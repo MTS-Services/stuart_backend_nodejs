@@ -1,7 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import * as QRCode from 'qrcode';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class QRCardService {
@@ -25,7 +25,7 @@ export class QRCardService {
     const cards: any[] = [];
     
     for (let i = 0; i < count; i++) {
-      const uniqueId = uuidv4();
+      const uniqueId = randomUUID();
       const qrData = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${uniqueId}`;
       
       // Generate QR code as data URL

@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  WAITLIST
+  PAID_SETUP
+  PROFILE_PENDING
+  VERIFIED
+  REJECTED
+  ACTIVE
+}
+
+enum ProfileStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum SubscriptionPlan {
+  MONTHLY // $13/month
+  YEARLY // $120/year
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  name         String?
+  password     String
+  phone            String?
+  status           UserStatus @default(WAITLIST)
+  paidSetupFee     Boolean    @default(false)
+  stripeCustomerId String?    @unique
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  // Relations
+  profile      Profile?
+  qrCards      QRCard[]
+  scans        Scan[]        @relation("ScanViewer")
+  matches      Match[]       @relation("MatchUser")
+  matchedBy    Match[]       @relation("MatchTarget")
+  subscription Subscription?
+
+  @@map("users")
+}
+
+model Profile {
+  id              Int           @id @default(autoincrement())
+  userId          Int           @unique
+  age             Int?
+  height          String?
+  bio             String?
+  location        String?
+  photos          String[] // Array of photo URLs
+  facePhoto       String? // Primary face photo
+  fullBodyPhoto   String? // Primary full body photo
+  status          ProfileStatus @default(DRAFT)
+  reviewedAt      DateTime?
+  reviewedBy      Int? // Admin ID who reviewed
+  rejectionReason String?
+  isActive        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer Admin?   @relation(fields: [reviewedBy], references: [id])
+  qrCards  QRCard[]
+
+  @@map("profiles")
+}
+
+model QRCard {
+  id        Int      @id @default(autoincrement())
+  profileId Int
+  userId    Int // Add direct relation to user
+  qrCode    String   @unique // QR code data/URL
+  scanCount Int      @default(0)
+  maxScans  Int      @default(5)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scans   Scan[]
+
+  @@map("qr_cards")
+}
+
+model Scan {
+  id        Int      @id @default(autoincrement())
+  qrCardId  Int
+  viewerId  Int? // User who scanned (if registered)
+  ipAddress String? // For tracking anonymous scans
+  userAgent String?
+  location  String? // General location if provided
+  createdAt DateTime @default(now())
+
+  // Relations
+  qrCard QRCard @relation(fields: [qrCardId], references: [id], onDelete: Cascade)
+  viewer User?  @relation("ScanViewer", fields: [viewerId], references: [id])
+  match  Match?
+
+  @@map("scans")
+}
+
+model Match {
+  id            Int      @id @default(autoincrement())
+  scanId        Int      @unique
+  userId        Int // Person who was scanned
+  targetId      Int // Person who scanned
+  isInterested  Boolean  @default(false)
+  isMutual      Boolean  @default(false)
+  contactShared Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  scan   Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  user   User @relation("MatchUser", fields: [userId], references: [id])
+  target User @relation("MatchTarget", fields: [targetId], references: [id])
+
+  @@map("matches")
+}
+
+model Subscription {
+  id                   Int                @id @default(autoincrement())
+  userId               Int                @unique
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus @default(INACTIVE)
+  amount               Decimal            @db.Decimal(10, 2)
+  currency             String             @default("USD")
+  startDate            DateTime?
+  endDate              DateTime?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                    Int      @id @default(autoincrement())
+  subscriptionId        Int?
+  userId                Int
+  amount                Decimal  @db.Decimal(10, 2)
+  currency              String   @default("USD")
+  type                  String // "setup_fee", "subscription", "refund"
+  status                String // "pending", "completed", "failed"
+  stripePaymentIntentId String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
+}
+
+model Admin {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  username  String    @unique
+  password  String
+  role      String    @default("admin")
+  isActive  Boolean   @default(true)
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  reviewedProfiles Profile[]
+
+  @@map("admins")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  adminId   Int
+  type      String // "new_signup", "profile_submitted", "payment_received"
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  data      Json? // Additional data
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}

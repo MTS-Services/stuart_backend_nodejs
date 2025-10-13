@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "QR Card Dating App API - Simplified Flow",
-    "description": "Simplified API collection: Users provide name/email → Admin gets notifications → Admin approves → Welcome email sent. No authentication required.",
+    "description": "🎯 **Simplified Admin-Approval Flow**: Users register with name/email → Admin gets notifications → Admin approves/rejects → Automatic email notifications sent.\n\n**Key Features:**\n✅ No password authentication required\n✅ Admin-controlled user approval system\n✅ Automatic email notifications\n✅ Complete user journey testing\n\n**Quick Start:** Run 'Complete User Journey' folder to test the full flow.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -38,6 +38,21 @@
     {
       "key": "qr_code",
       "value": ""
+    },
+    {
+      "key": "test_user_email",
+      "value": "",
+      "description": "Dynamically generated unique email for testing"
+    },
+    {
+      "key": "journey_user_id",
+      "value": "",
+      "description": "User ID from complete journey flow"
+    },
+    {
+      "key": "journey_user_email",
+      "value": "",
+      "description": "Email from complete journey flow"
     }
   ],
   "item": [
@@ -71,6 +86,17 @@
           "name": "� Simple Registration (No Password)",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique email for testing",
+                  "const timestamp = Date.now();",
+                  "const testEmail = 'user_' + timestamp + '@example.com';",
+                  "pm.globals.set('test_user_email', testEmail);"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "exec": [
@@ -81,6 +107,9 @@
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
                   "    pm.globals.set('user_id', response.user.id);",
+                  "    console.log('✅ User registered with ID:', response.user.id);",
+                  "    console.log('📧 Email:', response.user.email);",
+                  "    console.log('📬 Admin will see this registration in pending list');",
                   "}"
                 ]
               }
@@ -96,7 +125,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"name\": \"New User\"\n}"
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"name\": \"New Test User\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
@@ -839,6 +868,26 @@
         },
         {
           "name": "👥 Get Pending User Registrations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Pending users retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('📋 Pending users found:', response.users?.length || 0);",
+                  "    if (response.users && response.users.length > 0) {",
+                  "        console.log('👤 Latest user:', response.users[0].name, '(' + response.users[0].email + ')');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -871,6 +920,25 @@
         },
         {
           "name": "✅ Approve User Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User approved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ User approved successfully!');",
+                  "    console.log('📧 Welcome email sent to:', response.email);",
+                  "    console.log('📅 Approved at:', response.approvedAt);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -893,6 +961,25 @@
         },
         {
           "name": "❌ Reject User Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User rejected successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('❌ User rejected');",
+                  "    console.log('📧 Rejection email sent to:', response.email);",
+                  "    console.log('📝 Reason: Application needs improvement');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",

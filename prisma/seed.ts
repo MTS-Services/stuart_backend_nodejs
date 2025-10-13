@@ -22,17 +22,15 @@ async function main() {
   console.log('Default admin created:', admin);
 
   // Create a test user
-  const testUserPassword = await bcrypt.hash('testuser123', 10);
-  
   const testUser = await prisma.user.upsert({
     where: { email: 'test@example.com' },
     update: {},
     create: {
       email: 'test@example.com',
       name: 'Test User',
-      password: testUserPassword,
       status: 'WAITLIST',
       paidSetupFee: false,
+      isApproved: false,
     },
   });
 

@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "QR Card Dating App API",
-    "description": "Complete API collection for testing the QR Card Dating App with user journey and admin dashboard flows",
+    "name": "QR Card Dating App API - Simplified Flow",
+    "description": "Simplified API collection: Users provide name/email → Admin gets notifications → Admin approves → Welcome email sent. No authentication required.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -68,12 +68,16 @@
       "name": "🔐 Authentication",
       "item": [
         {
-          "name": "👤 User Register (Waitlist)",
+          "name": "� Simple Registration (No Password)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
+                  "pm.test('Registration successful', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
                   "    pm.globals.set('user_id', response.user.id);",
@@ -92,47 +96,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"New User\"\n}"
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"name\": \"New User\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
               "host": ["{{baseUrl}}"],
               "path": ["auth", "register"]
-            }
-          }
-        },
-        {
-          "name": "🔑 User Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const response = pm.response.json();",
-                  "    pm.globals.set('access_token', response.access_token);",
-                  "    pm.globals.set('user_id', response.user.id);",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"testuser123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
             }
           }
         },
@@ -867,14 +836,209 @@
               ]
             }
           }
+        },
+        {
+          "name": "👥 Get Pending User Registrations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/pending?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "pending"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "✅ Approve User Registration",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{user_id}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{user_id}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "❌ Reject User Registration",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Application does not meet our community guidelines\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{user_id}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{user_id}}", "reject"]
+            }
+          }
         }
       ]
     },
     {
-      "name": "🔄 Complete User Journey",
+      "name": "� Contact & Matching",
       "item": [
         {
-          "name": "1️⃣ Register New User",
+          "name": "📤 Send Contact Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{user_id}}\",\n  \"requesterEmail\": \"interested@example.com\",\n  \"requesterName\": \"John Doe\",\n  \"message\": \"Hi! I'd love to connect and get to know you better. Your profile caught my attention!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contact/request",
+              "host": ["{{baseUrl}}"],
+              "path": ["contact", "request"]
+            }
+          }
+        },
+        {
+          "name": "📋 Get My Contact Requests",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contact/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["contact", "requests"]
+            }
+          }
+        },
+        {
+          "name": "✅ Approve Contact Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contact/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["contact", "approve"]
+            }
+          }
+        },
+        {
+          "name": "❌ Reject Contact Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestId\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contact/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["contact", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "�🔄 Complete User Journey",
+      "item": [
+        {
+          "name": "1️⃣ Simple User Registration",
           "event": [
             {
               "listen": "test",
@@ -886,9 +1050,19 @@
                   "",
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
-                  "    pm.globals.set('journey_user_email', 'journey_' + Date.now() + '@example.com');",
+                  "    const timestamp = Date.now();",
+                  "    pm.globals.set('journey_user_email', 'journey_' + timestamp + '@example.com');",
                   "    pm.globals.set('journey_user_id', response.user.id);",
                   "}"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "pm.globals.set('journey_user_email', 'journey_' + timestamp + '@example.com');"
                 ]
               }
             }
@@ -903,7 +1077,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{journey_user_email}}\",\n  \"password\": \"password123\",\n  \"name\": \"Journey Test User\"\n}"
+              "raw": "{\n  \"email\": \"{{journey_user_email}}\",\n  \"name\": \"Journey Test User\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
@@ -913,52 +1087,14 @@
           }
         },
         {
-          "name": "2️⃣ Login User",
+          "name": "2️⃣ Admin Sees Notification",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Login successful', function () {",
-                  "    pm.response.to.have.status(201);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 201) {",
-                  "    const response = pm.response.json();",
-                  "    pm.globals.set('journey_token', response.access_token);",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{journey_user_email}}\",\n  \"password\": \"password123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
-            }
-          }
-        },
-        {
-          "name": "3️⃣ Pay Setup Fee ($69)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Setup fee payment successful', function () {",
-                  "    pm.response.to.have.status(201);",
+                  "pm.test('Notifications retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
                   "});"
                 ]
               }
@@ -970,35 +1106,30 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{journey_token}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
             },
-            "method": "POST",
+            "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/payment/setup-fee",
+              "raw": "{{baseUrl}}/admin/users/pending",
               "host": ["{{baseUrl}}"],
-              "path": ["payment", "setup-fee"]
+              "path": ["admin", "users", "pending"]
             }
           }
         },
         {
-          "name": "4️⃣ Create Profile",
+          "name": "3️⃣ Admin Approves User",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Profile created successfully', function () {",
-                  "    pm.response.to.have.status(201);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 201) {",
-                  "    const response = pm.response.json();",
-                  "    pm.globals.set('journey_profile_id', response.id);",
-                  "}"
+                  "pm.test('User approved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
                 ]
               }
             }
@@ -1009,26 +1140,42 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{journey_token}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
             },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"age\": 28,\n  \"height\": \"6'0\\\"\",\n  \"bio\": \"Testing the complete user journey!\",\n  \"location\": \"San Francisco, CA\"\n}"
-            },
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/profile",
+              "raw": "{{baseUrl}}/admin/users/{{journey_user_id}}/approve",
               "host": ["{{baseUrl}}"],
-              "path": ["profile"]
+              "path": ["admin", "users", "{{journey_user_id}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "4️⃣ User Receives Welcome Email ✉️",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('This step represents email notification', function () {",
+                  "    // This is a placeholder to show email was sent",
+                  "    // Check your email: ' + pm.globals.get('journey_user_email')",
+                  "    console.log('Welcome email sent to: ' + pm.globals.get('journey_user_email'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"]
             }
           }
         }

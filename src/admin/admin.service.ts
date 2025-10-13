@@ -345,4 +345,134 @@ export class AdminService {
       data: { isRead: true },
     });
   }
+
+  async getPendingUsers(page: number = 1, limit: number = 10) {
+    const users = await this.prisma.user.findMany({
+      where: { 
+        isApproved: false,
+        status: UserStatus.WAITLIST 
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalCount = await this.prisma.user.count({
+      where: { 
+        isApproved: false,
+        status: UserStatus.WAITLIST 
+      },
+    });
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
+  }
+
+  async approveUser(adminId: number, userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (user.isApproved) {
+      throw new HttpException('User is already approved', HttpStatus.BAD_REQUEST);
+    }
+
+    // Update user approval status
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isApproved: true,
+        approvedAt: new Date(),
+        status: UserStatus.ACTIVE,
+      },
+    });
+
+    // Send welcome email
+    await this.emailService.sendWelcomeEmail(
+      user.email,
+      user.name,
+    );
+
+    // Create notification
+    await this.prisma.notification.create({
+      data: {
+        adminId,
+        type: 'user_approved',
+        title: 'User Approved',
+        message: `${user.name} (${user.email}) has been approved and welcomed to the platform`,
+        data: {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+        },
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async rejectUser(adminId: number, userId: number, reason: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (user.isApproved) {
+      throw new HttpException('Cannot reject an approved user', HttpStatus.BAD_REQUEST);
+    }
+
+    // Update user status
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: UserStatus.REJECTED,
+      },
+    });
+
+    // Send rejection email
+    await this.emailService.sendUserRejectionEmail(
+      user.email,
+      user.name,
+      reason,
+    );
+
+    // Create notification
+    await this.prisma.notification.create({
+      data: {
+        adminId,
+        type: 'user_rejected',
+        title: 'User Rejected',
+        message: `${user.name} (${user.email}) has been rejected. Reason: ${reason}`,
+        data: {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          reason,
+        },
+      },
+    });
+
+    return updatedUser;
+  }
 }

@@ -159,4 +159,73 @@ export class EmailService {
 
     return this.transporter.sendMail(mailOptions);
   }
+
+  async sendWelcomeEmail(email: string, name: string) {
+    const loginUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/dashboard`;
+    
+    const mailOptions = {
+      from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
+      to: email,
+      subject: '🎉 Welcome to QR Card Dating!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>🎉 Welcome ${name}!</h2>
+          <p>Congratulations! Your application has been approved and you're now part of the QR Card Dating community!</p>
+          
+          <div style="background: #d4edda; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #28a745;">
+            <h3>✅ You're Approved!</h3>
+            <p>Our team has reviewed your application and we're excited to have you join our community of singles looking for meaningful connections.</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <h3>What's Next?</h3>
+            <ol>
+              <li>Access your dashboard to complete your profile</li>
+              <li>Upload your photos and write your bio</li>
+              <li>Pay the one-time setup fee ($69)</li>
+              <li>Receive your 50 physical QR cards by mail</li>
+            </ol>
+          </div>
+          
+          <a href="${loginUrl}" style="background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
+            Access Dashboard →
+          </a>
+          
+          <p>Welcome to your QR dating journey! 💕</p>
+        </div>
+      `,
+    };
+
+    return this.transporter.sendMail(mailOptions);
+  }
+
+  async sendUserRejectionEmail(email: string, name: string, reason: string) {
+    const mailOptions = {
+      from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
+      to: email,
+      subject: '📝 Application Update',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Application Update</h2>
+          <p>Hi ${name},</p>
+          
+          <div style="background: #f8d7da; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #dc3545;">
+            <h3>Application Status</h3>
+            <p>Thank you for your interest in QR Card Dating. After reviewing your application, we're unable to approve it at this time.</p>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+              <strong>Reason:</strong><br>
+              ${reason}
+            </div>
+          </div>
+          
+          <p>We appreciate your interest and wish you the best in your dating journey.</p>
+          
+          <p>If you have questions about this decision, please reply to this email.</p>
+        </div>
+      `,
+    };
+
+    return this.transporter.sendMail(mailOptions);
+  }
 }

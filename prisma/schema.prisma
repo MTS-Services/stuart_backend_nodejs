@@ -44,10 +44,11 @@ enum SubscriptionPlan {
 model User {
   id           Int        @id @default(autoincrement())
   email        String     @unique
-  name         String?
-  password     String
+  name         String
   phone            String?
   status           UserStatus @default(WAITLIST)
+  isApproved       Boolean    @default(false)
+  approvedAt       DateTime?
   paidSetupFee     Boolean    @default(false)
   stripeCustomerId String?    @unique
   createdAt        DateTime   @default(now())

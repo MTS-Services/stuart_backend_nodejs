@@ -8,20 +8,7 @@ export class RegisterDto {
   email: string;
 
   @IsString()
-  @MinLength(8)
-  password: string;
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-}
-
-export class LoginDto {
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  password: string;
+  name: string;
 }
 
 @Controller('auth')
@@ -33,11 +20,10 @@ export class AuthController {
     try {
       const user = await this.authService.register(
         registerDto.email,
-        registerDto.password,
         registerDto.name,
       );
       return {
-        message: 'User registered successfully. You are now on the waitlist.',
+        message: 'Registration submitted successfully. Admin will review and approve your application.',
         user,
       };
     } catch (error) {
@@ -46,12 +32,6 @@ export class AuthController {
         HttpStatus.BAD_REQUEST,
       );
     }
-  }
-
-  @UseGuards(AuthGuard('local'))
-  @Post('login')
-  async login(@Request() req) {
-    return this.authService.login(req.user);
   }
 
   @UseGuards(AuthGuard('admin-local'))

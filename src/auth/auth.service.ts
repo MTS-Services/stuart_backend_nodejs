@@ -26,38 +26,7 @@ export class AuthService {
     return bcrypt.compare(password, hashedPassword);
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: { profile: true },
-    });
-
-    if (user && await this.validatePassword(password, user.password)) {
-      const { password: _, ...result } = user;
-      return result;
-    }
-    return null;
-  }
-
-  async login(user: any) {
-    const payload: JwtPayload = { 
-      email: user.email, 
-      sub: user.id,
-    };
-    
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        status: user.status,
-        profile: user.profile,
-      },
-    };
-  }
-
-  async register(email: string, password: string, name?: string) {
+  async register(email: string, name: string) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -65,20 +34,31 @@ export class AuthService {
     if (existingUser) {
       throw new Error('User with this email already exists');
     }
-
-    const hashedPassword = await this.hashPassword(password);
     
     const user = await this.prisma.user.create({
       data: {
         email,
-        password: hashedPassword,
         name,
         status: UserStatus.WAITLIST,
       },
     });
 
-    const { password: _, ...result } = user;
-    return result;
+    // Create notification for admin
+    await this.prisma.notification.create({
+      data: {
+        adminId: 1, // Default admin ID
+        type: 'new_signup',
+        title: 'New User Registration',
+        message: `${name} (${email}) has registered and is waiting for approval`,
+        data: {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+        },
+      },
+    });
+
+    return user;
   }
 
   async validateAdmin(email: string, password: string): Promise<any> {

@@ -86,4 +86,29 @@ export class AdminController {
   ) {
     return this.adminService.markNotificationAsRead(req.user.id, notificationId);
   }
+
+  @Get('users/pending')
+  async getPendingUsers(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10
+  ) {
+    return this.adminService.getPendingUsers(page, limit);
+  }
+
+  @Post('users/:userId/approve')
+  async approveUser(
+    @Request() req,
+    @Param('userId', ParseIntPipe) userId: number
+  ) {
+    return this.adminService.approveUser(req.user.id, userId);
+  }
+
+  @Post('users/:userId/reject')
+  async rejectUser(
+    @Request() req,
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body('reason') reason: string
+  ) {
+    return this.adminService.rejectUser(req.user.id, userId, reason);
+  }
 }

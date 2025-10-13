@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "QR Card Dating App API - Simplified Flow",
-    "description": "🎯 **Simplified Admin-Approval Flow**: Users register with name/email → Admin gets notifications → Admin approves/rejects → Automatic email notifications sent.\n\n**Key Features:**\n✅ No password authentication required\n✅ Admin-controlled user approval system\n✅ Automatic email notifications\n✅ Complete user journey testing\n\n**Quick Start:** Run 'Complete User Journey' folder to test the full flow.",
+    "description": "🎯 **Simplified Admin-Approval Flow**: Users register with name/email → Admin gets notifications → Admin approves/rejects → Automatic email notifications sent.\n\n**Key Features:**\n✅ No password authentication required\n✅ Admin-controlled user approval system\n✅ Automatic email notifications\n✅ Complete user journey testing\n✅ Enhanced error handling and validation\n\n**📋 Important Endpoints:**\n• User Registration: `POST /auth/register` (name + email only)\n• Pending Users: `GET /admin/users/pending` (⚠️ NOT /admin/profiles/pending)\n• Approve User: `POST /admin/users/{id}/approve`\n• Reject User: `POST /admin/users/{id}/reject`\n\n**🚀 Quick Start:** Run 'Complete User Journey' folder to test the full flow.\n\n**📅 Last Updated:** October 13, 2025\n**🔧 Version:** 2.1 - Enhanced Simplified Flow",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -53,11 +53,40 @@
       "key": "journey_user_email",
       "value": "",
       "description": "Email from complete journey flow"
+    },
+    {
+      "key": "test_user_name",
+      "value": "",
+      "description": "Dynamically generated user name for testing"
+    },
+    {
+      "key": "pending_user_count",
+      "value": "0",
+      "description": "Count of pending users from last check"
     }
   ],
   "item": [
     {
       "name": "🏠 Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Server is running', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is acceptable', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});",
+              "",
+              "console.log('🟢 Server Status: Online');",
+              "console.log('⏱️ Response Time: ' + pm.response.responseTime + 'ms');"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [],
@@ -69,6 +98,24 @@
     },
     {
       "name": "🗄️ Test Database",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Database connection successful', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    console.log('✅ Database: Connected and accessible');",
+              "} else {",
+              "    console.log('❌ Database: Connection issues detected');",
+              "}"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [],
@@ -89,10 +136,14 @@
               "listen": "prerequest",
               "script": {
                 "exec": [
-                  "// Generate unique email for testing",
+                  "// Generate unique email and name for testing",
                   "const timestamp = Date.now();",
                   "const testEmail = 'user_' + timestamp + '@example.com';",
-                  "pm.globals.set('test_user_email', testEmail);"
+                  "const names = ['Alex Johnson', 'Emma Smith', 'Michael Brown', 'Sarah Davis', 'James Wilson', 'Lisa Martinez'];",
+                  "const testName = names[Math.floor(Math.random() * names.length)] + ' ' + timestamp.toString().slice(-3);",
+                  "pm.globals.set('test_user_email', testEmail);",
+                  "pm.globals.set('test_user_name', testName);",
+                  "console.log('📝 Generated test user: ' + testName + ' (' + testEmail + ')');"
                 ]
               }
             },
@@ -125,7 +176,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"name\": \"New Test User\"\n}"
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"name\": \"{{test_user_name}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
@@ -141,9 +192,17 @@
               "listen": "test",
               "script": {
                 "exec": [
+                  "pm.test('Admin login successful', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
                   "    pm.globals.set('admin_token', response.access_token);",
+                  "    console.log('✅ Admin authenticated successfully');",
+                  "    console.log('🔑 Token saved for admin operations');",
+                  "} else {",
+                  "    console.log('❌ Admin login failed - check credentials');",
                   "}"
                 ]
               }
@@ -165,6 +224,101 @@
               "raw": "{{baseUrl}}/auth/admin/login",
               "host": ["{{baseUrl}}"],
               "path": ["auth", "admin", "login"]
+            }
+          }
+        },
+        {
+          "name": "👥 Create Multiple Test Users",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set test users data",
+                  "const testUsers = [",
+                  "    { name: 'Alice Cooper', email: 'alice.test@example.com' },",
+                  "    { name: 'Bob Smith', email: 'bob.test@example.com' },",
+                  "    { name: 'Carol Johnson', email: 'carol.test@example.com' }",
+                  "];",
+                  "",
+                  "// Start with first user",
+                  "pm.globals.set('current_test_users', JSON.stringify(testUsers));",
+                  "pm.globals.set('current_user_index', '0');",
+                  "",
+                  "const currentUser = testUsers[0];",
+                  "pm.globals.set('bulk_test_email', currentUser.email);",
+                  "pm.globals.set('bulk_test_name', currentUser.name);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Test user created successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Created user:', response.user.name, '(ID:', response.user.id + ')');",
+                  "    ",
+                  "    // Create next user if available",
+                  "    const testUsers = JSON.parse(pm.globals.get('current_test_users') || '[]');",
+                  "    const currentIndex = parseInt(pm.globals.get('current_user_index') || '0');",
+                  "    const nextIndex = currentIndex + 1;",
+                  "    ",
+                  "    if (nextIndex < testUsers.length) {",
+                  "        pm.globals.set('current_user_index', nextIndex.toString());",
+                  "        const nextUser = testUsers[nextIndex];",
+                  "        pm.globals.set('bulk_test_email', nextUser.email);",
+                  "        pm.globals.set('bulk_test_name', nextUser.name);",
+                  "        ",
+                  "        console.log('🔄 Creating next user:', nextUser.name);",
+                  "        // Automatically run this request again for next user",
+                  "        setTimeout(() => {",
+                  "            pm.sendRequest({",
+                  "                url: pm.request.url,",
+                  "                method: 'POST',",
+                  "                header: pm.request.headers,",
+                  "                body: {",
+                  "                    mode: 'raw',",
+                  "                    raw: JSON.stringify({",
+                  "                        email: nextUser.email,",
+                  "                        name: nextUser.name",
+                  "                    })",
+                  "                }",
+                  "            }, (err, res) => {",
+                  "                if (!err && res.code === 201) {",
+                  "                    console.log('✅ Bulk user created:', nextUser.name);",
+                  "                }",
+                  "            });",
+                  "        }, 500);",
+                  "    } else {",
+                  "        console.log('🎉 All test users created successfully!');",
+                  "        console.log('💡 Now check \"Get Pending User Registrations\" to see them');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bulk_test_email}}\",\n  \"name\": \"{{bulk_test_name}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
             }
           }
         }
@@ -877,11 +1031,30 @@
                   "    pm.response.to.have.status(200);",
                   "});",
                   "",
+                  "pm.test('Response has correct structure', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('users');",
+                  "    pm.expect(response).to.have.property('total');",
+                  "    pm.expect(response).to.have.property('page');",
+                  "    pm.expect(response).to.have.property('limit');",
+                  "});",
+                  "",
                   "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
-                  "    console.log('📋 Pending users found:', response.users?.length || 0);",
-                  "    if (response.users && response.users.length > 0) {",
-                  "        console.log('👤 Latest user:', response.users[0].name, '(' + response.users[0].email + ')');",
+                  "    const pendingCount = response.users?.length || 0;",
+                  "    pm.globals.set('pending_user_count', pendingCount.toString());",
+                  "    ",
+                  "    console.log('📋 Pending users found:', pendingCount);",
+                  "    console.log('📊 Total in database:', response.total);",
+                  "    ",
+                  "    if (pendingCount === 0) {",
+                  "        console.log('⚠️ No pending users found!');",
+                  "        console.log('💡 Tip: Run \"Simple Registration\" first to create test users');",
+                  "    } else {",
+                  "        console.log('👤 Latest user:', response.users[0].name + ' (' + response.users[0].email + ')');",
+                  "        console.log('🆔 User ID for approval:', response.users[0].id);",
+                  "        // Auto-set the first pending user for approval testing",
+                  "        pm.globals.set('user_id', response.users[0].id);",
                   "    }",
                   "}"
                 ]
@@ -1253,6 +1426,114 @@
                   "    // Check your email: ' + pm.globals.get('journey_user_email')",
                   "    console.log('Welcome email sent to: ' + pm.globals.get('journey_user_email'));",
                   "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📚 Quick Reference Guide",
+      "item": [
+        {
+          "name": "🎯 Testing Workflow Guide",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "console.log('🎯 QR Dating App - Testing Workflow Guide');",
+                  "console.log('============================================');",
+                  "console.log('');",
+                  "console.log('📝 STEP-BY-STEP TESTING:');",
+                  "console.log('1. Health Check → Verify server is running');",
+                  "console.log('2. Admin Login → Get admin access token');",
+                  "console.log('3. Simple Registration → Create test users');",
+                  "console.log('4. Get Pending Users → View waiting registrations');",
+                  "console.log('5. Approve/Reject Users → Process applications');",
+                  "console.log('');",
+                  "console.log('⚠️ IMPORTANT ENDPOINTS:');",
+                  "console.log('• User Registration: POST /auth/register');",
+                  "console.log('• Pending Users: GET /admin/users/pending');",
+                  "console.log('• Approve User: POST /admin/users/{id}/approve');",
+                  "console.log('• Reject User: POST /admin/users/{id}/reject');",
+                  "console.log('');",
+                  "console.log('❌ COMMON MISTAKES:');",
+                  "console.log('• Using /admin/profiles/pending (OLD - WRONG)');",
+                  "console.log('• Forgetting to login as admin first');",
+                  "console.log('• Not running registration before checking pending');",
+                  "console.log('');",
+                  "console.log('✅ SUCCESS INDICATORS:');",
+                  "console.log('• Registration returns 201 with user ID');",
+                  "console.log('• Pending list shows WAITLIST status users');",
+                  "console.log('• Approval changes status to APPROVED');",
+                  "console.log('• Welcome emails are sent automatically');",
+                  "console.log('');",
+                  "console.log('📧 EMAIL TESTING:');",
+                  "console.log('• Check email service configuration');",
+                  "console.log('• Welcome emails sent on approval');",
+                  "console.log('• Rejection emails sent on rejection');",
+                  "console.log('');",
+                  "console.log('🔧 TROUBLESHOOTING:');",
+                  "console.log('• Empty pending list? Run \"Simple Registration\" first');",
+                  "console.log('• 401 errors? Check admin login token');",
+                  "console.log('• Server errors? Check console for details');",
+                  "console.log('');",
+                  "console.log('📅 Last Updated: October 13, 2025');",
+                  "console.log('🔧 Collection Version: 2.1');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        },
+        {
+          "name": "📊 Environment Variables Reference",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "console.log('📊 ENVIRONMENT VARIABLES REFERENCE');",
+                  "console.log('=====================================');",
+                  "console.log('');",
+                  "console.log('🏠 Server Configuration:');",
+                  "console.log('• baseUrl: ' + pm.globals.get('baseUrl') || 'http://localhost:3000');",
+                  "console.log('');",
+                  "console.log('🔑 Authentication Tokens:');",
+                  "console.log('• access_token: ' + (pm.globals.get('access_token') ? 'SET ✅' : 'NOT SET ❌'));",
+                  "console.log('• admin_token: ' + (pm.globals.get('admin_token') ? 'SET ✅' : 'NOT SET ❌'));",
+                  "console.log('');",
+                  "console.log('👤 User Data:');",
+                  "console.log('• user_id: ' + (pm.globals.get('user_id') || 'Not set'));",
+                  "console.log('• test_user_email: ' + (pm.globals.get('test_user_email') || 'Not set'));",
+                  "console.log('• test_user_name: ' + (pm.globals.get('test_user_name') || 'Not set'));",
+                  "console.log('');",
+                  "console.log('🚀 Journey Testing:');",
+                  "console.log('• journey_user_id: ' + (pm.globals.get('journey_user_id') || 'Not set'));",
+                  "console.log('• journey_user_email: ' + (pm.globals.get('journey_user_email') || 'Not set'));",
+                  "console.log('');",
+                  "console.log('📋 Admin Dashboard:');",
+                  "console.log('• pending_user_count: ' + (pm.globals.get('pending_user_count') || '0'));",
+                  "console.log('');",
+                  "console.log('💡 TIP: These variables are automatically set during testing.');",
+                  "console.log('    You can also set them manually in the Postman environment.');"
                 ]
               }
             }

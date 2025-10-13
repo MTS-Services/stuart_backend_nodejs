@@ -127,15 +127,20 @@ model Scan {
 }
 
 model Match {
-  id            Int      @id @default(autoincrement())
-  scanId        Int      @unique
-  userId        Int // Person who was scanned
-  targetId      Int // Person who scanned
-  isInterested  Boolean  @default(false)
-  isMutual      Boolean  @default(false)
-  contactShared Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  scanId          Int       @unique
+  userId          Int       // Person who was scanned (profile owner)
+  targetId        Int       // Person who scanned (viewer)
+  isInterested    Boolean   @default(false)
+  isMutual        Boolean   @default(false)
+  contactShared   Boolean   @default(false)
+  status          String    @default("pending") // "pending", "approved", "rejected"
+  requesterEmail  String?   // Email of person requesting contact
+  requesterName   String?   // Name of person requesting contact  
+  message         String?   // Message from requester
+  approvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   scan   Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)

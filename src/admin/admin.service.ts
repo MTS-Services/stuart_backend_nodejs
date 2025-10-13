@@ -1,10 +1,15 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { ProfileStatus, UserStatus } from '@prisma/client';
+import { EmailService } from '../email/email.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async getDashboardStats() {
     const [
@@ -124,18 +129,58 @@ export class AdminService {
       data: { status: UserStatus.VERIFIED },
     });
 
-    // Create notification for user (in a real app, this would trigger an email/push notification)
+    // Generate 50 QR cards for the approved profile
+    const qrCards: any[] = [];
+    for (let i = 0; i < 50; i++) {
+      const uniqueId = randomUUID();
+      const card = await this.prisma.qRCard.create({
+        data: {
+          profileId: profileId,
+          userId: profile.userId,
+          qrCode: uniqueId,
+          scanCount: 0,
+          maxScans: 5,
+          isActive: true,
+        },
+      });
+      qrCards.push(card);
+    }
+
+    // Generate tracking number for shipping
+    const trackingNumber = `QR-${Date.now()}-${profile.userId}`;
+
+    // Send approval email with tracking
+    try {
+      await this.emailService.sendApprovalEmail(
+        profile.user.email,
+        profile.user.name || 'User',
+        trackingNumber,
+      );
+    } catch (error) {
+      console.error('Failed to send approval email:', error);
+    }
+
+    // Create notification for user
     await this.prisma.notification.create({
       data: {
         adminId,
         type: 'profile_approved',
-        title: 'Profile Approved',
-        message: `Profile for user ${profile.user.email} has been approved`,
-        data: { userId: profile.userId, profileId },
+        title: 'Profile Approved - Cards Being Printed!',
+        message: `Profile approved! 50 QR cards generated and queued for printing. Tracking: ${trackingNumber}`,
+        data: { 
+          userId: profile.userId, 
+          profileId,
+          trackingNumber,
+          qrCardsGenerated: qrCards.length,
+        },
       },
     });
 
-    return updatedProfile;
+    return {
+      ...updatedProfile,
+      qrCardsGenerated: qrCards.length,
+      trackingNumber,
+    };
   }
 
   async rejectProfile(adminId: number, profileId: number, reason: string) {
@@ -164,20 +209,35 @@ export class AdminService {
       },
     });
 
-    // Update user status
+    // Update user status back to paid setup so they can re-edit
     await this.prisma.user.update({
       where: { id: profile.userId },
-      data: { status: UserStatus.REJECTED },
+      data: { status: UserStatus.PAID_SETUP }, // Allow them to edit and resubmit
     });
+
+    // Generate edit link for the user
+    const editLink = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/profile/edit`;
+
+    // Send rejection email with feedback and edit link
+    try {
+      await this.emailService.sendRejectionEmail(
+        profile.user.email,
+        profile.user.name || 'User',
+        reason,
+        editLink,
+      );
+    } catch (error) {
+      console.error('Failed to send rejection email:', error);
+    }
 
     // Create notification for user
     await this.prisma.notification.create({
       data: {
         adminId,
         type: 'profile_rejected',
-        title: 'Profile Rejected',
-        message: `Profile for user ${profile.user.email} has been rejected: ${reason}`,
-        data: { userId: profile.userId, profileId, reason },
+        title: 'Profile Needs Updates',
+        message: `Profile requires changes. Reason: ${reason}. Please edit and resubmit.`,
+        data: { userId: profile.userId, profileId, reason, editLink },
       },
     });
 

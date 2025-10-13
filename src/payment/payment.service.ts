@@ -2,12 +2,16 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { UserStatus, SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2025-09-30.clover',
     });
@@ -115,6 +119,22 @@ export class PaymentService {
             status: UserStatus.PAID_SETUP,
           },
         });
+
+        // Send order confirmation email
+        try {
+          const orderId = `QR-${Date.now()}-${payment.userId}`;
+          const deliveryETA = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(); // 7 days from now
+          
+          await this.emailService.sendOrderConfirmation(
+            updatedUser.email,
+            updatedUser.name || 'New User',
+            orderId,
+            deliveryETA,
+          );
+        } catch (error) {
+          console.error('Failed to send order confirmation email:', error);
+          // Don't fail the payment confirmation if email fails
+        }
 
         return {
           message: 'Setup fee payment confirmed',

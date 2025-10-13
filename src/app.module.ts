@@ -7,6 +7,7 @@ import { ProfileModule } from './profile/profile.module';
 import { QRCardModule } from './qr-card/qr-card.module';
 import { AdminModule } from './admin/admin.module';
 import { PaymentModule } from './payment/payment.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PaymentModule } from './payment/payment.module';
     QRCardModule,
     AdminModule,
     PaymentModule,
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

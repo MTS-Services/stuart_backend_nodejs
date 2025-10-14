@@ -6,25 +6,60 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    // Configure email transporter (use your preferred email service)
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    // Check if email credentials are available
+    const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+    const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+
+    if (!emailUser || !emailPass) {
+      console.log('⚠️ Email credentials not configured. Email service will run in mock mode.');
+      // Create a mock transporter that doesn't actually send emails
+      this.transporter = {
+        sendMail: async (options) => {
+          console.log('📧 Mock Email Service - Would send email to:', options.to);
+          console.log('📝 Subject:', options.subject);
+          return { messageId: 'mock-' + Date.now() };
+        }
+      } as any;
+    } else {
+      // Configure real email transporter
+      this.transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587'),
+        secure: process.env.EMAIL_SECURE === 'true' || false,
+        auth: {
+          user: emailUser,
+          pass: emailPass,
+        },
+      });
+    }
+
+    // Log configuration for debugging (without showing password)
+    console.log('📧 Email Configuration:');
+    console.log('Host:', process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com');
+    console.log('Port:', process.env.EMAIL_PORT || process.env.SMTP_PORT || '587');
+    console.log('User:', process.env.EMAIL_USER || process.env.SMTP_USER || 'Not configured');
+    console.log('Auth configured:', !!(process.env.EMAIL_USER || process.env.SMTP_USER) && !!(process.env.EMAIL_PASS || process.env.SMTP_PASS));
+  }
+
+  private isEmailConfigured(): boolean {
+    const hasUser = !!(process.env.EMAIL_USER || process.env.SMTP_USER);
+    const hasPass = !!(process.env.EMAIL_PASS || process.env.SMTP_PASS);
+    return hasUser && hasPass;
   }
 
   async sendSignupLink(email: string, name: string, signupToken: string) {
-    const signupUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/complete-signup?token=${signupToken}`;
-    
-    const mailOptions = {
-      from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
-      to: email,
-      subject: '💕 Complete Your QR Card Dating App Signup',
+    if (!this.isEmailConfigured()) {
+      console.log('⚠️ Email not configured - skipping signup link email to:', email);
+      return { message: 'Email service not configured' };
+    }
+
+    try {
+      const signupUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/complete-signup?token=${signupToken}`;
+      
+      const mailOptions = {
+        from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
+        to: email,
+        subject: '💕 Complete Your QR Card Dating App Signup',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome ${name}! 💕</h2>
@@ -47,9 +82,15 @@ export class EmailService {
           <p><small>This link expires in 24 hours. If you didn't request this, please ignore this email.</small></p>
         </div>
       `,
-    };
+      };
 
-    return this.transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('📧 Signup link email sent successfully to:', email);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to send signup link email to:', email, error.message);
+      throw new Error(`Failed to send signup link email: ${error.message}`);
+    }
   }
 
   async sendOrderConfirmation(email: string, name: string, orderId: string, deliveryETA: string) {
@@ -161,12 +202,18 @@ export class EmailService {
   }
 
   async sendWelcomeEmail(email: string, name: string) {
-    const loginUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/dashboard`;
-    
-    const mailOptions = {
-      from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
-      to: email,
-      subject: '🎉 Welcome to QR Card Dating!',
+    if (!this.isEmailConfigured()) {
+      console.log('⚠️ Email not configured - skipping welcome email to:', email);
+      return { message: 'Email service not configured' };
+    }
+
+    try {
+      const loginUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/dashboard`;
+      
+      const mailOptions = {
+        from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
+        to: email,
+        subject: '🎉 Welcome to QR Card Dating!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>🎉 Welcome ${name}!</h2>
@@ -194,12 +241,24 @@ export class EmailService {
           <p>Welcome to your QR dating journey! 💕</p>
         </div>
       `,
-    };
+      };
 
-    return this.transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Welcome email sent successfully to:', email);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to send welcome email to:', email, error.message);
+      throw new Error(`Failed to send welcome email: ${error.message}`);
+    }
   }
 
   async sendUserRejectionEmail(email: string, name: string, reason: string) {
+    if (!this.isEmailConfigured()) {
+      console.log('⚠️ Email not configured - skipping rejection email to:', email);
+      return { message: 'Email service not configured' };
+    }
+
+    try {
     const mailOptions = {
       from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
       to: email,
@@ -224,8 +283,14 @@ export class EmailService {
           <p>If you have questions about this decision, please reply to this email.</p>
         </div>
       `,
-    };
+      };
 
-    return this.transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('📧 Rejection email sent successfully to:', email);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to send rejection email to:', email, error.message);
+      throw new Error(`Failed to send rejection email: ${error.message}`);
+    }
   }
 }

@@ -115,9 +115,10 @@ export class QRCardService {
         age: card.profile.age,
         bio: card.profile.bio,
         location: card.profile.location,
-        photos: card.profile.photos,
         facePhoto: card.profile.facePhoto,
         fullBodyPhoto: card.profile.fullBodyPhoto,
+        thirdPhoto: card.profile.thirdPhoto,
+        additionalPhotos: card.profile.additionalPhotos || [],
       },
       scanId: scan.id,
       scansRemaining: card.maxScans - (card.scanCount + 1),
@@ -184,5 +185,240 @@ export class QRCardService {
     }
 
     return card.scans;
+  }
+
+  // Email-based QR card generation - No approval required for testing
+  async generateQRCardsByEmail(email: string, count: number = 50) {
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    if (!user.profile) {
+      throw new HttpException('Profile must be created before generating QR cards', HttpStatus.BAD_REQUEST);
+    }
+
+    // For testing purposes, allow QR generation even without approval
+    // In production, you might want to enforce approval
+    
+    const cards: any[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const uniqueId = randomUUID();
+      const qrData = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${uniqueId}`;
+      
+      // Generate QR code as data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+
+      const card = await this.prisma.qRCard.create({
+        data: {
+          profileId: user.profile.id,
+          userId: user.id,
+          qrCode: uniqueId,
+          scanCount: 0,
+          maxScans: 5,
+          isActive: true,
+        },
+      });
+
+      cards.push({
+        ...card,
+        qrCodeImage: qrCodeDataUrl,
+        scanUrl: qrData,
+      });
+    }
+
+    return {
+      success: true,
+      message: `Generated ${count} QR cards successfully`,
+      cards,
+      user: {
+        email: user.email,
+        name: user.name,
+      },
+      profile: {
+        id: user.profile.id,
+        status: user.profile.status,
+      },
+    };
+  }
+
+  // Email-based QR cards retrieval
+  async getUserCardsByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    const cards = await this.prisma.qRCard.findMany({
+      where: { userId: user.id },
+      include: {
+        profile: {
+          include: {
+            user: true,
+          },
+        },
+        scans: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 5, // Show last 5 scans per card
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      totalCards: cards.length,
+      cards: cards.map(card => ({
+        ...card,
+        scansRemaining: card.maxScans - card.scanCount,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+      })),
+      user: {
+        email: user.email,
+        name: user.name,
+      },
+    };
+  }
+
+  // Get all QR cards in the system (for admin purposes)
+  async getAllQRCards() {
+    const cards = await this.prisma.qRCard.findMany({
+      include: {
+        profile: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      totalCards: cards.length,
+      cards: cards.map(card => ({
+        ...card,
+        scansRemaining: card.maxScans - card.scanCount,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+        owner: {
+          name: card.profile?.user?.name || 'Unknown',
+          email: card.profile?.user?.email || 'Unknown',
+        },
+      })),
+    };
+  }
+
+  // Get QR cards with pagination
+  async getPaginatedQRCards(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    
+    const [cards, totalCount] = await Promise.all([
+      this.prisma.qRCard.findMany({
+        skip,
+        take: limit,
+        include: {
+          profile: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.qRCard.count(),
+    ]);
+
+    return {
+      success: true,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page * limit < totalCount,
+        hasPrev: page > 1,
+      },
+      cards: cards.map(card => ({
+        ...card,
+        scansRemaining: card.maxScans - card.scanCount,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+        owner: {
+          name: card.profile?.user?.name || 'Unknown',
+          email: card.profile?.user?.email || 'Unknown',
+        },
+      })),
+    };
+  }
+
+  // Get only active QR cards
+  async getActiveQRCards() {
+    const cards = await this.prisma.qRCard.findMany({
+      where: {
+        isActive: true,
+        scanCount: {
+          lt: 5, // maxScans default value
+        },
+      },
+      include: {
+        profile: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      totalActiveCards: cards.length,
+      cards: cards.map(card => ({
+        ...card,
+        scansRemaining: card.maxScans - card.scanCount,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+        owner: {
+          name: card.profile?.user?.name || 'Unknown',
+          email: card.profile?.user?.email || 'Unknown',
+        },
+      })),
+    };
   }
 }

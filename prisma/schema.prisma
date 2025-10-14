@@ -72,9 +72,12 @@ model Profile {
   height          String?
   bio             String?
   location        String?
-  photos          String[] // Array of photo URLs
-  facePhoto       String? // Primary face photo
-  fullBodyPhoto   String? // Primary full body photo
+  // Required photos (minimum 3)
+  facePhoto       String? // Primary face photo (required)
+  fullBodyPhoto   String? // Primary full body photo (required)  
+  thirdPhoto      String? // Third required photo
+  // Additional photos (up to 10 more)
+  additionalPhotos String[] @default([]) // Additional photo URLs (max 10)
   status          ProfileStatus @default(DRAFT)
   reviewedAt      DateTime?
   reviewedBy      Int? // Admin ID who reviewed

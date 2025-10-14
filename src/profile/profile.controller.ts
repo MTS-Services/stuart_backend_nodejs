@@ -1,91 +1,64 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Put, 
-  Delete, 
-  Body, 
-  UseGuards, 
-  Request, 
-  Param,
-  HttpException,
-  HttpStatus,
-  UseInterceptors,
-  UploadedFile
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, Get, Put, Delete, Body, Param, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { ProfileService } from './profile.service';
-import { CreateProfileDto, UpdateProfileDto, UploadPhotoDto } from './profile.dto';
-import type { Express } from 'express';
+import { CreateProfileDto, UpdateProfileDto, SubmitProfileDto, ProfileResponseDto } from './profile.dto';
+
+const storage = diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = join(process.cwd(), 'uploads', 'profiles');
+    if (!existsSync(uploadPath)) {
+      mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const fileExtension = extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${fileExtension}`);
+  },
+});
 
 @Controller('profile')
-@UseGuards(AuthGuard('jwt'))
 export class ProfileController {
   constructor(private profileService: ProfileService) {}
 
   @Post()
-  async createProfile(@Request() req, @Body() createProfileDto: CreateProfileDto) {
-    return this.profileService.createProfile(req.user.id, createProfileDto);
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'facePhoto', maxCount: 1 },
+    { name: 'fullBodyPhoto', maxCount: 1 },
+    { name: 'thirdPhoto', maxCount: 1 },
+    { name: 'additionalPhotos', maxCount: 10 },
+  ], { storage }))
+  async createProfile(@Body() createProfileDto: CreateProfileDto, @UploadedFiles() files: any) {
+    return this.profileService.createProfileWithFiles(createProfileDto, files);
   }
 
-  @Get()
-  async getProfile(@Request() req) {
-    return this.profileService.getProfile(req.user.id);
+  @Get(':email')
+  async getProfile(@Param('email') email: string) {
+    return this.profileService.getProfileByEmail(email);
   }
 
   @Put()
-  async updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.profileService.updateProfile(req.user.id, updateProfileDto);
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'facePhoto', maxCount: 1 },
+    { name: 'fullBodyPhoto', maxCount: 1 },
+    { name: 'thirdPhoto', maxCount: 1 },
+    { name: 'additionalPhotos', maxCount: 10 },
+  ], { storage }))
+  async updateProfile(@Body() updateProfileDto: UpdateProfileDto, @UploadedFiles() files: any) {
+    return this.profileService.updateProfileWithFiles(updateProfileDto, files);
   }
 
-  @Post('photo')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadPhoto(
-    @Request() req, 
-    @UploadedFile() file: Express.Multer.File,
-    @Body() metadata?: { photoType?: string; isMain?: string }
-  ) {
-    try {
-      if (!file) {
-        throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
-      }
-
-      // You can implement actual file storage here (AWS S3, local storage, etc.)
-      const photoUrl = `uploads/${Date.now()}-${file.originalname}`;
-      const photoType = (metadata?.photoType as 'face' | 'fullBody' | 'additional') || 'face';
-
-      const result = await this.profileService.uploadPhoto(
-        req.user.id,
-        photoType,
-        photoUrl
-      );
-
-      return {
-        success: true,
-        message: 'Photo uploaded successfully',
-        data: result,
-        fileInfo: {
-          originalName: file.originalname,
-          mimetype: file.mimetype,
-          size: file.size,
-          photoUrl: photoUrl
-        }
-      };
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  @Delete('photo/:photoUrl')
-  async deletePhoto(@Request() req, @Param('photoUrl') photoUrl: string) {
-    // URL decode the photo URL
-    const decodedUrl = decodeURIComponent(photoUrl);
-    return this.profileService.deletePhoto(req.user.id, decodedUrl);
+  @Delete(':email')
+  async deleteProfile(@Param('email') email: string) {
+    return this.profileService.deleteProfile(email);
   }
 
   @Post('submit')
-  async submitForReview(@Request() req) {
-    return this.profileService.submitForReview(req.user.id);
+  async submitForReview(@Body() submitDto: SubmitProfileDto) {
+    return this.profileService.submitForReviewByEmail(submitDto.email);
   }
 }

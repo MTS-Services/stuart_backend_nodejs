@@ -328,31 +328,35 @@
       "name": "👤 Profile Management",
       "item": [
         {
-          "name": "📝 Create Profile",
+          "name": "📝 Create Profile with Photos - No Login Required",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 201) {",
+                  "pm.test('Profile created successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
                   "    pm.globals.set('profile_id', response.id);",
+                  "    console.log('✅ Profile Created with Photos!');",
+                  "    console.log('🆔 Profile ID:', response.id);",
+                  "    console.log('📝 Status:', response.status);",
+                  "    console.log('📸 Photo Count:', response.photoCount);",
+                  "    console.log('✅ Complete Profile:', response.isComplete);",
+                  "    console.log('🧑 Age:', response.age || 'Not provided');",
+                  "    console.log('📍 Location:', response.location || 'Not provided');",
+                  "} else if (pm.response.code === 400) {",
+                  "    console.log('⚠️ Error: ', pm.response.json().message);",
+                  "    console.log('💡 Make sure to upload 3 required photos: facePhoto, fullBodyPhoto, thirdPhoto');",
                   "}"
                 ]
               }
             }
           ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -361,8 +365,62 @@
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"age\": 25,\n  \"height\": \"5'8\\\"\",\n  \"bio\": \"Looking for meaningful connections through QR cards!\",\n  \"location\": \"New York, NY\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_user_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "25",
+                  "type": "text"
+                },
+                {
+                  "key": "height",
+                  "value": "5'8\\\"",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Looking for meaningful connections through QR cards!",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "New York, NY",
+                  "type": "text"
+                },
+                {
+                  "key": "facePhoto",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true,
+                  "description": "Required: Upload a clear face photo"
+                },
+                {
+                  "key": "fullBodyPhoto", 
+                  "type": "file",
+                  "src": [],
+                  "disabled": true,
+                  "description": "Required: Upload a full body photo"
+                },
+                {
+                  "key": "thirdPhoto",
+                  "type": "file", 
+                  "src": [],
+                  "disabled": true,
+                  "description": "Required: Upload a third photo"
+                },
+                {
+                  "key": "additionalPhotos",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true,
+                  "description": "Optional: Up to 10 additional photos"
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/profile",
@@ -446,20 +504,132 @@
           }
         },
         {
-          "name": "👀 Get Profile",
+          "name": "👀 Get Profile - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profile retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const profile = pm.response.json();",
+                  "    console.log('📋 Profile Details:');",
+                  "    console.log('🆔 ID:', profile.id);",
+                  "    console.log('📝 Status:', profile.status);",
+                  "    console.log('🧑 Age:', profile.age || 'Not provided');",
+                  "    console.log('📏 Height:', profile.height || 'Not provided');",
+                  "    console.log('📍 Location:', profile.location || 'Not provided');",
+                  "    console.log('📸 Photos:', profile.photos.length + ' uploaded');",
+                  "    if (profile.user) {",
+                  "        console.log('👤 User:', profile.user.name);",
+                  "    }",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('💡 No profile found - create one first');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/profile/{{test_user_email}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "{{test_user_email}}"]
+            }
+          }
+        },
+        {
+          "name": "✏️ Update Profile with Photos - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profile updated successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const profile = pm.response.json();",
+                  "    console.log('✅ Profile Updated!');",
+                  "    console.log('📝 Updated Bio:', profile.bio);",
+                  "    console.log('📍 Updated Location:', profile.location);",
+                  "    console.log('� Photo Count:', profile.photoCount);",
+                  "    console.log('✅ Complete Profile:', profile.isComplete);",
+                  "    console.log('�📅 Last Updated:', profile.updatedAt);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
                 {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
+                  "key": "email",
+                  "value": "{{test_user_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Updated bio - Love traveling and meeting new people!",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Los Angeles, CA",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "29",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "height",
+                  "value": "5'10\\\"",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "facePhoto",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true,
+                  "description": "Optional: Replace face photo"
+                },
+                {
+                  "key": "fullBodyPhoto", 
+                  "type": "file",
+                  "src": [],
+                  "disabled": true,
+                  "description": "Optional: Replace full body photo"
+                },
+                {
+                  "key": "thirdPhoto",
+                  "type": "file", 
+                  "src": [],
+                  "disabled": true,
+                  "description": "Optional: Replace third photo"
+                },
+                {
+                  "key": "additionalPhotos",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true,
+                  "description": "Optional: Add more photos (up to 10 total)"
                 }
               ]
             },
-            "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{baseUrl}}/profile",
               "host": ["{{baseUrl}}"],
@@ -468,19 +638,28 @@
           }
         },
         {
-          "name": "✏️ Update Profile",
+          "name": "✅ Submit for Review - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profile submitted successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const result = pm.response.json();",
+                  "    console.log('✅ Profile Submitted for Review!');",
+                  "    console.log('📄 Message:', result.message);",
+                  "    console.log('⏳ Status: Awaiting admin approval');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -489,30 +668,8 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"bio\": \"Updated bio - Love traveling and meeting new people!\",\n  \"location\": \"Los Angeles, CA\"\n}"
+              "raw": "{\n  \"email\": \"{{test_user_email}}\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["profile"]
-            }
-          }
-        },
-        {
-          "name": "✅ Submit for Review",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
             "url": {
               "raw": "{{baseUrl}}/profile/submit",
               "host": ["{{baseUrl}}"],
@@ -526,40 +683,30 @@
       "name": "� Payment & Subscription",
       "item": [
         {
-          "name": "💰 Pay Setup Fee ($69) - Create Payment Intent",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/payment/setup-fee",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment", "setup-fee"]
+          "name": "💰 Pay Setup Fee ($69) - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment intent created successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.globals.set('payment_intent_id', response.paymentIntentId);",
+                  "    console.log('💳 Payment Intent Created:', response.paymentIntentId);",
+                  "    if (response.mockMode) {",
+                  "        console.log('🧪 Mock Mode: Use confirm payment to complete');",
+                  "    }",
+                  "    console.log('💰 Amount: $' + response.payment.amount);",
+                  "}"
+                ]
+              }
             }
-          }
-        },
-        {
-          "name": "✅ Confirm Setup Fee Payment",
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -569,7 +716,49 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"paymentIntentId\": \"pi_example_payment_intent_id\"\n}"
+              "raw": "{\n  \"email\": \"{{test_user_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment/setup-fee",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "setup-fee"]
+            }
+          }
+        },
+        {
+          "name": "✅ Confirm Setup Fee Payment - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment confirmed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Payment Confirmed!');",
+                  "    console.log('💳 Payment Status:', response.payment.status);",
+                  "    if (response.mockMode) {",
+                  "        console.log('🧪 Mock payment completed successfully');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentIntentId\": \"{{payment_intent_id}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/payment/confirm-setup-fee",
@@ -579,40 +768,66 @@
           }
         },
         {
-          "name": "📊 Get My Payments",
+          "name": "📊 Get My Payments - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payments retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const payments = pm.response.json();",
+                  "    console.log('💳 Total Payments Found:', payments.length);",
+                  "    if (payments.length > 0) {",
+                  "        console.log('💰 Latest Payment:', payments[0].type + ' - $' + payments[0].amount);",
+                  "        console.log('📅 Payment Date:', payments[0].createdAt);",
+                  "        console.log('✅ Status:', payments[0].status);",
+                  "    } else {",
+                  "        console.log('💡 No payments found for this user');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/payment/payments",
+              "raw": "{{baseUrl}}/payment/payments/{{test_user_email}}",
               "host": ["{{baseUrl}}"],
-              "path": ["payment", "payments"]
+              "path": ["payment", "payments", "{{test_user_email}}"]
             }
           }
         },
         {
-          "name": "📅 Create Monthly Subscription ($13)",
+          "name": "📅 Create Monthly Subscription ($13) - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Subscription created successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('📅 Monthly Subscription Created!');",
+                  "    console.log('💰 Monthly Amount: $' + response.subscription.amount);",
+                  "    console.log('📆 End Date:', response.subscription.endDate);",
+                  "    console.log('✅ Status:', response.subscription.status);",
+                  "} else if (pm.response.code === 400) {",
+                  "    console.log('⚠️ Setup fee must be paid first');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -622,28 +837,40 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plan\": \"MONTHLY\"\n}"
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"plan\": \"MONTHLY\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/payment/subscription",
+              "raw": "{{baseUrl}}/payment/subscription/by-email",
               "host": ["{{baseUrl}}"],
-              "path": ["payment", "subscription"]
+              "path": ["payment", "subscription", "by-email"]
             }
           }
         },
         {
-          "name": "📆 Create Yearly Subscription ($120)",
+          "name": "📆 Create Yearly Subscription ($120) - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Yearly subscription created successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('📆 Yearly Subscription Created!');",
+                  "    console.log('💰 Yearly Amount: $' + response.subscription.amount);",
+                  "    console.log('📅 End Date:', response.subscription.endDate);",
+                  "    console.log('✅ Status:', response.subscription.status);",
+                  "} else if (pm.response.code === 400) {",
+                  "    console.log('⚠️ Setup fee must be paid first');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -653,56 +880,90 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plan\": \"YEARLY\"\n}"
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"plan\": \"YEARLY\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/payment/subscription",
+              "raw": "{{baseUrl}}/payment/subscription/by-email",
               "host": ["{{baseUrl}}"],
-              "path": ["payment", "subscription"]
+              "path": ["payment", "subscription", "by-email"]
             }
           }
         },
         {
-          "name": "👀 Get My Subscription",
+          "name": "👀 Get My Subscription - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Subscription retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const subscription = pm.response.json();",
+                  "    console.log('📋 Subscription Details:');",
+                  "    console.log('📅 Plan:', subscription.plan + ' - $' + subscription.amount);",
+                  "    console.log('📆 End Date:', subscription.endDate);",
+                  "    console.log('✅ Status:', subscription.status);",
+                  "    if (subscription.payments && subscription.payments.length > 0) {",
+                  "        console.log('💳 Total Payments:', subscription.payments.length);",
+                  "    }",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('💡 No active subscription found');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/payment/subscription",
+              "raw": "{{baseUrl}}/payment/subscription/{{test_user_email}}",
               "host": ["{{baseUrl}}"],
-              "path": ["payment", "subscription"]
+              "path": ["payment", "subscription", "{{test_user_email}}"]
             }
           }
         },
         {
-          "name": "❌ Cancel Subscription",
+          "name": "❌ Cancel Subscription - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Subscription cancelled successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('❌ Subscription Cancelled Successfully');",
+                  "    console.log('📋 Final Status:', response.subscription.status);",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('💡 No active subscription to cancel');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_user_email}}\"\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/payment/subscription/cancel",
+              "raw": "{{baseUrl}}/payment/subscription/cancel/by-email",
               "host": ["{{baseUrl}}"],
-              "path": ["payment", "subscription", "cancel"]
+              "path": ["payment", "subscription", "cancel", "by-email"]
             }
           }
         }
@@ -712,33 +973,37 @@
       "name": "�📱 QR Card System",
       "item": [
         {
-          "name": "🎯 Generate QR Cards",
+          "name": "🎯 Generate QR Cards - No Login Required",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 201) {",
+                  "pm.test('QR cards generated successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
+                  "    console.log('✅ QR Cards Generated Successfully!');",
+                  "    console.log('📊 Total Cards:', response.cards.length);",
+                  "    console.log('👤 User:', response.user.name + ' (' + response.user.email + ')');",
+                  "    console.log('📋 Profile Status:', response.profile.status);",
+                  "    console.log('🔗 First Card URL:', response.cards[0].scanUrl);",
+                  "    ",
                   "    if (response.cards && response.cards.length > 0) {",
                   "        pm.globals.set('qr_code', response.cards[0].qrCode);",
+                  "        console.log('💾 Saved first QR code for testing:', response.cards[0].qrCode);",
                   "    }",
+                  "} else if (pm.response.code === 400) {",
+                  "    console.log('⚠️ Error:', pm.response.json().message);",
+                  "    console.log('💡 Make sure the profile is created first');",
                   "}"
                 ]
               }
             }
           ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -748,39 +1013,87 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"count\": 50\n}"
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"count\": 50\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/qr-cards/generate",
+              "raw": "{{baseUrl}}/qr-cards/generate/by-email",
               "host": ["{{baseUrl}}"],
-              "path": ["qr-cards", "generate"]
+              "path": ["qr-cards", "generate", "by-email"]
             }
           }
         },
         {
-          "name": "📋 Get My QR Cards",
+          "name": "📋 Get My QR Cards - No Login Required",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('QR cards retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('📋 QR Cards Retrieved Successfully!');",
+                  "    console.log('📊 Total Cards:', response.totalCards);",
+                  "    console.log('👤 User:', response.user.name + ' (' + response.user.email + ')');",
+                  "    ",
+                  "    if (response.cards && response.cards.length > 0) {",
+                  "        console.log('🔗 First Card URL:', response.cards[0].scanUrl);",
+                  "        console.log('📊 First Card Scans Used:', response.cards[0].scanCount + '/' + response.cards[0].maxScans);",
+                  "        console.log('📊 Scans Remaining:', response.cards[0].scansRemaining);",
+                  "    }",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('💡 No QR cards found - generate some first');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/qr-cards",
+              "raw": "{{baseUrl}}/qr-cards/by-email/{{test_user_email}}",
               "host": ["{{baseUrl}}"],
-              "path": ["qr-cards"]
+              "path": ["qr-cards", "by-email", "{{test_user_email}}"]
             }
           }
         },
         {
           "name": "📱 Scan QR Code (PUBLIC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('QR code scan successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ QR Code Scanned Successfully!');",
+                  "    console.log('👤 Profile Owner:', response.profile.user.name);",
+                  "    console.log('📧 Email:', response.profile.user.email);",
+                  "    console.log('🔢 Total Scans:', response.scanCount);",
+                  "    console.log('📊 Max Scans:', response.maxScans);",
+                  "    console.log('✅ Card Active:', response.isActive);",
+                  "    if (response.profile.bio) {",
+                  "        console.log('📝 Bio:', response.profile.bio);",
+                  "    }",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('❌ Invalid QR code - card not found');",
+                  "    console.log('💡 Make sure you generated QR cards first');",
+                  "} else if (pm.response.code === 400) {",
+                  "    const error = pm.response.json();",
+                  "    console.log('⚠️ Scan Error:', error.message);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -819,6 +1132,178 @@
               "raw": "{{baseUrl}}/qr-cards/1/scans",
               "host": ["{{baseUrl}}"],
               "path": ["qr-cards", "1", "scans"]
+            }
+          }
+        },
+        {
+          "name": "🔍 QR Scan Help (Debug)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Help endpoint accessible', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const help = pm.response.json();",
+                  "    console.log('🆘 QR SCANNING HELP');",
+                  "    console.log('===================');",
+                  "    console.log('✅ Correct Format:', help.correctUsage.qrCodeFormat);",
+                  "    console.log('🔗 Example URL:', help.correctUsage.exampleUrl);",
+                  "    console.log('');",
+                  "    console.log('❌ Common Mistakes:');",
+                  "    help.commonMistakes.forEach((mistake, i) => {",
+                  "        console.log(`   ${i + 1}. ${mistake}`);",
+                  "    });",
+                  "    console.log('');",
+                  "    console.log('📋 Workflow:');",
+                  "    help.workflow.forEach(step => {",
+                  "        console.log(`   ${step}`);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/qr-cards/debug/scan-help",
+              "host": ["{{baseUrl}}"],
+              "path": ["qr-cards", "debug", "scan-help"]
+            }
+          }
+        },
+        {
+          "name": "📊 Get All QR Cards (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All QR cards retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('📊 ALL QR CARDS SYSTEM OVERVIEW');",
+                  "    console.log('================================');",
+                  "    console.log('🎯 Total Cards:', response.totalCards);",
+                  "    console.log('👥 Unique Users:', new Set(response.cards.map(c => c.owner.email)).size);",
+                  "    console.log('✅ Active Cards:', response.cards.filter(c => c.isActive).length);",
+                  "    console.log('🔒 Inactive Cards:', response.cards.filter(c => !c.isActive).length);",
+                  "    console.log('');",
+                  "    if (response.cards.length > 0) {",
+                  "        console.log('📋 Recent Cards:');",
+                  "        response.cards.slice(0, 5).forEach((card, i) => {",
+                  "            console.log(`   ${i + 1}. ${card.owner.name} (${card.owner.email}) - Scans: ${card.scanCount}/${card.maxScans}`);",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/qr-cards/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["qr-cards", "all"]
+            }
+          }
+        },
+        {
+          "name": "📃 Get QR Cards (Paginated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Paginated QR cards retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('📃 PAGINATED QR CARDS');",
+                  "    console.log('=====================');",
+                  "    console.log('📊 Page:', response.pagination.page + ' of ' + response.pagination.totalPages);",
+                  "    console.log('🎯 Cards on Page:', response.cards.length);",
+                  "    console.log('📈 Total Cards:', response.pagination.totalCount);",
+                  "    console.log('➡️ Has Next:', response.pagination.hasNext);",
+                  "    console.log('⬅️ Has Previous:', response.pagination.hasPrev);",
+                  "    console.log('');",
+                  "    response.cards.forEach((card, i) => {",
+                  "        console.log(`${i + 1}. ${card.owner.name} - ${card.qrCode.substring(0, 8)}... (${card.scanCount}/${card.maxScans} scans)`);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/qr-cards/paginated",
+              "host": ["{{baseUrl}}"],
+              "path": ["qr-cards", "paginated"]
+            }
+          }
+        },
+        {
+          "name": "✅ Get Active QR Cards Only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Active QR cards retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ ACTIVE QR CARDS');",
+                  "    console.log('==================');",
+                  "    console.log('🎯 Active Cards:', response.totalActiveCards);",
+                  "    console.log('📊 Scan Capacity:', response.cards.reduce((sum, card) => sum + card.scansRemaining, 0) + ' scans available');",
+                  "    console.log('');",
+                  "    if (response.cards.length > 0) {",
+                  "        console.log('📋 Active Cards List:');",
+                  "        response.cards.forEach((card, i) => {",
+                  "            console.log(`   ${i + 1}. ${card.owner.name} - ${card.scansRemaining} scans left`);",
+                  "        });",
+                  "    } else {",
+                  "        console.log('💡 No active QR cards found - all may be at scan limit');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/qr-cards/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["qr-cards", "active"]
             }
           }
         }
@@ -1415,7 +1900,88 @@
           }
         },
         {
-          "name": "4️⃣ User Receives Welcome Email ✉️",
+          "name": "4️⃣ User Creates Payment Intent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment intent created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.globals.set('journey_payment_id', response.paymentIntentId);",
+                  "    console.log('💳 Step 4 Complete: Payment intent created');",
+                  "    console.log('🆔 Payment ID:', response.paymentIntentId);",
+                  "    console.log('💰 Amount: $' + response.payment.amount);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{journey_user_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment/setup-fee",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "setup-fee"]
+            }
+          }
+        },
+        {
+          "name": "5️⃣ User Completes Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Payment completed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Step 5 Complete: Payment confirmed!');",
+                  "    console.log('💳 Status:', response.payment.status);",
+                  "    console.log('🎉 User journey complete - ready for QR cards!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentIntentId\": \"{{journey_payment_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment/confirm-setup-fee",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "confirm-setup-fee"]
+            }
+          }
+        },
+        {
+          "name": "6️⃣ Welcome Email Sent ✉️",
           "event": [
             {
               "listen": "test",

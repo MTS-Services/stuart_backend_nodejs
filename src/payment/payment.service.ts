@@ -6,15 +6,30 @@ import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class PaymentService {
-  private stripe: Stripe;
+  private stripe: Stripe | null;
 
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
   ) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2025-09-30.clover',
-    });
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const enableMockPayments = process.env.MOCK_PAYMENTS === 'true' || process.env.NODE_ENV === 'development';
+    
+    if (!stripeKey || enableMockPayments) {
+      console.log('⚠️ Payment service running in mock mode.');
+      console.log('💡 Set MOCK_PAYMENTS=false in .env to use real Stripe payments');
+      this.stripe = null;
+    } else {
+      try {
+        this.stripe = new Stripe(stripeKey, {
+          apiVersion: '2025-09-30.clover',
+        });
+        console.log('💳 Stripe payment service initialized');
+      } catch (error) {
+        console.log('⚠️ Stripe initialization failed, falling back to mock mode');
+        this.stripe = null;
+      }
+    }
   }
 
   async paySetupFee(userId: number) {
@@ -28,6 +43,34 @@ export class PaymentService {
 
     if (user.paidSetupFee) {
       throw new HttpException('Setup fee already paid', HttpStatus.BAD_REQUEST);
+    }
+
+    // Mock mode - if Stripe is not properly configured
+    if (!this.stripe) {
+      console.log('💳 Mock Payment: Creating setup fee payment for user:', user.email);
+      
+      const mockPaymentIntentId = 'pi_mock_' + Date.now();
+      
+      // Create payment record in database
+      const payment = await this.prisma.payment.create({
+        data: {
+          userId,
+          amount: 69.00,
+          currency: 'USD',
+          type: 'setup_fee',
+          status: 'pending',
+          stripePaymentIntentId: mockPaymentIntentId,
+        },
+      });
+
+      return {
+        message: 'Mock setup fee payment intent created',
+        payment,
+        clientSecret: 'pi_mock_client_secret_' + Date.now(),
+        paymentIntentId: mockPaymentIntentId,
+        mockMode: true,
+        instructions: 'This is a mock payment. Use /payment/confirm-setup-fee to simulate payment completion.'
+      };
     }
 
     try {
@@ -92,8 +135,71 @@ export class PaymentService {
     }
   }
 
+  async paySetupFeeByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    if (user.paidSetupFee) {
+      throw new HttpException('Setup fee already paid', HttpStatus.BAD_REQUEST);
+    }
+
+    // Use the existing paySetupFee method
+    return this.paySetupFee(user.id);
+  }
+
   async confirmSetupFeePayment(paymentIntentId: string) {
     try {
+      // Handle mock payments
+      if (paymentIntentId.startsWith('pi_mock_')) {
+        console.log('💳 Mock Payment: Confirming setup fee payment:', paymentIntentId);
+        
+        const payment = await this.prisma.payment.findFirst({
+          where: { stripePaymentIntentId: paymentIntentId }
+        });
+
+        if (!payment) {
+          throw new HttpException('Payment not found', HttpStatus.NOT_FOUND);
+        }
+
+        // Get user info
+        const user = await this.prisma.user.findUnique({
+          where: { id: payment.userId }
+        });
+
+        // Update payment status to completed
+        const updatedPayment = await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: 'completed' }
+        });
+
+        // Update user's payment status
+        await this.prisma.user.update({
+          where: { id: payment.userId },
+          data: { 
+            paidSetupFee: true,
+            status: 'ACTIVE'
+          }
+        });
+
+        console.log('✅ Mock Payment Completed for user:', user?.email);
+
+        return {
+          message: 'Mock setup fee payment confirmed successfully',
+          payment: updatedPayment,
+          mockMode: true
+        };
+      }
+
+      // Real Stripe payment handling
+      if (!this.stripe) {
+        throw new HttpException('Payment service not properly configured', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+
       const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
       
       if (paymentIntent.status === 'succeeded') {
@@ -235,6 +341,18 @@ export class PaymentService {
     return payments;
   }
 
+  async getUserPaymentsByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    return this.getUserPayments(user.id);
+  }
+
   async getUserSubscription(userId: number) {
     const subscription = await this.prisma.subscription.findUnique({
       where: { userId },
@@ -266,5 +384,41 @@ export class PaymentService {
       message: 'Subscription cancelled successfully',
       subscription: updatedSubscription,
     };
+  }
+
+  async createSubscriptionByEmail(email: string, plan: 'MONTHLY' | 'YEARLY') {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    return this.createSubscription(user.id, plan);
+  }
+
+  async getUserSubscriptionByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    return this.getUserSubscription(user.id);
+  }
+
+  async cancelSubscriptionByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    return this.cancelSubscription(user.id);
   }
 }

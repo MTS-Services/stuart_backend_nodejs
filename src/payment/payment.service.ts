@@ -188,6 +188,22 @@ export class PaymentService {
 
         console.log('✅ Mock Payment Completed for user:', user?.email);
 
+        // Create notification for admin about payment completion
+        await this.prisma.notification.create({
+          data: {
+            adminId: 1, // Default admin ID
+            type: 'payment_completed',
+            title: 'Setup Fee Payment Completed',
+            message: `${user?.name || 'User'} (${user?.email}) completed setup fee payment ($69)`,
+            data: {
+              userId: payment.userId,
+              paymentId: payment.id,
+              amount: 69.00,
+              mockMode: true,
+            },
+          },
+        });
+
         return {
           message: 'Mock setup fee payment confirmed successfully',
           payment: updatedPayment,
@@ -241,6 +257,22 @@ export class PaymentService {
           console.error('Failed to send order confirmation email:', error);
           // Don't fail the payment confirmation if email fails
         }
+
+        // Create notification for admin about real payment completion
+        await this.prisma.notification.create({
+          data: {
+            adminId: 1, // Default admin ID
+            type: 'payment_completed_stripe',
+            title: 'Setup Fee Payment Completed (Stripe)',
+            message: `${updatedUser.name || 'User'} (${updatedUser.email}) completed setup fee payment via Stripe ($69)`,
+            data: {
+              userId: updatedUser.id,
+              paymentId: updatedPayment.id,
+              stripePaymentIntentId: paymentIntentId,
+              amount: 69.00,
+            },
+          },
+        });
 
         return {
           message: 'Setup fee payment confirmed',

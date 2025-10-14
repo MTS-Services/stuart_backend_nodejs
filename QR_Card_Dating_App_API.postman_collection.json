@@ -1506,7 +1506,202 @@
           }
         },
         {
-          "name": "👥 Get Pending User Registrations",
+          "name": "� Get Unread Notifications Count",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Unread count retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('🔔 NOTIFICATION BADGE COUNT');",
+                  "    console.log('==========================');",
+                  "    console.log('📊 Unread Notifications:', response.unreadCount);",
+                  "    console.log('⏰ Last Check:', response.timestamp);",
+                  "    ",
+                  "    // Save count for UI badge display",
+                  "    pm.globals.set('unread_notifications', response.unreadCount.toString());",
+                  "    ",
+                  "    if (response.unreadCount > 0) {",
+                  "        console.log('🔴 Action Required: You have unread notifications!');",
+                  "    } else {",
+                  "        console.log('✅ All caught up! No unread notifications.');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/notifications/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "notifications", "unread-count"]
+            }
+          }
+        },
+        {
+          "name": "✅ Mark All Notifications Read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All notifications marked as read', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ BULK NOTIFICATION UPDATE');",
+                  "    console.log('============================');",
+                  "    console.log('📊 Marked as Read:', response.markedAsRead + ' notifications');",
+                  "    console.log('💬 Message:', response.message);",
+                  "    console.log('🔔 Badge should now show 0 unread');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/notifications/mark-all-read",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "notifications", "mark-all-read"]
+            }
+          }
+        },
+        {
+          "name": "⏰ Get Recent Notifications (24h)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Recent notifications retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('⏰ RECENT ACTIVITY');",
+                  "    console.log('=================');",
+                  "    console.log('📊 Recent Count:', response.count);",
+                  "    console.log('⏱️ Timeframe:', response.timeframe);",
+                  "    console.log('');",
+                  "    if (response.recentNotifications.length > 0) {",
+                  "        console.log('📋 Latest Activities:');",
+                  "        response.recentNotifications.slice(0, 5).forEach((notif, i) => {",
+                  "            const time = new Date(notif.createdAt).toLocaleTimeString();",
+                  "            console.log(`   ${i + 1}. [${time}] ${notif.title}`);",
+                  "        });",
+                  "    } else {",
+                  "        console.log('😴 No recent activity in the last 24 hours');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/notifications/recent",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "notifications", "recent"]
+            }
+          }
+        },
+        {
+          "name": "🧪 Create Test Notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Test notification created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('🧪 TEST NOTIFICATION CREATED');",
+                  "    console.log('============================');",
+                  "    console.log('✅ Success:', response.message);",
+                  "    console.log('🆔 Notification ID:', response.notification.id);",
+                  "    console.log('📝 Title:', response.notification.title);",
+                  "    console.log('💬 Message:', response.notification.message);",
+                  "    console.log('');",
+                  "    console.log('💡 Now check \"Get Unread Count\" to see the change!');",
+                  "    ",
+                  "    // Save the test notification ID for deletion test",
+                  "    pm.globals.set('test_notification_id', response.notification.id.toString());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/notifications/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "notifications", "test"]
+            }
+          }
+        },
+        {
+          "name": "�👥 Get Pending User Registrations",
           "event": [
             {
               "listen": "test",

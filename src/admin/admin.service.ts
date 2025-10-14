@@ -475,4 +475,136 @@ export class AdminService {
 
     return updatedUser;
   }
+
+  // Enhanced notification methods
+  async getUnreadNotificationsCount(adminId: number) {
+    const count = await this.prisma.notification.count({
+      where: { 
+        adminId,
+        isRead: false 
+      },
+    });
+
+    return { 
+      unreadCount: count,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  async markAllNotificationsAsRead(adminId: number) {
+    const result = await this.prisma.notification.updateMany({
+      where: { 
+        adminId,
+        isRead: false 
+      },
+      data: { isRead: true },
+    });
+
+    return {
+      success: true,
+      markedAsRead: result.count,
+      message: `Marked ${result.count} notifications as read`
+    };
+  }
+
+  async getRecentNotifications(adminId: number, hours: number = 24) {
+    const since = new Date();
+    since.setHours(since.getHours() - hours);
+
+    const notifications = await this.prisma.notification.findMany({
+      where: {
+        adminId,
+        createdAt: {
+          gte: since,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50, // Limit to 50 recent notifications
+    });
+
+    return {
+      success: true,
+      recentNotifications: notifications,
+      timeframe: `Last ${hours} hours`,
+      count: notifications.length,
+    };
+  }
+
+  async deleteNotification(adminId: number, notificationId: number) {
+    const notification = await this.prisma.notification.findFirst({
+      where: { 
+        id: notificationId,
+        adminId 
+      },
+    });
+
+    if (!notification) {
+      throw new HttpException('Notification not found', HttpStatus.NOT_FOUND);
+    }
+
+    await this.prisma.notification.delete({
+      where: { id: notificationId },
+    });
+
+    return {
+      success: true,
+      message: 'Notification deleted successfully',
+      deletedId: notificationId
+    };
+  }
+
+  async createTestNotification(adminId: number) {
+    const testNotification = await this.prisma.notification.create({
+      data: {
+        adminId,
+        type: 'test_notification',
+        title: 'Test Notification',
+        message: 'This is a test notification created at ' + new Date().toLocaleString(),
+        data: {
+          testData: true,
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV || 'development',
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Test notification created successfully',
+      notification: testNotification
+    };
+  }
+
+  // Enhanced notification creation helper
+  async createNotification(
+    adminId: number, 
+    type: string, 
+    title: string, 
+    message: string, 
+    data: any = null
+  ) {
+    return this.prisma.notification.create({
+      data: {
+        adminId,
+        type,
+        title,
+        message,
+        data,
+      },
+    });
+  }
+
+  // Create notifications for all admins
+  async createNotificationForAllAdmins(
+    type: string, 
+    title: string, 
+    message: string, 
+    data: any = null
+  ) {
+    // Get all admin users (assuming you have a way to identify admins)
+    // For now, let's use adminId = 1 as default admin
+    const defaultAdminId = 1;
+    
+    return this.createNotification(defaultAdminId, type, title, message, data);
+  }
 }

@@ -3,6 +3,7 @@ import {
   Get, 
   Post, 
   Put, 
+  Delete,
   Body, 
   Param, 
   Query,
@@ -85,6 +86,39 @@ export class AdminController {
     @Param('notificationId', ParseIntPipe) notificationId: number
   ) {
     return this.adminService.markNotificationAsRead(req.user.id, notificationId);
+  }
+
+  // Get unread notifications count for badge
+  @Get('notifications/unread-count')
+  async getUnreadNotificationsCount(@Request() req) {
+    return this.adminService.getUnreadNotificationsCount(req.user.id);
+  }
+
+  // Mark all notifications as read
+  @Put('notifications/mark-all-read')
+  async markAllNotificationsAsRead(@Request() req) {
+    return this.adminService.markAllNotificationsAsRead(req.user.id);
+  }
+
+  // Get recent notifications (last 24 hours)
+  @Get('notifications/recent')
+  async getRecentNotifications(@Request() req) {
+    return this.adminService.getRecentNotifications(req.user.id);
+  }
+
+  // Delete a notification
+  @Delete('notifications/:notificationId')
+  async deleteNotification(
+    @Request() req,
+    @Param('notificationId', ParseIntPipe) notificationId: number
+  ) {
+    return this.adminService.deleteNotification(req.user.id, notificationId);
+  }
+
+  // Create test notification (for development)
+  @Post('notifications/test')
+  async createTestNotification(@Request() req) {
+    return this.adminService.createTestNotification(req.user.id);
   }
 
   @Get('users/pending')

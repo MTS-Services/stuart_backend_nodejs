@@ -49,6 +49,21 @@ export class QRCardService {
       });
     }
 
+    // Create notification for admin about QR card generation
+    await this.prisma.notification.create({
+      data: {
+        adminId: 1, // Default admin ID
+        type: 'qr_cards_generated',
+        title: 'QR Cards Generated',
+        message: `User generated ${count} QR cards (User ID: ${userId})`,
+        data: {
+          userId,
+          cardCount: count,
+          profileId: user.profile.id,
+        },
+      },
+    });
+
     return {
       message: `Generated ${count} QR cards`,
       cards,
@@ -232,6 +247,23 @@ export class QRCardService {
         scanUrl: qrData,
       });
     }
+
+    // Create notification for admin about QR card generation by email
+    await this.prisma.notification.create({
+      data: {
+        adminId: 1, // Default admin ID
+        type: 'qr_cards_generated_email',
+        title: 'QR Cards Generated (Email)',
+        message: `${user.name} (${email}) generated ${count} QR cards via email`,
+        data: {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          cardCount: count,
+          profileId: user.profile.id,
+        },
+      },
+    });
 
     return {
       success: true,

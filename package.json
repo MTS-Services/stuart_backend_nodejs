@@ -14,7 +14,7 @@
     "start:prod": "node dist/main",
     "deploy": "npm run build && npm run start:prod",
     "deploy:docker": "docker build -t stuart-api . && docker run -p 3000:3000 stuart-api",
-    "postbuild": "npx prisma generate && npx prisma migrate deploy",
+    "postbuild": "npx prisma generate",
     "prestart:prod": "npx prisma migrate deploy",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
@@ -94,5 +94,9 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=8.0.0"
   }
 }

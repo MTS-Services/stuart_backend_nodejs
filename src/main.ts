@@ -15,8 +15,20 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
   }));
   
-  // Enable CORS if needed
-  app.enableCors();
+  // Enable CORS for production
+  app.enableCors({
+    origin: process.env.NODE_ENV === 'production' 
+      ? [
+          process.env.FRONTEND_URL,
+          `https://admin.${process.env.FRONTEND_URL?.replace('https://', '')}`,
+          'https://your-production-domain.com',
+          'https://admin.your-production-domain.com'
+        ].filter(Boolean)
+      : true, // Allow all origins in development
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
   
   const port = process.env.PORT || 3000;
   await app.listen(port);

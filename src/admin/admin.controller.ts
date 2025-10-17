@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
+import { ProfileQueryDto } from './dto/profile-query.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
@@ -82,14 +83,12 @@ export class AdminController {
   }
 
   @Get('profiles/all')
-  async getAllProfiles(
-    @Query('status') status?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string
-  ) {
-    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
-    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
-    return this.adminService.getAllProfiles(status, pageNum, limitNum);
+  async getAllProfiles(@Query() query: ProfileQueryDto) {
+    return this.adminService.getAllProfiles(
+      query.getStatus(),
+      query.getPage(),
+      query.getLimit()
+    );
   }
 
   @Post('profiles/unverify')

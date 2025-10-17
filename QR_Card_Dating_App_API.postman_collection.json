@@ -1314,6 +1314,102 @@
       "item": [
         {
           "name": "📊 Dashboard Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Dashboard stats retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const stats = pm.response.json();",
+                  "    ",
+                  "    // Overview Stats",
+                  "    console.log('� OVERVIEW ANALYTICS');",
+                  "    console.log('====================');",
+                  "    console.log('👥 Total Users:', stats.overview?.totalUsers || stats.totalUsers);",
+                  "    console.log('� Total Profiles:', stats.overview?.totalProfiles);", 
+                  "    console.log('👀 Total Scans:', stats.overview?.totalScans || stats.totalScans);",
+                  "    console.log('📱 Total Cards:', stats.overview?.totalCards);",
+                  "    console.log('� Total Revenue: $' + (stats.overview?.totalRevenue || 0));",
+                  "    console.log('� Active Subscriptions:', stats.overview?.activeSubscriptions);",
+                  "    ",
+                  "    // Today's Analytics",
+                  "    if (stats.today) {",
+                  "        console.log('');",
+                  "        console.log('� TODAY\\'S ANALYTICS');", 
+                  "        console.log('==================');",
+                  "        console.log('👥 New Users:', stats.today.users);",
+                  "        console.log('� New Profiles:', stats.today.profiles);",
+                  "        console.log('👀 New Scans:', stats.today.scans);",
+                  "        console.log('📱 New Cards:', stats.today.cards);",
+                  "        console.log('💰 Revenue: $' + stats.today.revenue.amount + ' (' + stats.today.revenue.payments + ' payments)');",
+                  "    }",
+                  "    ",
+                  "    // Tomorrow's Projections",
+                  "    if (stats.tomorrow) {",
+                  "        console.log('');",
+                  "        console.log('🔮 TOMORROW\\'S PROJECTIONS');",
+                  "        console.log('========================');",
+                  "        console.log('💰 Projected Revenue: $' + stats.tomorrow.projectedRevenue);",
+                  "        console.log('📝 Note:', stats.tomorrow.note);",
+                  "    }",
+                  "    ",
+                  "    // Week's Analytics",
+                  "    if (stats.week) {",
+                  "        console.log('');",
+                  "        console.log('📊 THIS WEEK\\'S ANALYTICS');",
+                  "        console.log('======================');",
+                  "        console.log('👥 New Users:', stats.week.users);",
+                  "        console.log('📄 New Profiles:', stats.week.profiles);",
+                  "        console.log('👀 New Scans:', stats.week.scans);",
+                  "        console.log('📱 New Cards:', stats.week.cards);",
+                  "        console.log('💰 Revenue: $' + stats.week.revenue.amount + ' (' + stats.week.revenue.payments + ' payments)');",
+                  "    }",
+                  "    ",
+                  "    // Month's Analytics",
+                  "    if (stats.month) {",
+                  "        console.log('');",
+                  "        console.log('📅 THIS MONTH\\'S ANALYTICS');",
+                  "        console.log('========================');",
+                  "        console.log('👥 New Users:', stats.month.users);",
+                  "        console.log('📄 New Profiles:', stats.month.profiles);",
+                  "        console.log('👀 New Scans:', stats.month.scans);",
+                  "        console.log('📱 New Cards:', stats.month.cards);",
+                  "        console.log('💰 Revenue: $' + stats.month.revenue.amount + ' (' + stats.month.revenue.payments + ' payments)');",
+                  "    }",
+                  "    ",
+                  "    // Year's Analytics",
+                  "    if (stats.year) {",
+                  "        console.log('');",
+                  "        console.log('📆 THIS YEAR\\'S ANALYTICS');",
+                  "        console.log('=======================');",
+                  "        console.log('👥 New Users:', stats.year.users);",
+                  "        console.log('📄 New Profiles:', stats.year.profiles);",
+                  "        console.log('👀 New Scans:', stats.year.scans);",
+                  "        console.log('📱 New Cards:', stats.year.cards);",
+                  "        console.log('💰 Revenue: $' + stats.year.revenue.amount);",
+                  "    }",
+                  "    ",
+                  "    // Status Breakdown",
+                  "    if (stats.userStatus) {",
+                  "        console.log('');",
+                  "        console.log('🎯 STATUS BREAKDOWN');",
+                  "        console.log('==================');",
+                  "        console.log('� Users - Waitlist:', stats.userStatus.waitlist, '| Active:', stats.userStatus.active, '| Verified:', stats.userStatus.verified);",
+                  "        console.log('� Profiles - Pending:', stats.userStatus ? stats.profileStatus.pending : stats.pendingProfiles, '| Approved:', stats.profileStatus ? stats.profileStatus.approved : stats.verifiedProfiles, '| Rejected:', stats.profileStatus ? stats.profileStatus.rejected : stats.rejectedProfiles);",
+                  "        console.log('📱 Cards - Active:', stats.cardStatus ? stats.cardStatus.active : stats.activeCards, '| Total:', stats.cardStatus ? stats.cardStatus.total : 'N/A');",
+                  "    }",
+                  "    ",
+                  "    console.log('');",
+                  "    console.log('📈 Full JSON Response:', JSON.stringify(stats, null, 2));",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -1697,6 +1793,58 @@
               "raw": "{{baseUrl}}/admin/notifications/test",
               "host": ["{{baseUrl}}"],
               "path": ["admin", "notifications", "test"]
+            }
+          }
+        },
+        {
+          "name": "💰 Create Test Revenue Data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Test revenue data created successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('💰 TEST REVENUE DATA CREATED!');",
+                  "    console.log('===========================');",
+                  "    console.log('📊 Payments Created:', response.paymentsCreated);",
+                  "    console.log('🔄 Subscriptions Created:', response.subscriptionsCreated);",
+                  "    console.log('💵 Total Test Revenue: $' + response.totalRevenue);",
+                  "    console.log('');",
+                  "    console.log('🎯 Now run the \"📊 Dashboard Stats\" endpoint to see revenue analytics!');",
+                  "    console.log('💡 You will see revenue broken down by:');",
+                  "    console.log('   • Today');",
+                  "    console.log('   • Tomorrow (Projected)');", 
+                  "    console.log('   • This Week');",
+                  "    console.log('   • This Month');",
+                  "    console.log('   • This Year');",
+                  "    console.log('   • All Time Total');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/test/revenue",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "test", "revenue"]
             }
           }
         },

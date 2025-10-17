@@ -146,6 +146,12 @@ export class AdminController {
     return this.adminService.createTestNotification(req.user.id);
   }
 
+  // Create test revenue data (for development)
+  @Post('test/revenue')
+  async createTestRevenue(@Request() req) {
+    return this.adminService.createTestRevenue();
+  }
+
   @Get('users/pending')
   async getPendingUsers(
     @Query('page') page?: string,

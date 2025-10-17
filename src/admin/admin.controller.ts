@@ -9,7 +9,8 @@ import {
   Query,
   UseGuards, 
   Request,
-  ParseIntPipe 
+  ParseIntPipe,
+  BadRequestException
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
@@ -24,12 +25,20 @@ export class AdminController {
     return this.adminService.getDashboardStats();
   }
 
+  @Get('test-verified')
+  async testVerified() {
+    // Simple test endpoint without validation to check data
+    return this.adminService.getVerifiedProfiles(1, 10);
+  }
+
   @Get('profiles/pending')
   async getPendingProfiles(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
-    return this.adminService.getPendingProfiles(page, limit);
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getPendingProfiles(pageNum, limitNum);
   }
 
   @Get('profiles/:profileId')
@@ -37,47 +46,63 @@ export class AdminController {
     return this.adminService.getProfileById(profileId);
   }
 
-  @Post('profiles/:profileId/approve')
+  @Post('profiles/approve')
   async approveProfile(
     @Request() req,
-    @Param('profileId', ParseIntPipe) profileId: number
+    @Query('profile_id') profileId: string
   ) {
-    return this.adminService.approveProfile(req.user.id, profileId);
+    const profileIdNum = parseInt(profileId, 10);
+    if (!profileIdNum || isNaN(profileIdNum)) {
+      throw new BadRequestException('Invalid profile_id provided');
+    }
+    return this.adminService.approveProfile(req.user.id, profileIdNum);
   }
 
-  @Post('profiles/:profileId/reject')
+  @Post('profiles/reject')
   async rejectProfile(
     @Request() req,
-    @Param('profileId', ParseIntPipe) profileId: number,
+    @Query('profile_id') profileId: string,
     @Body('reason') reason: string
   ) {
-    return this.adminService.rejectProfile(req.user.id, profileId, reason);
+    const profileIdNum = parseInt(profileId, 10);
+    if (!profileIdNum || isNaN(profileIdNum)) {
+      throw new BadRequestException('Invalid profile_id provided');
+    }
+    return this.adminService.rejectProfile(req.user.id, profileIdNum, reason);
   }
 
   @Get('profiles/verified')
   async getVerifiedProfiles(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
-    return this.adminService.getVerifiedProfiles(page, limit);
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getVerifiedProfiles(pageNum, limitNum);
   }
 
-  @Post('profiles/:profileId/unverify')
+  @Post('profiles/unverify')
   async unverifyProfile(
     @Request() req,
-    @Param('profileId', ParseIntPipe) profileId: number,
+    @Query('profile_id') profileId: string,
     @Body('reason') reason: string
   ) {
-    return this.adminService.unverifyProfile(req.user.id, profileId, reason);
+    const profileIdNum = parseInt(profileId, 10);
+    if (!profileIdNum || isNaN(profileIdNum)) {
+      throw new BadRequestException('Invalid profile_id provided');
+    }
+    return this.adminService.unverifyProfile(req.user.id, profileIdNum, reason);
   }
 
   @Get('notifications')
   async getNotifications(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
-    return this.adminService.getNotifications(req.user.id, page, limit);
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 20)) : 20;
+    return this.adminService.getNotifications(req.user.id, pageNum, limitNum);
   }
 
   @Put('notifications/:notificationId/read')
@@ -123,26 +148,36 @@ export class AdminController {
 
   @Get('users/pending')
   async getPendingUsers(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
-    return this.adminService.getPendingUsers(page, limit);
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getPendingUsers(pageNum, limitNum);
   }
 
-  @Post('users/:userId/approve')
+  @Post('users/approve')
   async approveUser(
     @Request() req,
-    @Param('userId', ParseIntPipe) userId: number
+    @Query('user_id') userId: string
   ) {
-    return this.adminService.approveUser(req.user.id, userId);
+    const userIdNum = parseInt(userId, 10);
+    if (!userIdNum || isNaN(userIdNum)) {
+      throw new BadRequestException('Invalid user_id provided');
+    }
+    return this.adminService.approveUser(req.user.id, userIdNum);
   }
 
-  @Post('users/:userId/reject')
+  @Post('users/reject')
   async rejectUser(
     @Request() req,
-    @Param('userId', ParseIntPipe) userId: number,
+    @Query('user_id') userId: string,
     @Body('reason') reason: string
   ) {
-    return this.adminService.rejectUser(req.user.id, userId, reason);
+    const userIdNum = parseInt(userId, 10);
+    if (!userIdNum || isNaN(userIdNum)) {
+      throw new BadRequestException('Invalid user_id provided');
+    }
+    return this.adminService.rejectUser(req.user.id, userIdNum, reason);
   }
 }

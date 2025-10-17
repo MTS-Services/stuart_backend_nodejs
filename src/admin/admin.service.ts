@@ -405,11 +405,16 @@ export class AdminService {
       },
     });
 
-    // Send welcome email
-    await this.emailService.sendWelcomeEmail(
-      user.email,
-      user.name,
-    );
+    // Send welcome email (non-blocking - don't fail the approval if email fails)
+    try {
+      await this.emailService.sendWelcomeEmail(
+        user.email,
+        user.name,
+      );
+    } catch (error) {
+      console.error('Failed to send welcome email:', error.message);
+      // Continue execution - email failure shouldn't block user approval
+    }
 
     // Create notification
     await this.prisma.notification.create({

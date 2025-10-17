@@ -11,8 +11,12 @@ async function bootstrap() {
   // Enable validation globally
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
-    whitelist: true,
-    forbidNonWhitelisted: true,
+    whitelist: false, // Don't strip unknown properties (allows query params)
+    forbidNonWhitelisted: false, // Allow query params that aren't in DTO
+    skipMissingProperties: true, // Skip validation if property is missing
+    transformOptions: {
+      enableImplicitConversion: true, // Allow string to number conversion
+    },
   }));
   
   // Enable CORS for production

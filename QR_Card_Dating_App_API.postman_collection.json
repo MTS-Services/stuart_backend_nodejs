@@ -1570,7 +1570,110 @@
           }
         },
         {
-          "name": "🔔 Get Notifications",
+          "name": "� Get All User Profiles",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/profiles/all?status=ALL&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "profiles", "all"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "description": "Filter by status: ALL, PENDING, APPROVED, REJECTED, DRAFT"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('📊 All User Profiles Overview:');",
+                  "    console.log('================================');",
+                  "    ",
+                  "    // Pagination Info",
+                  "    console.log(`📄 Page: ${response.page}/${response.totalPages}`);",
+                  "    console.log(`📋 Showing: ${response.profiles.length} of ${response.total} profiles`);",
+                  "    console.log(`⏭️ Has Next: ${response.hasNext ? 'Yes' : 'No'}`);",
+                  "    console.log(`⏮️ Has Previous: ${response.hasPrevious ? 'Yes' : 'No'}`);",
+                  "    ",
+                  "    // Status Statistics",
+                  "    if (response.statistics) {",
+                  "        console.log('\\n📈 Status Statistics:');",
+                  "        console.log(`✅ Approved: ${response.statistics.approved}`);",
+                  "        console.log(`⏳ Pending: ${response.statistics.pending}`);",
+                  "        console.log(`❌ Rejected: ${response.statistics.rejected}`);",
+                  "        console.log(`📝 Draft: ${response.statistics.draft}`);",
+                  "        console.log(`📊 Total: ${response.statistics.total}`);",
+                  "    }",
+                  "    ",
+                  "    // Profile Details",
+                  "    console.log('\\n👥 Profile Details:');",
+                  "    console.log('===================');",
+                  "    ",
+                  "    response.profiles.forEach((profile, index) => {",
+                  "        console.log(`\\n${index + 1}. ${profile.user?.name || 'No Name'} (${profile.user?.email || 'No Email'})`);",
+                  "        console.log(`   📱 Phone: ${profile.phoneNumber || 'Not provided'}`);",
+                  "        console.log(`   📍 Location: ${profile.location || 'Not specified'}`);",
+                  "        console.log(`   🎂 Age: ${profile.age || 'Not specified'}`);",
+                  "        console.log(`   💼 Occupation: ${profile.occupation || 'Not specified'}`);",
+                  "        console.log(`   📊 Status: ${profile.status}`);",
+                  "        ",
+                  "        if (profile.qrCard) {",
+                  "            console.log(`   🎫 QR Card: ${profile.qrCard.cardNumber}`);",
+                  "            console.log(`   👁️ Scan Count: ${profile.qrCard.scanCount}`);",
+                  "        }",
+                  "        ",
+                  "        if (profile.reviewedBy) {",
+                  "            console.log(`   👤 Reviewed by: ${profile.reviewedBy.name} (${profile.reviewedBy.email})`);",
+                  "        }",
+                  "        ",
+                  "        if (profile.rejectionReason) {",
+                  "            console.log(`   ❌ Rejection Reason: ${profile.rejectionReason}`);",
+                  "        }",
+                  "        ",
+                  "        console.log(`   📅 Created: ${new Date(profile.createdAt).toLocaleDateString()}`);",
+                  "        console.log(`   🔄 Updated: ${new Date(profile.updatedAt).toLocaleDateString()}`);",
+                  "    });",
+                  "    ",
+                  "    console.log('\\n================================');",
+                  "} else {",
+                  "    console.error('❌ Failed to fetch profiles:', pm.response.text());",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "�🔔 Get Notifications",
           "request": {
             "auth": {
               "type": "bearer",

@@ -81,6 +81,17 @@ export class AdminController {
     return this.adminService.getVerifiedProfiles(pageNum, limitNum);
   }
 
+  @Get('profiles/all')
+  async getAllProfiles(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getAllProfiles(status, pageNum, limitNum);
+  }
+
   @Post('profiles/unverify')
   async unverifyProfile(
     @Request() req,

@@ -659,6 +659,100 @@ export class AdminService {
     };
   }
 
+  async getAllProfiles(status?: string, page: number = 1, limit: number = 10) {
+    // Build where clause based on status filter
+    const whereClause: any = {};
+    
+    if (status && status !== 'ALL') {
+      // Map status to ProfileStatus enum
+      const statusMap = {
+        'PENDING': ProfileStatus.PENDING_REVIEW,
+        'APPROVED': ProfileStatus.APPROVED,
+        'REJECTED': ProfileStatus.REJECTED,
+        'DRAFT': ProfileStatus.DRAFT
+      };
+      
+      if (statusMap[status.toUpperCase()]) {
+        whereClause.status = statusMap[status.toUpperCase()];
+      }
+    }
+
+    const profiles = await this.prisma.profile.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            status: true,
+            isApproved: true,
+            paidSetupFee: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        qrCards: {
+          select: {
+            id: true,
+            scanCount: true,
+            maxScans: true,
+            isActive: true,
+            createdAt: true,
+          },
+        },
+        reviewer: {
+          select: {
+            id: true,
+            email: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: [
+        { createdAt: 'desc' },
+        { updatedAt: 'desc' }
+      ],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalCount = await this.prisma.profile.count({
+      where: whereClause,
+    });
+
+    // Get status statistics for overview
+    const statusStats = await this.prisma.profile.groupBy({
+      by: ['status'],
+      _count: { status: true },
+    });
+
+    const stats = {
+      total: totalCount,
+      pending: statusStats.find(s => s.status === ProfileStatus.PENDING_REVIEW)?._count.status || 0,
+      approved: statusStats.find(s => s.status === ProfileStatus.APPROVED)?._count.status || 0,
+      rejected: statusStats.find(s => s.status === ProfileStatus.REJECTED)?._count.status || 0,
+      draft: statusStats.find(s => s.status === ProfileStatus.DRAFT)?._count.status || 0,
+    };
+
+    return {
+      profiles,
+      pagination: {
+        currentPage: page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNextPage: page < Math.ceil(totalCount / limit),
+        hasPrevPage: page > 1,
+      },
+      stats,
+      filters: {
+        status: status || 'ALL',
+        availableStatuses: ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'DRAFT']
+      }
+    };
+  }
+
   async unverifyProfile(adminId: number, profileId: number, reason: string) {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },

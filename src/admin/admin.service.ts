@@ -599,6 +599,238 @@ export class AdminService {
     });
   }
 
+  // Additional user management methods
+  async getApprovedUsers(page: number = 1, limit: number = 10) {
+    const users = await this.prisma.user.findMany({
+      where: { 
+        isApproved: true,
+        status: UserStatus.ACTIVE 
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        approvedAt: true,
+        paidSetupFee: true,
+        profile: {
+          select: {
+            status: true,
+            createdAt: true,
+          }
+        }
+      },
+      orderBy: { approvedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalCount = await this.prisma.user.count({
+      where: { 
+        isApproved: true,
+        status: UserStatus.ACTIVE 
+      },
+    });
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
+  }
+
+  async getRejectedUsers(page: number = 1, limit: number = 10) {
+    const users = await this.prisma.user.findMany({
+      where: { 
+        status: UserStatus.REJECTED 
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalCount = await this.prisma.user.count({
+      where: { 
+        status: UserStatus.REJECTED 
+      },
+    });
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
+  }
+
+  async getAllUsers(status?: string, page: number = 1, limit: number = 10) {
+    const whereClause: any = {};
+    
+    if (status && status !== 'ALL') {
+      whereClause.status = status;
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true,
+        isApproved: true,
+        createdAt: true,
+        updatedAt: true,
+        approvedAt: true,
+        paidSetupFee: true,
+        profile: {
+          select: {
+            status: true,
+            createdAt: true,
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalCount = await this.prisma.user.count({
+      where: whereClause,
+    });
+
+    // Get summary stats
+    const stats = await this.getDashboardStats();
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+      stats
+    };
+  }
+
+  async getUserById(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: {
+          include: {
+            qrCards: {
+              select: {
+                id: true,
+                qrCode: true,
+                scanCount: true,
+                maxScans: true,
+                isActive: true,
+                createdAt: true,
+              }
+            }
+          }
+        }
+      },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Get user's payments separately since there's no direct relation
+    const userPayments = await this.prisma.payment.findMany({
+      where: { userId: userId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return {
+      ...user,
+      payments: userPayments
+    };
+  }
+
+  async searchUsers(
+    filters: { email?: string; name?: string; status?: string },
+    page: number = 1,
+    limit: number = 10
+  ) {
+    const whereClause: any = {};
+
+    if (filters.email) {
+      whereClause.email = {
+        contains: filters.email,
+        mode: 'insensitive'
+      };
+    }
+
+    if (filters.name) {
+      whereClause.name = {
+        contains: filters.name,
+        mode: 'insensitive'
+      };
+    }
+
+    if (filters.status && filters.status !== 'ALL') {
+      whereClause.status = filters.status;
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true,
+        isApproved: true,
+        createdAt: true,
+        updatedAt: true,
+        approvedAt: true,
+        paidSetupFee: true,
+        profile: {
+          select: {
+            status: true,
+            createdAt: true,
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalCount = await this.prisma.user.count({
+      where: whereClause,
+    });
+
+    return {
+      users,
+      searchFilters: filters,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
+  }
+
   // Create notifications for all admins
   async createNotificationForAllAdmins(
     type: string, 

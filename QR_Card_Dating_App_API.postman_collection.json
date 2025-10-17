@@ -1806,9 +1806,15 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/admin/users/{{user_id}}/approve",
+              "raw": "{{baseUrl}}/admin/users/approve?user_id={{user_id}}",
               "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", "{{user_id}}", "approve"]
+              "path": ["admin", "users", "approve"],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                }
+              ]
             }
           }
         },
@@ -1856,9 +1862,303 @@
               "raw": "{\n  \"reason\": \"Application does not meet our community guidelines\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/admin/users/{{user_id}}/reject",
+              "raw": "{{baseUrl}}/admin/users/reject?user_id={{user_id}}",
               "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", "{{user_id}}", "reject"]
+              "path": ["admin", "users", "reject"],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "👥 Get All Approved Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Approved users retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Approved Users:', response.users.length);",
+                  "    console.log('📊 Total Count:', response.pagination.totalCount);",
+                  "    if (response.users.length > 0) {",
+                  "        console.log('👤 Latest:', response.users[0].name + ' (' + response.users[0].email + ')');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/approved?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "approved"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "🚫 Get All Rejected Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rejected users retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('🚫 Rejected Users:', response.users.length);",
+                  "    console.log('📊 Total Count:', response.pagination.totalCount);",
+                  "    if (response.users.length > 0) {",
+                  "        console.log('👤 Latest:', response.users[0].name + ' (' + response.users[0].email + ')');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/rejected?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "rejected"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "📊 Get All Users (With Status Filter)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All users retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('📊 All Users:', response.users.length);",
+                  "    console.log('📊 Total Count:', response.pagination.totalCount);",
+                  "    console.log('📈 Dashboard Stats:', JSON.stringify(response.stats, null, 2));",
+                  "    if (response.users.length > 0) {",
+                  "        response.users.forEach((user, index) => {",
+                  "            console.log(`${index + 1}. ${user.name} (${user.email}) - Status: ${user.status}`);",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/all?status=ALL&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "all"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "description": "Filter: ALL, WAITLIST, ACTIVE, VERIFIED, REJECTED, PAID_SETUP"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "👤 Get User Details by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User details retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const user = pm.response.json();",
+                  "    console.log('👤 User Details for:', user.name);",
+                  "    console.log('📧 Email:', user.email);",
+                  "    console.log('🎯 Status:', user.status);",
+                  "    console.log('✅ Approved:', user.isApproved);",
+                  "    console.log('💳 Paid Setup:', user.paidSetupFee);",
+                  "    if (user.profile) {",
+                  "        console.log('📄 Profile Status:', user.profile.status);",
+                  "        console.log('📱 QR Cards:', user.profile.qrCards.length);",
+                  "    }",
+                  "    if (user.payments) {",
+                  "        console.log('💰 Payments:', user.payments.length);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "🔍 Search Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User search completed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('🔍 Search Results:', response.users.length + ' users found');",
+                  "    console.log('🎯 Search Filters:', JSON.stringify(response.searchFilters));",
+                  "    console.log('📊 Total Matches:', response.pagination.totalCount);",
+                  "    if (response.users.length > 0) {",
+                  "        response.users.forEach((user, index) => {",
+                  "            console.log(`${index + 1}. ${user.name} (${user.email}) - ${user.status}`);",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/search?email=test&name=&status=WAITLIST&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "search"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "test",
+                  "description": "Search by email (partial match)"
+                },
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "Search by name (partial match)"
+                },
+                {
+                  "key": "status",
+                  "value": "WAITLIST",
+                  "description": "Filter by status"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
             }
           }
         }

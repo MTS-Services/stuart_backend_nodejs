@@ -156,6 +156,55 @@ export class AdminController {
     return this.adminService.getPendingUsers(pageNum, limitNum);
   }
 
+  @Get('users/approved')
+  async getApprovedUsers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getApprovedUsers(pageNum, limitNum);
+  }
+
+  @Get('users/rejected')
+  async getRejectedUsers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getRejectedUsers(pageNum, limitNum);
+  }
+
+  @Get('users/search')
+  async searchUsers(
+    @Query('email') email?: string,
+    @Query('name') name?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.searchUsers({ email, name, status }, pageNum, limitNum);
+  }
+
+  @Get('users/all')
+  async getAllUsers(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getAllUsers(status, pageNum, limitNum);
+  }
+
+  @Get('users/:userId')
+  async getUserById(@Param('userId', ParseIntPipe) userId: number) {
+    return this.adminService.getUserById(userId);
+  }
+
   @Post('users/approve')
   async approveUser(
     @Request() req,

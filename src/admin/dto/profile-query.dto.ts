@@ -1,20 +1,6 @@
-import { IsOptional, IsString, IsIn } from 'class-validator';
-import { Transform } from 'class-transformer';
-
 export class ProfileQueryDto {
-  @IsOptional()
-  @IsString()
-  @IsIn(['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'DRAFT'])
   status?: string = 'ALL';
-
-  @IsOptional()
-  @Transform(({ value }) => value ? String(value) : '1')
-  @IsString()
   page?: string = '1';
-
-  @IsOptional()
-  @Transform(({ value }) => value ? String(value) : '10')
-  @IsString()
   limit?: string = '10';
 
   // Helper methods to get numeric values
@@ -27,6 +13,7 @@ export class ProfileQueryDto {
   }
 
   getStatus(): string {
-    return this.status || 'ALL';
+    const validStatuses = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'DRAFT'];
+    return validStatuses.includes(this.status || '') ? this.status || 'ALL' : 'ALL';
   }
 }

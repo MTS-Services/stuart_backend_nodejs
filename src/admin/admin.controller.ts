@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
-import { ProfileQueryDto } from './dto/profile-query.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
@@ -32,6 +31,9 @@ export class AdminController {
     return this.adminService.getVerifiedProfiles(1, 10);
   }
 
+  // ✅ FIXED: All specific routes MUST come BEFORE parameterized routes
+  // This prevents route conflicts where "verified" gets matched as ":profileId"
+  
   @Get('profiles/pending')
   async getPendingProfiles(
     @Query('page') page?: string,
@@ -42,6 +44,35 @@ export class AdminController {
     return this.adminService.getPendingProfiles(pageNum, limitNum);
   }
 
+  @Get('profiles/verified')
+  async getVerifiedProfiles(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    // ✅ Manual parsing prevents validation conflicts
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    return this.adminService.getVerifiedProfiles(pageNum, limitNum);
+  }
+
+  @Get('profiles/all')
+  async getAllProfiles(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    // ✅ Validate and parse parameters safely
+    const validStatuses = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'DRAFT'];
+    const validStatus = validStatuses.includes(status || '') ? status : 'ALL';
+    
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
+    
+    return this.adminService.getAllProfiles(validStatus, pageNum, limitNum);
+  }
+
+  // ⚠️ IMPORTANT: Parameterized routes MUST be placed AFTER all specific routes
+  // to prevent route matching conflicts
   @Get('profiles/:profileId')
   async getProfile(@Param('profileId', ParseIntPipe) profileId: number) {
     return this.adminService.getProfileById(profileId);
@@ -70,25 +101,6 @@ export class AdminController {
       throw new BadRequestException('Invalid profile_id provided');
     }
     return this.adminService.rejectProfile(req.user.id, profileIdNum, reason);
-  }
-
-  @Get('profiles/verified')
-  async getVerifiedProfiles(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string
-  ) {
-    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
-    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
-    return this.adminService.getVerifiedProfiles(pageNum, limitNum);
-  }
-
-  @Get('profiles/all')
-  async getAllProfiles(@Query() query: ProfileQueryDto) {
-    return this.adminService.getAllProfiles(
-      query.getStatus(),
-      query.getPage(),
-      query.getLimit()
-    );
   }
 
   @Post('profiles/unverify')
@@ -160,16 +172,6 @@ export class AdminController {
   @Post('test/revenue')
   async createTestRevenue(@Request() req) {
     return this.adminService.createTestRevenue();
-  }
-
-  @Get('users/pending')
-  async getPendingUsers(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string
-  ) {
-    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
-    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
-    return this.adminService.getPendingUsers(pageNum, limitNum);
   }
 
   @Get('users/approved')

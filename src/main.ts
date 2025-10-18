@@ -14,8 +14,9 @@ async function bootstrap() {
     whitelist: false, // Don't strip unknown properties (allows query params)
     forbidNonWhitelisted: false, // Allow query params that aren't in DTO
     skipMissingProperties: true, // Skip validation if property is missing
+    disableErrorMessages: false, // Keep error messages for debugging
     transformOptions: {
-      enableImplicitConversion: true, // Allow string to number conversion
+      enableImplicitConversion: false, // Disable implicit conversion to avoid conflicts
     },
   }));
   

@@ -32,6 +32,27 @@ export class AdminController {
     return this.adminService.getVerifiedProfiles(1, 10);
   }
 
+  // 🔍 DEBUG ENDPOINT - Check profile status without auth (temp)
+  @Get('debug/profile/:id')
+  async debugProfile(@Param('id', ParseIntPipe) profileId: number) {
+    try {
+      const profile = await this.adminService.getProfileById(profileId);
+      return { 
+        profile, 
+        status: profile?.status || 'NOT_FOUND',
+        message: profile?.status === 'DRAFT' ? 'Profile needs to be submitted for review first' : 'Ready for approval'
+      };
+    } catch (error) {
+      return { error: error.message, profileId };
+    }
+  }
+
+  // 🔧 DEBUG ENDPOINT - Force submit profile for review (temp)
+  @Post('debug/profile/:id/force-submit')
+  async forceSubmitProfile(@Param('id', ParseIntPipe) profileId: number) {
+    return this.adminService.forceSubmitForReview(profileId);
+  }
+
   // ✅ FIXED: All specific routes MUST come BEFORE parameterized routes
   // This prevents route conflicts where "verified" gets matched as ":profileId"
   
@@ -117,6 +138,24 @@ export class AdminController {
     return this.adminService.unverifyProfile(req.user.id, profileIdNum, reason);
   }
 
+  // ✅ URL PARAMETER VERSIONS - For Postman compatibility
+  @Post('profiles/:profileId/approve')
+  async approveProfileByParam(
+    @Request() req,
+    @Param('profileId', ParseIntPipe) profileId: number
+  ) {
+    return this.adminService.approveProfile(req.user.id, profileId);
+  }
+
+  @Post('profiles/:profileId/reject')
+  async rejectProfileByParam(
+    @Request() req,
+    @Param('profileId', ParseIntPipe) profileId: number,
+    @Body('reason') reason: string
+  ) {
+    return this.adminService.rejectProfile(req.user.id, profileId, reason);
+  }
+
   @Get('notifications')
   async getNotifications(
     @Request() req,
@@ -175,7 +214,7 @@ export class AdminController {
     return this.adminService.createTestRevenue();
   }
 
-  @Get('users/approved')
+                                                                                                                                                                                                                                        @Get('users/approved')
   async getApprovedUsers(
     @Query('page') page?: string,
     @Query('limit') limit?: string
@@ -272,5 +311,43 @@ export class AdminController {
     @Body() changePasswordDto: ChangeAdminPasswordDto
   ) {
     return this.adminService.changeAdminPassword(req.user.id, changePasswordDto);
+  }
+}
+
+// 🔧 DEBUG CONTROLLER - No authentication required for testing
+@Controller('debug/admin')
+export class AdminDebugController {
+  constructor(private adminService: AdminService) {}
+
+  @Get('profile/:id')
+  async debugProfile(@Param('id', ParseIntPipe) profileId: number) {
+    try {
+      const profile = await this.adminService.getProfileById(profileId);
+      return { 
+        profile, 
+        status: profile?.status || 'NOT_FOUND',
+        message: profile?.status === 'DRAFT' ? 'Profile needs to be submitted for review first' : 'Ready for approval'
+      };
+    } catch (error) {
+      return { error: error.message, profileId };
+    }
+  }
+
+  @Post('profile/:id/force-submit')
+  async forceSubmitProfile(@Param('id', ParseIntPipe) profileId: number) {
+    return this.adminService.forceSubmitForReview(profileId);
+  }
+
+  @Post('profile/:id/approve')
+  async debugApproveProfile(@Param('id', ParseIntPipe) profileId: number) {
+    return this.adminService.approveProfile(1, profileId); // Use admin ID 1
+  }
+
+  @Post('profile/:id/reject')
+  async debugRejectProfile(
+    @Param('id', ParseIntPipe) profileId: number,
+    @Body('reason') reason: string = 'Debug rejection'
+  ) {
+    return this.adminService.rejectProfile(1, profileId, reason);
   }
 }

@@ -473,6 +473,39 @@ export class AdminService {
     return profile;
   }
 
+  // 🔧 DEBUG METHOD - Force submit profile for review
+  async forceSubmitForReview(profileId: number) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      include: { user: true },
+    });
+
+    if (!profile) {
+      throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (profile.status === ProfileStatus.PENDING_REVIEW) {
+      return { message: 'Profile is already pending review', profile };
+    }
+
+    if (profile.status === ProfileStatus.APPROVED) {
+      return { message: 'Profile is already approved', profile };
+    }
+
+    // Force submit for review
+    const updatedProfile = await this.prisma.profile.update({
+      where: { id: profileId },
+      data: { status: ProfileStatus.PENDING_REVIEW },
+    });
+
+    return {
+      message: `Profile ${profileId} forced to PENDING_REVIEW status`,
+      previousStatus: profile.status,
+      newStatus: updatedProfile.status,
+      profile: updatedProfile
+    };
+  }
+
   async approveProfile(adminId: number, profileId: number) {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
@@ -484,7 +517,10 @@ export class AdminService {
     }
 
     if (profile.status !== ProfileStatus.PENDING_REVIEW) {
-      throw new HttpException('Profile is not pending review', HttpStatus.BAD_REQUEST);
+      const statusMessage = profile.status === ProfileStatus.DRAFT 
+        ? `Profile is in DRAFT status. Submit for review first using POST /profile/submit with email: ${profile.user?.email}`
+        : `Profile status is ${profile.status}, expected PENDING_REVIEW`;
+      throw new HttpException(statusMessage, HttpStatus.BAD_REQUEST);
     }
 
     // Update profile status
@@ -569,7 +605,10 @@ export class AdminService {
     }
 
     if (profile.status !== ProfileStatus.PENDING_REVIEW) {
-      throw new HttpException('Profile is not pending review', HttpStatus.BAD_REQUEST);
+      const statusMessage = profile.status === ProfileStatus.DRAFT 
+        ? `Profile is in DRAFT status. Submit for review first using POST /profile/submit with email: ${profile.user?.email}`
+        : `Profile status is ${profile.status}, expected PENDING_REVIEW`;
+      throw new HttpException(statusMessage, HttpStatus.BAD_REQUEST);
     }
 
     // Update profile status

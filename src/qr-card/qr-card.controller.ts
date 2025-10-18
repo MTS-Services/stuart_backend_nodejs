@@ -76,16 +76,34 @@ export class QRCardController {
     return this.qrCardService.deactivateCard(req.user.id, cardId);
   }
 
-  // Public endpoint for scanning QR codes
+  // Public endpoint for scanning QR codes with email functionality
   @Post('scan/:qrCode')
   async scanQRCode(
     @Param('qrCode') qrCode: string,
-    @Body('viewerId') viewerId?: number,
+    @Body() body: { viewerId?: number; scannerEmail?: string },
     @Ip() ipAddress?: string,
     @Headers('user-agent') userAgent?: string
   ) {
     return this.qrCardService.scanQRCard(qrCode, {
-      viewerId,
+      viewerId: body.viewerId,
+      scannerEmail: body.scannerEmail,
+      ipAddress,
+      userAgent,
+    });
+  }
+
+  // Public endpoint for scanning QR codes with email as URL parameter
+  @Post('scan/:qrCode/:scannerEmail')
+  async scanQRCodeWithEmail(
+    @Param('qrCode') qrCode: string,
+    @Param('scannerEmail') scannerEmail: string,
+    @Body() body: { viewerId?: number } = {},
+    @Ip() ipAddress?: string,
+    @Headers('user-agent') userAgent?: string
+  ) {
+    return this.qrCardService.scanQRCard(qrCode, {
+      viewerId: body.viewerId,
+      scannerEmail: decodeURIComponent(scannerEmail),
       ipAddress,
       userAgent,
     });
@@ -95,12 +113,30 @@ export class QRCardController {
   @Get('debug/scan-help')
   async getScanHelp() {
     return {
-      message: 'QR Code Scanning Help',
+      message: 'QR Code Scanning Help with Email Notifications',
       correctUsage: {
-        endpoint: 'POST /qr-cards/scan/{qrCode}',
-        qrCodeFormat: 'UUID (e.g., abc-123-def-456)',
-        exampleUrl: 'POST /qr-cards/scan/550e8400-e29b-41d4-a716-446655440000',
-        body: { viewerId: 'optional_number' }
+        method1: {
+          endpoint: 'POST /qr-cards/scan/{qrCode}',
+          description: 'Email in request body',
+          exampleUrl: 'POST /qr-cards/scan/550e8400-e29b-41d4-a716-446655440000',
+          body: { 
+            viewerId: 'optional_number',
+            scannerEmail: 'optional_email_for_notifications'
+          }
+        },
+        method2: {
+          endpoint: 'POST /qr-cards/scan/{qrCode}/{scannerEmail}',
+          description: 'Email as URL parameter (recommended)',
+          exampleUrl: 'POST /qr-cards/scan/550e8400-e29b-41d4-a716-446655440000/scanner@example.com',
+          body: { 
+            viewerId: 'optional_number'
+          }
+        }
+      },
+      emailFeatures: {
+        profileOwnerNotification: 'Profile owner gets notified when their QR is scanned',
+        scannerProfileInfo: 'If scanner provides email, they receive profile contact info',
+        scanLimitWarnings: 'Low scan count warnings for profile owners'
       },
       commonMistakes: [
         'Using base64 image data instead of UUID',
@@ -110,14 +146,23 @@ export class QRCardController {
       workflow: [
         '1. Generate QR cards: POST /qr-cards/generate/by-email',
         '2. Extract qrCode field from response (UUID)',
-        '3. Use UUID in scan endpoint: POST /qr-cards/scan/{uuid}',
-        '4. Get profile information in response'
+        '3a. Scan with email in URL: POST /qr-cards/scan/{uuid}/{email}',
+        '3b. OR scan with email in body: POST /qr-cards/scan/{uuid} + {"scannerEmail": "email"}',
+        '4. Both parties receive email notifications with contact information'
       ],
       exampleResponse: {
-        qrCode: '550e8400-e29b-41d4-a716-446655440000',
-        scanCount: 1,
-        maxScans: 5,
-        profile: { user: { name: 'John Doe', email: 'john@example.com' } }
+        success: true,
+        profile: { 
+          name: 'John Doe', 
+          contactEmail: 'john@example.com',
+          age: 25,
+          bio: 'Looking for connections!'
+        },
+        scansRemaining: 4,
+        emailNotifications: {
+          profileOwnerNotified: true,
+          scannerNotified: true
+        }
       }
     };
   }

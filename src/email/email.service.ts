@@ -293,4 +293,108 @@ export class EmailService {
       throw new Error(`Failed to send rejection email: ${error.message}`);
     }
   }
+
+  async sendQRCodeScanned(email: string, name: string, scanDetails: {
+    scanDate: string;
+    scanLocation: string;
+    scansRemaining: number;
+    scannerEmail: string;
+  }) {
+    try {
+      const scanDate = new Date(scanDetails.scanDate).toLocaleString();
+      
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'noreply@qrdatingapp.com',
+        to: email,
+        subject: '🔍 Your QR Card Was Scanned!',
+        html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
+          <h2 style="color: #e91e63;">QR Card Scan Notification</h2>
+          
+          <p>Hi ${name},</p>
+          
+          <p>Great news! Someone just scanned your QR card and viewed your profile.</p>
+          
+          <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="color: #333; margin-top: 0;">Scan Details:</h3>
+            <ul>
+              <li><strong>Date & Time:</strong> ${scanDate}</li>
+              <li><strong>Location:</strong> ${scanDetails.scanLocation}</li>
+              <li><strong>Scanner:</strong> ${scanDetails.scannerEmail}</li>
+              <li><strong>Remaining Scans:</strong> ${scanDetails.scansRemaining}</li>
+            </ul>
+          </div>
+          
+          ${scanDetails.scansRemaining <= 2 ? `
+          <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 15px 0;">
+            <p style="margin: 0; color: #856404;"><strong>⚠️ Low Scan Count:</strong> You have ${scanDetails.scansRemaining} scans remaining on this card.</p>
+          </div>
+          ` : ''}
+          
+          <p>If the scanner provided their email, they'll receive your contact information to potentially connect with you!</p>
+          
+          <p>Keep networking and making great connections! 💕</p>
+        </div>
+      `,
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('📧 QR scan notification sent successfully to:', email);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to send QR scan notification to:', email, error.message);
+      throw new Error(`Failed to send QR scan notification: ${error.message}`);
+    }
+  }
+
+  async sendProfileInfo(scannerEmail: string, profileOwnerName: string, profileInfo: {
+    name: string;
+    age: number;
+    bio: string;
+    location: string;
+    contactEmail: string;
+  }) {
+    try {
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'noreply@qrdatingapp.com',
+        to: scannerEmail,
+        subject: `📋 Profile Information for ${profileInfo.name}`,
+        html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
+          <h2 style="color: #e91e63;">QR Card Profile Information</h2>
+          
+          <p>Hi there!</p>
+          
+          <p>You just scanned a QR card and here's the profile information:</p>
+          
+          <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="color: #333; margin-top: 0;">${profileInfo.name}</h3>
+            <ul style="list-style: none; padding: 0;">
+              <li style="margin: 8px 0;"><strong>Age:</strong> ${profileInfo.age}</li>
+              <li style="margin: 8px 0;"><strong>Location:</strong> ${profileInfo.location}</li>
+              <li style="margin: 8px 0;"><strong>Bio:</strong> ${profileInfo.bio}</li>
+            </ul>
+          </div>
+          
+          <div style="background-color: #e8f5e8; border: 1px solid #4caf50; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <h4 style="color: #2e7d32; margin-top: 0;">💌 Want to Connect?</h4>
+            <p style="margin: 5px 0;">You can reach out to ${profileInfo.name} at:</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:${profileInfo.contactEmail}" style="color: #e91e63;">${profileInfo.contactEmail}</a></p>
+          </div>
+          
+          <p>Good luck with your connection! 💕</p>
+          
+          <p><small>This information was shared because ${profileInfo.name} chose to use QR cards for networking and meeting new people.</small></p>
+        </div>
+      `,
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('📧 Profile info sent successfully to scanner:', scannerEmail);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to send profile info to scanner:', scannerEmail, error.message);
+      throw new Error(`Failed to send profile info: ${error.message}`);
+    }
+  }
 }

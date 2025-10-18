@@ -506,8 +506,37 @@ export class AdminService {
     };
   }
 
+  async findProfileByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+    }
+
+    if (!user.profile) {
+      throw new HttpException('User has no profile', HttpStatus.NOT_FOUND);
+    }
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+      profile: {
+        id: user.profile.id,
+        status: user.profile.status,
+        createdAt: user.profile.createdAt,
+        updatedAt: user.profile.updatedAt,
+      }
+    };
+  }
+
   async approveProfile(adminId: number, profileId: number) {
-    const profile = await this.prisma.profile.findUnique({
+    let profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
       include: { user: true },
     });
@@ -516,10 +545,34 @@ export class AdminService {
       throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
     }
 
+    // 🚀 AUTO-SUBMIT: If profile is DRAFT, automatically submit for review first
+    if (profile.status === ProfileStatus.DRAFT) {
+      console.log(`🔄 Auto-submitting DRAFT profile ${profileId} for review before approval`);
+      
+      profile = await this.prisma.profile.update({
+        where: { id: profileId },
+        data: { status: ProfileStatus.PENDING_REVIEW },
+        include: { user: true },
+      });
+
+      // Create notification for auto-submission
+      await this.prisma.notification.create({
+        data: {
+          adminId: 1, // Default admin ID
+          type: 'profile_auto_submitted',
+          title: 'Profile Auto-Submitted for Review',
+          message: `Profile ${profileId} was automatically submitted for review during approval process`,
+          data: {
+            profileId: profileId,
+            userId: profile.userId,
+            autoSubmitted: true,
+          },
+        },
+      });
+    }
+
     if (profile.status !== ProfileStatus.PENDING_REVIEW) {
-      const statusMessage = profile.status === ProfileStatus.DRAFT 
-        ? `Profile is in DRAFT status. Submit for review first using POST /profile/submit with email: ${profile.user?.email}`
-        : `Profile status is ${profile.status}, expected PENDING_REVIEW`;
+      const statusMessage = `Profile status is ${profile.status}, expected PENDING_REVIEW`;
       throw new HttpException(statusMessage, HttpStatus.BAD_REQUEST);
     }
 
@@ -595,7 +648,7 @@ export class AdminService {
   }
 
   async rejectProfile(adminId: number, profileId: number, reason: string) {
-    const profile = await this.prisma.profile.findUnique({
+    let profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
       include: { user: true },
     });
@@ -604,10 +657,34 @@ export class AdminService {
       throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
     }
 
+    // 🚀 AUTO-SUBMIT: If profile is DRAFT, automatically submit for review first
+    if (profile.status === ProfileStatus.DRAFT) {
+      console.log(`🔄 Auto-submitting DRAFT profile ${profileId} for review before rejection`);
+      
+      profile = await this.prisma.profile.update({
+        where: { id: profileId },
+        data: { status: ProfileStatus.PENDING_REVIEW },
+        include: { user: true },
+      });
+
+      // Create notification for auto-submission
+      await this.prisma.notification.create({
+        data: {
+          adminId: 1, // Default admin ID
+          type: 'profile_auto_submitted',
+          title: 'Profile Auto-Submitted for Review',
+          message: `Profile ${profileId} was automatically submitted for review during rejection process`,
+          data: {
+            profileId: profileId,
+            userId: profile.userId,
+            autoSubmitted: true,
+          },
+        },
+      });
+    }
+
     if (profile.status !== ProfileStatus.PENDING_REVIEW) {
-      const statusMessage = profile.status === ProfileStatus.DRAFT 
-        ? `Profile is in DRAFT status. Submit for review first using POST /profile/submit with email: ${profile.user?.email}`
-        : `Profile status is ${profile.status}, expected PENDING_REVIEW`;
+      const statusMessage = `Profile status is ${profile.status}, expected PENDING_REVIEW`;
       throw new HttpException(statusMessage, HttpStatus.BAD_REQUEST);
     }
 

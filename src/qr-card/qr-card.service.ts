@@ -1,11 +1,15 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { EmailService } from '../email/email.service';
 import * as QRCode from 'qrcode';
 import { randomUUID } from 'crypto';
 
 @Injectable()
 export class QRCardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService
+  ) {}
 
   async generateQRCards(userId: number, count: number = 50) {
     // Check if user has approved profile
@@ -70,7 +74,7 @@ export class QRCardService {
     };
   }
 
-  async scanQRCard(qrCode: string, viewerInfo: { ipAddress?: string; userAgent?: string; viewerId?: number }) {
+  async scanQRCard(qrCode: string, viewerInfo: { ipAddress?: string; userAgent?: string; viewerId?: number; scannerEmail?: string }) {
     // Find the QR card
     const card = await this.prisma.qRCard.findUnique({
       where: { qrCode },
@@ -121,6 +125,43 @@ export class QRCardService {
       data: { scanCount: card.scanCount + 1 },
     });
 
+    // Send email notification to both profile owner and scanner (if email provided)
+    const profileOwnerEmail = card.profile.user.email;
+    const profileOwnerName = card.profile.user.name;
+    const scannerEmail = viewerInfo.scannerEmail;
+    
+    try {
+      // Send notification to profile owner about the scan
+      await this.emailService.sendQRCodeScanned(
+        profileOwnerEmail,
+        profileOwnerName,
+        {
+          scanDate: new Date().toISOString(),
+          scanLocation: viewerInfo.ipAddress || 'Unknown',
+          scansRemaining: card.maxScans - (card.scanCount + 1),
+          scannerEmail: scannerEmail || 'Anonymous'
+        }
+      );
+
+      // If scanner provided email, send them the profile information
+      if (scannerEmail) {
+        await this.emailService.sendProfileInfo(
+          scannerEmail,
+          profileOwnerName,
+          {
+            name: card.profile.user.name,
+            age: card.profile.age || 0,
+            bio: card.profile.bio || 'No bio available',
+            location: card.profile.location || 'Location not specified',
+            contactEmail: profileOwnerEmail
+          }
+        );
+      }
+    } catch (emailError) {
+      console.error('Failed to send email notifications:', emailError);
+      // Continue with the response even if email fails
+    }
+
     // Return profile information (without sensitive data)
     return {
       success: true,
@@ -134,9 +175,14 @@ export class QRCardService {
         fullBodyPhoto: card.profile.fullBodyPhoto,
         thirdPhoto: card.profile.thirdPhoto,
         additionalPhotos: card.profile.additionalPhotos || [],
+        contactEmail: profileOwnerEmail,
       },
       scanId: scan.id,
       scansRemaining: card.maxScans - (card.scanCount + 1),
+      emailNotifications: {
+        profileOwnerNotified: true,
+        scannerNotified: !!scannerEmail
+      }
     };
   }
 

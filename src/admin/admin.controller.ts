@@ -350,4 +350,9 @@ export class AdminDebugController {
   ) {
     return this.adminService.rejectProfile(1, profileId, reason);
   }
+
+  @Get('find-profile/:email')
+  async findProfileByEmail(@Param('email') email: string) {
+    return this.adminService.findProfileByEmail(email);
+  }
 }

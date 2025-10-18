@@ -104,9 +104,11 @@ export class PaymentService {
           type: 'setup_fee',
         },
         description: 'QR Card Dating App - Setup Fee',
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        // ✅ FIX: Specify explicit payment method types instead of automatic_payment_methods
+        // This resolves "No valid payment method types" error from Stripe
+        payment_method_types: ['card'],
+        // Note: You can add more payment types if enabled in your Stripe dashboard:
+        // payment_method_types: ['card', 'us_bank_account', 'link'],
       });
 
       // Create payment record in database
@@ -128,6 +130,16 @@ export class PaymentService {
         paymentIntentId: paymentIntent.id,
       };
     } catch (error) {
+      // Handle specific Stripe errors with better messages
+      if (error.type === 'StripeInvalidRequestError') {
+        if (error.message.includes('payment method types')) {
+          throw new HttpException(
+            'Payment method configuration error. Please contact support.',
+            HttpStatus.INTERNAL_SERVER_ERROR
+          );
+        }
+      }
+      
       throw new HttpException(
         `Payment processing failed: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR

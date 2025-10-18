@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
+import { UpdateAdminProfileDto, ChangeAdminPasswordDto } from './dto/admin-profile.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
@@ -246,5 +247,30 @@ export class AdminController {
       throw new BadRequestException('Invalid user_id provided');
     }
     return this.adminService.rejectUser(req.user.id, userIdNum, reason);
+  }
+
+  // ================================
+  // 👤 ADMIN PROFILE MANAGEMENT
+  // ================================
+
+  @Get('profile')
+  async getAdminProfile(@Request() req) {
+    return this.adminService.getAdminProfile(req.user.id);
+  }
+
+  @Put('profile')
+  async updateAdminProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateAdminProfileDto
+  ) {
+    return this.adminService.updateAdminProfile(req.user.id, updateProfileDto);
+  }
+
+  @Put('profile/password')
+  async changeAdminPassword(
+    @Request() req,
+    @Body() changePasswordDto: ChangeAdminPasswordDto
+  ) {
+    return this.adminService.changeAdminPassword(req.user.id, changePasswordDto);
   }
 }

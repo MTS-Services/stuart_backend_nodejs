@@ -1450,4 +1450,229 @@ export class AdminService {
       );
     }
   }
+
+  // ================================
+  // 👤 ADMIN PROFILE MANAGEMENT
+  // ================================
+
+  async getAdminProfile(adminId: number) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { id: adminId },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          isActive: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true,
+          // Note: password is excluded for security
+        }
+      });
+
+      if (!admin) {
+        throw new HttpException('Admin not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Split email to get potential first/last name if stored as full name
+      const [firstName = '', lastName = ''] = admin.username?.split(' ') || ['', ''];
+
+      return {
+        ...admin,
+        firstName,
+        lastName,
+        phoneNumber: '', // Add phone field to admin schema if needed
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to fetch admin profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async updateAdminProfile(adminId: number, updateData: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phoneNumber?: string;
+    username?: string;
+  }) {
+    try {
+      // Check if admin exists
+      const existingAdmin = await this.prisma.admin.findUnique({
+        where: { id: adminId }
+      });
+
+      if (!existingAdmin) {
+        throw new HttpException('Admin not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Check if email is being updated and if it's already taken
+      if (updateData.email && updateData.email !== existingAdmin.email) {
+        const emailExists = await this.prisma.admin.findFirst({
+          where: { 
+            email: updateData.email,
+            id: { not: adminId }
+          }
+        });
+
+        if (emailExists) {
+          throw new HttpException('Email already in use', HttpStatus.CONFLICT);
+        }
+      }
+
+      // Check if username is being updated and if it's already taken
+      if (updateData.username && updateData.username !== existingAdmin.username) {
+        const usernameExists = await this.prisma.admin.findFirst({
+          where: { 
+            username: updateData.username,
+            id: { not: adminId }
+          }
+        });
+
+        if (usernameExists) {
+          throw new HttpException('Username already in use', HttpStatus.CONFLICT);
+        }
+      }
+
+      // Prepare update data
+      const updatePayload: any = {};
+      
+      if (updateData.email) {
+        updatePayload.email = updateData.email;
+      }
+
+      if (updateData.username) {
+        updatePayload.username = updateData.username;
+      }
+
+      // If firstName and lastName are provided, combine them for username if username not explicitly set
+      if (updateData.firstName && updateData.lastName && !updateData.username) {
+        const fullName = `${updateData.firstName} ${updateData.lastName}`.trim();
+        if (fullName && fullName !== existingAdmin.username) {
+          // Check if this combined name is available
+          const nameExists = await this.prisma.admin.findFirst({
+            where: { 
+              username: fullName,
+              id: { not: adminId }
+            }
+          });
+
+          if (!nameExists) {
+            updatePayload.username = fullName;
+          }
+        }
+      }
+
+      // Update admin profile
+      const updatedAdmin = await this.prisma.admin.update({
+        where: { id: adminId },
+        data: {
+          ...updatePayload,
+          updatedAt: new Date(),
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          isActive: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true,
+        }
+      });
+
+      // Return updated profile with split name fields
+      const [firstName = '', lastName = ''] = updatedAdmin.username?.split(' ') || ['', ''];
+
+      return {
+        success: true,
+        message: 'Admin profile updated successfully',
+        admin: {
+          ...updatedAdmin,
+          firstName,
+          lastName,
+          phoneNumber: updateData.phoneNumber || '', // Store in admin table if needed
+        }
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to update admin profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async changeAdminPassword(adminId: number, passwordData: {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) {
+    try {
+      const bcrypt = require('bcryptjs');
+
+      // Validate password confirmation
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        throw new HttpException('New password and confirmation do not match', HttpStatus.BAD_REQUEST);
+      }
+
+      // Get admin with password
+      const admin = await this.prisma.admin.findUnique({
+        where: { id: adminId }
+      });
+
+      if (!admin) {
+        throw new HttpException('Admin not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Verify old password
+      const isOldPasswordValid = await bcrypt.compare(passwordData.oldPassword, admin.password);
+      if (!isOldPasswordValid) {
+        throw new HttpException('Current password is incorrect', HttpStatus.UNAUTHORIZED);
+      }
+
+      // Check if new password is different from old password
+      const isSamePassword = await bcrypt.compare(passwordData.newPassword, admin.password);
+      if (isSamePassword) {
+        throw new HttpException('New password must be different from current password', HttpStatus.BAD_REQUEST);
+      }
+
+      // Hash new password
+      const saltRounds = 12;
+      const hashedNewPassword = await bcrypt.hash(passwordData.newPassword, saltRounds);
+
+      // Update password
+      await this.prisma.admin.update({
+        where: { id: adminId },
+        data: { 
+          password: hashedNewPassword,
+          updatedAt: new Date(),
+        }
+      });
+
+      return {
+        success: true,
+        message: 'Password changed successfully',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to change password: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 }

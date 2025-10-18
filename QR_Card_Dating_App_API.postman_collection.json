@@ -2412,6 +2412,163 @@
               ]
             }
           }
+        },
+        {
+          "name": "👤 Get Admin Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Admin profile retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('👤 ADMIN PROFILE');",
+                  "    console.log('===============');",
+                  "    console.log('📧 Email:', response.email);",
+                  "    console.log('👤 Username:', response.username);",
+                  "    console.log('🏷️ Role:', response.role);",
+                  "    console.log('✅ Active:', response.isActive);",
+                  "    console.log('🕐 Last Login:', response.lastLogin);",
+                  "    console.log('📅 Created:', response.createdAt);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "profile"]
+            }
+          }
+        },
+        {
+          "name": "✏️ Update Admin Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Admin profile updated successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ PROFILE UPDATED');",
+                  "    console.log('==================');",
+                  "    console.log('📧 Email:', response.admin.email);",
+                  "    console.log('👤 Username:', response.admin.username);",
+                  "    console.log('👤 First Name:', response.admin.firstName);",
+                  "    console.log('👤 Last Name:', response.admin.lastName);",
+                  "    console.log('📱 Phone:', response.admin.phoneNumber);",
+                  "    console.log('💬 Message:', response.message);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jenny\",\n  \"lastName\": \"Wilson\",\n  \"email\": \"jenny.wilson@example.com\",\n  \"phoneNumber\": \"+1 (555) 123-4567\",\n  \"username\": \"jenny.wilson\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "profile"]
+            }
+          }
+        },
+        {
+          "name": "🔒 Change Admin Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Password changed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('🔒 PASSWORD CHANGED');",
+                  "    console.log('==================');",
+                  "    console.log('✅ Success:', response.success);",
+                  "    console.log('💬 Message:', response.message);",
+                  "    console.log('🕐 Timestamp:', response.timestamp);",
+                  "    console.log('⚠️  Please login again with new password');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"currentPassword123!\",\n  \"newPassword\": \"newSecurePassword123!\",\n  \"confirmPassword\": \"newSecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/profile/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "profile", "password"]
+            }
+          }
         }
       ]
     },

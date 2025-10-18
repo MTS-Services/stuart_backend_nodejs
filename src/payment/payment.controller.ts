@@ -98,4 +98,10 @@ export class PaymentController {
   async cancelSubscription(@Request() req) {
     return this.paymentService.cancelSubscription(req.user.id);
   }
+
+  // ✅ TEST/DEMO ENDPOINT: Simulate payment completion for testing
+  @Post('demo/complete-payment/:paymentIntentId')
+  async simulatePaymentCompletion(@Param('paymentIntentId') paymentIntentId: string) {
+    return this.paymentService.simulateSetupFeePaymentCompletion(paymentIntentId);
+  }
 }

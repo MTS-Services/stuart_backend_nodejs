@@ -768,6 +768,48 @@
           }
         },
         {
+          "name": "🧪 [DEMO] Simulate Payment Completion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Demo payment completed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('🧪 DEMO Payment Simulated!');",
+                  "    console.log('💳 Payment Status:', response.payment.status);",
+                  "    console.log('👤 User Status:', response.user.status);",
+                  "    console.log('✅ Paid Setup Fee:', response.user.paidSetupFee);",
+                  "    console.log('📝 Note:', response.note);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment/demo/complete-payment/{{payment_intent_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "demo", "complete-payment", "{{payment_intent_id}}"]
+            }
+          }
+        },
+        {
           "name": "📊 Get My Payments - No Login Required",
           "event": [
             {

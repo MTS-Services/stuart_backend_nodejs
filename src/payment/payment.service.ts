@@ -298,7 +298,22 @@ export class PaymentService {
           },
         };
       } else {
-        throw new HttpException('Payment not completed', HttpStatus.BAD_REQUEST);
+        // Check different payment statuses and provide helpful messages
+        if (paymentIntent.status === 'requires_payment_method') {
+          throw new HttpException('Payment requires a payment method to be attached', HttpStatus.BAD_REQUEST);
+        } else if (paymentIntent.status === 'requires_confirmation') {
+          throw new HttpException('Payment requires confirmation on the client side', HttpStatus.BAD_REQUEST);
+        } else if (paymentIntent.status === 'requires_action') {
+          throw new HttpException('Payment requires additional action (e.g., 3D Secure authentication)', HttpStatus.BAD_REQUEST);
+        } else if (paymentIntent.status === 'processing') {
+          throw new HttpException('Payment is currently being processed, please wait', HttpStatus.ACCEPTED);
+        } else if (paymentIntent.status === 'requires_capture') {
+          throw new HttpException('Payment requires manual capture', HttpStatus.BAD_REQUEST);
+        } else if (paymentIntent.status === 'canceled') {
+          throw new HttpException('Payment was canceled', HttpStatus.BAD_REQUEST);
+        } else {
+          throw new HttpException(`Payment not completed. Status: ${paymentIntent.status}. This payment needs to be completed through the frontend interface.`, HttpStatus.BAD_REQUEST);
+        }
       }
     } catch (error) {
       throw new HttpException(
@@ -464,5 +479,81 @@ export class PaymentService {
     }
 
     return this.cancelSubscription(user.id);
+  }
+
+  // ✅ TEST/DEMO METHOD: Simulate payment completion for testing
+  async simulateSetupFeePaymentCompletion(paymentIntentId: string) {
+    try {
+      console.log('🧪 DEMO MODE: Simulating payment completion for:', paymentIntentId);
+      
+      const payment = await this.prisma.payment.findFirst({
+        where: { stripePaymentIntentId: paymentIntentId }
+      });
+
+      if (!payment) {
+        throw new HttpException('Payment not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (payment.status === 'completed') {
+        throw new HttpException('Payment already completed', HttpStatus.BAD_REQUEST);
+      }
+
+      // Get user info
+      const user = await this.prisma.user.findUnique({
+        where: { id: payment.userId }
+      });
+
+      // Update payment status to completed
+      const updatedPayment = await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'completed' }
+      });
+
+      // Update user's payment status
+      const updatedUser = await this.prisma.user.update({
+        where: { id: payment.userId },
+        data: { 
+          paidSetupFee: true,
+          status: UserStatus.PAID_SETUP,
+        }
+      });
+
+      // Create notification for admin
+      await this.prisma.notification.create({
+        data: {
+          adminId: 1,
+          type: 'payment_completed_demo',
+          title: 'Setup Fee Payment Completed (Demo)',
+          message: `${user?.name || 'User'} (${user?.email}) completed setup fee payment - DEMO MODE ($69)`,
+          data: {
+            userId: payment.userId,
+            paymentId: payment.id,
+            amount: 69.00,
+            demoMode: true,
+          },
+        },
+      });
+
+      console.log('✅ DEMO Payment Completed for user:', user?.email);
+
+      return {
+        message: 'Setup fee payment simulated successfully (DEMO MODE)',
+        payment: updatedPayment,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          status: updatedUser.status,
+          paidSetupFee: updatedUser.paidSetupFee,
+        },
+        demoMode: true,
+        note: 'This is a simulated payment completion for testing purposes'
+      };
+    } catch (error) {
+      throw new HttpException(
+        `Demo payment simulation failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }

@@ -12,6 +12,7 @@ import {
   Headers
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { AdminGuard } from '../auth/admin.guard';
 import { QRCardService } from './qr-card.service';
 
 @Controller('qr-cards')
@@ -19,13 +20,14 @@ export class QRCardController {
   constructor(private qrCardService: QRCardService) {}
 
   @Post('generate')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AdminGuard)
   async generateCards(@Request() req, @Body('count') count: number = 50) {
     return this.qrCardService.generateQRCards(req.user.id, count);
   }
 
-  // Email-based QR card generation - No Login Required
+  // Email-based QR card generation - Admin Only
   @Post('generate/by-email')
+  @UseGuards(AdminGuard)
   async generateCardsByEmail(@Body() body: { email: string; count?: number }) {
     const count = body.count || 50;
     return this.qrCardService.generateQRCardsByEmail(body.email, count);
@@ -45,12 +47,14 @@ export class QRCardController {
 
   // Get all QR cards in the system (Admin endpoint)
   @Get('all')
+  @UseGuards(AdminGuard)
   async getAllQRCards() {
     return this.qrCardService.getAllQRCards();
   }
 
-  // Get QR cards with pagination
+  // Get QR cards with pagination (Admin endpoint)
   @Get('paginated')
+  @UseGuards(AdminGuard)
   async getPaginatedQRCards(
     @Body('page') page: number = 1,
     @Body('limit') limit: number = 10
@@ -58,8 +62,9 @@ export class QRCardController {
     return this.qrCardService.getPaginatedQRCards(page, limit);
   }
 
-  // Get active QR cards only
+  // Get active QR cards only (Admin endpoint)
   @Get('active')
+  @UseGuards(AdminGuard)
   async getActiveQRCards() {
     return this.qrCardService.getActiveQRCards();
   }

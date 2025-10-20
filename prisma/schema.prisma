@@ -70,7 +70,12 @@ model Profile {
   userId          Int           @unique
   age             Int?
   height          String?
-  bio             String?
+  bodyType        String?
+  area            String?
+  dealbreakers    String?
+  bio           String?
+  startDate       String?
+  endDate         String?
   location        String?
   // Required photos (minimum 3)
   facePhoto       String? // Primary face photo (required)
@@ -78,6 +83,9 @@ model Profile {
   thirdPhoto      String? // Third required photo
   // Additional photos (up to 10 more)
   additionalPhotos String[] @default([]) // Additional photo URLs (max 10)
+  displayName     String?
+  email           String?
+  phone           String?
   status          ProfileStatus @default(DRAFT)
   reviewedAt      DateTime?
   reviewedBy      Int? // Admin ID who reviewed

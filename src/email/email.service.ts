@@ -208,7 +208,7 @@ export class EmailService {
     }
 
     try {
-      const loginUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/dashboard`;
+      const loginUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/dashboard/${email}`;
       
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',

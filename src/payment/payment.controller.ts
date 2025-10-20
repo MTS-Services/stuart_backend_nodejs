@@ -41,13 +41,39 @@ export class CreateSetupFeeDto {
   email: string;
 }
 
+export class SimplePaymentDto {
+  @IsString()
+  email: string;
+
+  @IsString()
+  paymentMethodId: string;
+
+  @IsString()
+  priceId: string;
+}
+
 @Controller('payment')
 export class PaymentController {
-  constructor(private paymentService: PaymentService) {}
+  constructor(private readonly paymentService: PaymentService) {}
+
+  @Get('debug/mode')
+  getPaymentMode() {
+    return this.paymentService.getPaymentMode();
+  }
 
   @Post('setup-fee')
   async paySetupFee(@Body() createSetupFeeDto: CreateSetupFeeDto) {
     return this.paymentService.paySetupFeeByEmail(createSetupFeeDto.email);
+  }
+
+  // Simplified payment route with email, paymentMethodId, and priceId
+  @Post('simple-payment')
+  async simplePayment(@Body() paymentDto: SimplePaymentDto) {
+    return this.paymentService.processSimplePayment(
+      paymentDto.email, 
+      paymentDto.paymentMethodId, 
+      paymentDto.priceId
+    );
   }
 
   @Post('confirm-setup-fee')

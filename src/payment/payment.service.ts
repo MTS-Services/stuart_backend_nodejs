@@ -24,11 +24,45 @@ export class PaymentService {
         this.stripe = new Stripe(stripeKey, {
           apiVersion: '2025-09-30.clover',
         });
-        console.log('💳 Stripe payment service initialized');
+        
+        // Detect if we're in test or live mode
+        const isTestMode = stripeKey.startsWith('sk_test_');
+        const isLiveMode = stripeKey.startsWith('sk_live_');
+        
+        if (isTestMode) {
+          console.log('🧪 Stripe payment service initialized in TEST mode');
+        } else if (isLiveMode) {
+          console.log('💳 Stripe payment service initialized in LIVE mode');
+          console.log('⚠️ Remember: Use live payment methods only!');
+        }
+        
       } catch (error) {
         console.log('⚠️ Stripe initialization failed, falling back to mock mode');
         this.stripe = null;
       }
+    }
+  }
+
+  private validatePaymentMethod(paymentMethodId: string): void {
+    if (!this.stripe) return; // Skip validation in mock mode
+    
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const isTestMode = stripeKey?.startsWith('sk_test_');
+    const isLiveMode = stripeKey?.startsWith('sk_live_');
+    
+    // Check for test payment methods
+    const testPaymentMethods = ['pm_card_visa', 'pm_card_mastercard', 'pm_card_amex', 'pm_card_discover'];
+    const isTestPaymentMethod = testPaymentMethods.includes(paymentMethodId);
+    
+    if (isLiveMode && isTestPaymentMethod) {
+      throw new HttpException(
+        `Cannot use test payment method '${paymentMethodId}' in live mode. Switch to test mode in .env file or use a real payment method.`,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    
+    if (isTestMode && !isTestPaymentMethod && !paymentMethodId.startsWith('pm_')) {
+      console.log(`⚠️ Warning: '${paymentMethodId}' might not be a valid test payment method`);
     }
   }
 
@@ -323,6 +357,231 @@ export class PaymentService {
     }
   }
 
+  async processSimplePayment(email: string, paymentMethodId: string, priceId: string) {
+    try {
+      // Mock mode - if Stripe is not properly configured
+      if (!this.stripe) {
+        console.log('💳 Mock Simple Payment for:', email, 'Price ID:', priceId);
+        
+        // Find or create user by email for mock mode
+        let user = await this.prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user) {
+          // Create new user if doesn't exist
+          user = await this.prisma.user.create({
+            data: {
+              email,
+              name: email.split('@')[0], // Use email prefix as default name
+              status: UserStatus.WAITLIST,
+              paidSetupFee: false,
+            },
+          });
+        }
+        
+        // Create mock payment record
+        const payment = await this.prisma.payment.create({
+          data: {
+            userId: user.id,
+            amount: 69.00, // Default amount for mock
+            currency: 'usd',
+            type: 'setup_fee',
+            status: 'completed',
+            stripePaymentIntentId: `mock_pi_${Date.now()}`,
+          },
+        });
+
+        // Send mock confirmation via order confirmation email
+        await this.emailService.sendOrderConfirmation(
+          user.email,
+          user.name || 'User',
+          payment.stripePaymentIntentId || `mock_order_${payment.id}`,
+          'Mock payment - no delivery required'
+        );
+
+        return {
+          success: true,
+          mockMode: true,
+          paymentId: payment.id,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: payment.status,
+          message: 'Mock payment processed successfully'
+        };
+      }
+
+      // Find or create user by email
+      let user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        // Create new user if doesn't exist
+        user = await this.prisma.user.create({
+          data: {
+            email,
+            name: email.split('@')[0], // Use email prefix as default name
+            status: UserStatus.WAITLIST,
+            paidSetupFee: false,
+          },
+        });
+      }
+
+      // Mock mode - if Stripe is not properly configured
+      if (!this.stripe) {
+        console.log('💳 Mock Simple Payment for:', email, 'Price ID:', priceId);
+        
+        // Create mock payment record
+        const payment = await this.prisma.payment.create({
+          data: {
+            userId: user.id,
+            amount: 69.00, // Default amount for mock
+            currency: 'usd',
+            status: 'completed',
+            stripePaymentIntentId: `mock_pi_${Date.now()}`,
+            type: 'setup_fee',
+          },
+        });
+
+        // Update user status
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            paidSetupFee: true,
+            status: UserStatus.PAID_SETUP,
+          },
+        });
+
+        return {
+          success: true,
+          message: 'Mock simple payment processed successfully',
+          payment: payment,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            status: UserStatus.PAID_SETUP,
+            paidSetupFee: true,
+          },
+          mockMode: true,
+        };
+      }
+
+      // Real Stripe processing
+      let stripeCustomerId = user.stripeCustomerId;
+
+      // Validate payment method before proceeding
+      this.validatePaymentMethod(paymentMethodId);
+
+      // Create Stripe customer if doesn't exist
+      if (!stripeCustomerId) {
+        const customer = await this.stripe.customers.create({
+          email: user.email,
+          name: user.name || undefined,
+          metadata: {
+            userId: user.id.toString(),
+          },
+        });
+        
+        // Update user with Stripe customer ID
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { stripeCustomerId: customer.id },
+        });
+        
+        stripeCustomerId = customer.id;
+      }
+
+      // Attach payment method to customer
+      await this.stripe.paymentMethods.attach(paymentMethodId, {
+        customer: stripeCustomerId,
+      });
+
+      // Get price details from Stripe
+      const price = await this.stripe.prices.retrieve(priceId);
+      const amount = price.unit_amount || 6900; // Default to $69 if price not found
+
+      // Create payment intent with the payment method
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: amount,
+        currency: price.currency || 'usd',
+        customer: stripeCustomerId,
+        payment_method: paymentMethodId,
+        confirmation_method: 'manual',
+        confirm: true,
+        metadata: {
+          userId: user.id.toString(),
+          type: 'simple_payment',
+          priceId: priceId,
+        },
+      });
+
+      // Create payment record
+      const payment = await this.prisma.payment.create({
+        data: {
+          userId: user.id,
+          amount: amount / 100, // Convert cents to dollars
+          currency: price.currency || 'usd',
+          status: paymentIntent.status === 'succeeded' ? 'completed' : 'pending',
+          stripePaymentIntentId: paymentIntent.id,
+          type: 'setup_fee', // Assuming this is for setup fee
+        },
+      });
+
+      // If payment succeeded, update user status
+      if (paymentIntent.status === 'succeeded') {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            paidSetupFee: true,
+            status: UserStatus.PAID_SETUP,
+          },
+        });
+
+        // Send confirmation email
+        try {
+          const orderId = `QR-${Date.now()}-${user.id}`;
+          const deliveryETA = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString();
+          
+          await this.emailService.sendOrderConfirmation(
+            user.email,
+            user.name || 'New User',
+            orderId,
+            deliveryETA,
+          );
+        } catch (error) {
+          console.error('Failed to send order confirmation email:', error);
+        }
+      }
+
+      return {
+        success: paymentIntent.status === 'succeeded',
+        message: paymentIntent.status === 'succeeded' ? 'Payment processed successfully' : 'Payment requires additional action',
+        payment: payment,
+        paymentIntent: {
+          id: paymentIntent.id,
+          status: paymentIntent.status,
+          client_secret: paymentIntent.client_secret,
+        },
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          status: user.status,
+          paidSetupFee: user.paidSetupFee,
+        },
+      };
+
+    } catch (error) {
+      console.error('Simple payment processing failed:', error);
+      throw new HttpException(
+        `Payment processing failed: ${error.message}`,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
   async createSubscription(userId: number, plan: SubscriptionPlan) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -555,5 +814,20 @@ export class PaymentService {
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  getPaymentMode() {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const enableMockPayments = process.env.MOCK_PAYMENTS === 'true' || process.env.NODE_ENV === 'development';
+    
+    return {
+      isMockMode: enableMockPayments,
+      isTestMode: stripeKey?.startsWith('sk_test_') || false,
+      isLiveMode: stripeKey?.startsWith('sk_live_') || false,
+      stripeKeyType: stripeKey?.substring(0, 10) + '...',
+      nodeEnv: process.env.NODE_ENV,
+      mockPayments: process.env.MOCK_PAYMENTS,
+      hasStripeInstance: this.stripe !== null
+    };
   }
 }

@@ -8,6 +8,7 @@ import { QRCardModule } from './qr-card/qr-card.module';
 import { AdminModule } from './admin/admin.module';
 import { PaymentModule } from './payment/payment.module';
 import { ContactModule } from './contact/contact.module';
+import { ImageUploadModule } from './image-upload/image-upload.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ContactModule } from './contact/contact.module';
     AdminModule,
     PaymentModule,
     ContactModule,
+    ImageUploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

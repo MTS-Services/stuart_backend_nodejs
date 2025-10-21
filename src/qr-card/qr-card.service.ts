@@ -150,7 +150,7 @@ export class QRCardService {
           profileOwnerName,
           {
             name: card.profile.user.name,
-            age: card.profile.age || 0,
+            age: Number(card.profile.age || 0),
             bio: card.profile.bio || 'No bio available',
             location: card.profile.location || 'Location not specified',
             contactEmail: profileOwnerEmail

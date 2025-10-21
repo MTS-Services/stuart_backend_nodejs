@@ -11,6 +11,56 @@ export class ProfileService {
     private imageUploadService: ImageUploadService
   ) {}
 
+  private validateProfileFields(profile: any): { isValid: boolean; missingFields: string[] } {
+    const requiredFields = [
+      'age',
+      'height',
+      'bodyType',
+      'area',
+      'bio',
+      'location',
+      'facePhoto',
+      'fullBodyPhoto',
+      'thirdPhoto',
+      'displayName',
+      'email',
+      'phone'
+    ];
+
+    const missingFields = requiredFields.filter(field => !profile[field]);
+    
+    return {
+      isValid: missingFields.length === 0,
+      missingFields
+    };
+  }
+
+  private async validateProfileForSubmission(profile: any) {
+    const validation = this.validateProfileFields(profile);
+    
+    if (!validation.isValid) {
+      throw new HttpException(
+        `Profile is incomplete. Missing required fields: ${validation.missingFields.join(', ')}`,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    // Additional validations
+    if (!profile.bio || profile.bio.length < 10) {
+      throw new HttpException(
+        'Bio must be at least 10 characters long',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    if (profile.additionalPhotos && profile.additionalPhotos.length > 10) {
+      throw new HttpException(
+        'Maximum 10 additional photos allowed',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
   private async uploadProfilePhotos(files: {
     facePhoto?: Express.Multer.File[];
     fullBodyPhoto?: Express.Multer.File[];
@@ -67,30 +117,6 @@ export class ProfileService {
     return uploadedFiles;
   }
 
-  async createProfileWithFiles(createProfileDto: CreateProfileDto, files: {
-    facePhoto?: Express.Multer.File[];
-    fullBodyPhoto?: Express.Multer.File[];
-    thirdPhoto?: Express.Multer.File[];
-    additionalPhotos?: Express.Multer.File[];
-  }) {
-    try {
-      // First upload the files
-      const uploadedFiles = await this.uploadProfilePhotos(files);
-
-      // Then create the profile with the file URLs
-      return await this.createProfile(createProfileDto.userId, {
-        ...createProfileDto,
-        ...uploadedFiles,
-        additionalPhotos: uploadedFiles.additionalPhotos || []
-      });
-    } catch (error) {
-      throw new HttpException(
-        `Failed to create profile: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
   async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     // Check if user exists and has paid setup fee
     const user = await this.prisma.user.findUnique({
@@ -118,7 +144,14 @@ export class ProfileService {
     const profile = await this.prisma.profile.create({
       data: {
         userId,
-        ...createProfileDto,
+        age: createProfileDto.age?.toString(),
+        height: createProfileDto.height,
+        bio: createProfileDto.bio,
+        location: createProfileDto.location,
+        facePhoto: createProfileDto.facePhoto,
+        fullBodyPhoto: createProfileDto.fullBodyPhoto,
+        thirdPhoto: createProfileDto.thirdPhoto,
+        additionalPhotos: createProfileDto.additionalPhotos,
         status: ProfileStatus.DRAFT,
       },
     });
@@ -180,7 +213,16 @@ export class ProfileService {
 
     return this.prisma.profile.update({
       where: { userId },
-      data: updateProfileDto,
+      data: {
+        age: updateProfileDto.age?.toString(),
+        height: updateProfileDto.height,
+        bio: updateProfileDto.bio,
+        location: updateProfileDto.location,
+        facePhoto: updateProfileDto.facePhoto,
+        fullBodyPhoto: updateProfileDto.fullBodyPhoto,
+        thirdPhoto: updateProfileDto.thirdPhoto,
+        additionalPhotos: updateProfileDto.additionalPhotos,
+      },
     });
   }
 
@@ -223,12 +265,8 @@ export class ProfileService {
       throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
     }
 
-    if (!profile.facePhoto || !profile.fullBodyPhoto || !profile.bio) {
-      throw new HttpException(
-        'Face photo, full body photo, and bio are required before submission',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    // Validate all required fields
+    await this.validateProfileForSubmission(profile);
 
     const updatedProfile = await this.prisma.profile.update({
       where: { userId },
@@ -352,70 +390,6 @@ export class ProfileService {
     }
 
     return this.submitForReview(user.id);
-  }
-
-  async createProfileWithFiles(createProfileDto: CreateProfileDto, files: {
-    facePhoto?: Express.Multer.File[];
-    fullBodyPhoto?: Express.Multer.File[];
-    thirdPhoto?: Express.Multer.File[];
-    additionalPhotos?: Express.Multer.File[];
-  }) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { email: createProfileDto.email },
-      });
-
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-
-      // Upload any new files
-      const uploadedFiles = await this.uploadProfilePhotos(files);
-
-      // Create the profile with file URLs
-      return await this.createProfile(user.id, {
-        ...createProfileDto,
-        ...uploadedFiles,
-        additionalPhotos: uploadedFiles.additionalPhotos || []
-      });
-    } catch (error) {
-      throw new HttpException(
-        `Failed to create profile: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  async updateProfileWithFiles(updateProfileDto: UpdateProfileDto, files: {
-    facePhoto?: Express.Multer.File[];
-    fullBodyPhoto?: Express.Multer.File[];
-    thirdPhoto?: Express.Multer.File[];
-    additionalPhotos?: Express.Multer.File[];
-  }) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { email: updateProfileDto.email },
-      });
-
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-
-      // Upload any new files
-      const uploadedFiles = await this.uploadProfilePhotos(files);
-
-      // Update the profile with new URLs and other data
-      return await this.updateProfile(user.id, {
-        ...updateProfileDto,
-        ...uploadedFiles,
-        additionalPhotos: uploadedFiles.additionalPhotos || undefined
-      });
-    } catch (error) {
-      throw new HttpException(
-        `Failed to update profile: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
   }
 
   async deleteProfile(email: string) {

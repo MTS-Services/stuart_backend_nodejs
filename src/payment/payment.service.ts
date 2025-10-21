@@ -384,7 +384,7 @@ export class PaymentService {
         const payment = await this.prisma.payment.create({
           data: {
             userId: user.id,
-            amount: 69.00, // Default amount for mock
+            amount: 69.00,
             currency: 'usd',
             type: 'setup_fee',
             status: 'completed',
@@ -404,7 +404,9 @@ export class PaymentService {
           success: true,
           mockMode: true,
           paymentId: payment.id,
-          amount: payment.amount,
+          userId: user.id,
+          email: user.email,
+          amount: payment.amount.toString(),
           currency: payment.currency,
           status: payment.status,
           message: 'Mock payment processed successfully'
@@ -455,16 +457,14 @@ export class PaymentService {
 
         return {
           success: true,
-          message: 'Mock simple payment processed successfully',
-          payment: payment,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            status: UserStatus.PAID_SETUP,
-            paidSetupFee: true,
-          },
           mockMode: true,
+          paymentId: payment.id,
+          userId: user.id,
+          email: user.email,
+          amount: payment.amount.toString(),
+          currency: payment.currency,
+          status: payment.status,
+          message: 'Mock simple payment processed successfully'
         };
       }
 
@@ -557,20 +557,19 @@ export class PaymentService {
 
       return {
         success: paymentIntent.status === 'succeeded',
+        mockMode: false,
+        paymentId: payment.id,
+        userId: user.id,
+        email: user.email,
+        amount: payment.amount.toString(),
+        currency: payment.currency,
+        status: payment.status,
         message: paymentIntent.status === 'succeeded' ? 'Payment processed successfully' : 'Payment requires additional action',
-        payment: payment,
         paymentIntent: {
           id: paymentIntent.id,
           status: paymentIntent.status,
           client_secret: paymentIntent.client_secret,
-        },
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          status: user.status,
-          paidSetupFee: user.paidSetupFee,
-        },
+        }
       };
 
     } catch (error) {

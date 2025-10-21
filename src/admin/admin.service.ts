@@ -11,6 +11,84 @@ export class AdminService {
     private emailService: EmailService,
   ) {}
 
+  async getProfilesByStatus(status: ProfileStatus, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    
+    const [profiles, total] = await Promise.all([
+      this.prisma.profile.findMany({
+        where: { status },
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              email: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        }
+      }),
+      this.prisma.profile.count({
+        where: { status }
+      })
+    ]);
+
+    return {
+      profiles,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  async updateProfileStatus(profileId: number, status: ProfileStatus) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      include: {
+        user: {
+          select: {
+            email: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!profile) {
+      throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
+    }
+
+    const updatedProfile = await this.prisma.profile.update({
+      where: { id: profileId },
+      data: { status },
+      include: {
+        user: {
+          select: {
+            email: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    // Send email notification
+    if (status === 'APPROVED') {
+      await this.emailService.sendSignupLink(
+        profile.user.email,
+        profile.user.name,
+        'Your profile has been approved!'
+      );
+    }
+
+    return updatedProfile;
+  }
+
   async getDashboardStats() {
     // Get current time boundaries
     const now = new Date();

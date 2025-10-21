@@ -15,9 +15,11 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
 import { UpdateAdminProfileDto, ChangeAdminPasswordDto } from './dto/admin-profile.dto';
+import { PaginationQueryDto } from './dto/profile-status.dto';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('admin')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), AdminGuard)
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
@@ -48,6 +50,27 @@ export class AdminController {
   }
 
   // 🔧 DEBUG ENDPOINT - Force submit profile for review (temp)
+
+  // Profile Approval Management Endpoints
+  @Get('profiles/approved')
+  async getApprovedProfiles(@Query() query: PaginationQueryDto) {
+    return this.adminService.getProfilesByStatus('APPROVED', query.page, query.limit);
+  }
+
+  @Get('profiles/draft')
+  async getDraftProfiles(@Query() query: PaginationQueryDto) {
+    return this.adminService.getProfilesByStatus('DRAFT', query.page, query.limit);
+  }
+
+  @Get('profiles/:id/approve')
+  async approveProfile(@Param('id', ParseIntPipe) profileId: number) {
+    return this.adminService.updateProfileStatus(profileId, 'APPROVED');
+  }
+
+  @Get('profiles/:id/draft')
+  async setProfileToDraft(@Param('id', ParseIntPipe) profileId: number) {
+    return this.adminService.updateProfileStatus(profileId, 'DRAFT');
+  }
   @Post('debug/profile/:id/force-submit')
   async forceSubmitProfile(@Param('id', ParseIntPipe) profileId: number) {
     return this.adminService.forceSubmitForReview(profileId);
@@ -100,17 +123,7 @@ export class AdminController {
     return this.adminService.getProfileById(profileId);
   }
 
-  @Post('profiles/approve')
-  async approveProfile(
-    @Request() req,
-    @Query('profile_id') profileId: string
-  ) {
-    const profileIdNum = parseInt(profileId, 10);
-    if (!profileIdNum || isNaN(profileIdNum)) {
-      throw new BadRequestException('Invalid profile_id provided');
-    }
-    return this.adminService.approveProfile(req.user.id, profileIdNum);
-  }
+
 
   @Post('profiles/reject')
   async rejectProfile(

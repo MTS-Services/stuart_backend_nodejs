@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
-import * as FormData from 'form-data';
+import FormData from 'form-data';
 import { createReadStream } from 'fs';
 
 @Injectable()
@@ -8,10 +8,11 @@ export class ImageUploadService {
   private readonly uploadServiceUrl: string;
 
   constructor() {
-    this.uploadServiceUrl = process.env.IMAGE_UPLOAD_SERVICE_URL;
-    if (!this.uploadServiceUrl) {
+    const serviceUrl = process.env.IMAGE_UPLOAD_SERVICE_URL;
+    if (!serviceUrl) {
       console.warn('⚠️ IMAGE_UPLOAD_SERVICE_URL not configured in .env');
     }
+    this.uploadServiceUrl = serviceUrl || 'https://img.mtscorporate.com';
   }
 
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {

@@ -19,6 +19,9 @@ export class CreateProfileDto {
   @IsEmail()
   email: string; // Required for email-based access
 
+  @IsNumber()
+  userId: number; // User ID for profile association
+
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -40,6 +43,24 @@ export class CreateProfileDto {
   @IsString()
   @MaxLength(100)
   location?: string;
+
+  @IsOptional()
+  @IsString()
+  facePhoto?: string;
+
+  @IsOptional()
+  @IsString()
+  fullBodyPhoto?: string;
+
+  @IsOptional()
+  @IsString()
+  thirdPhoto?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMaxSize(10)
+  additionalPhotos?: string[];
 }
 
 // Update profile DTO - all fields optional except email
@@ -69,6 +90,24 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(100)
   location?: string;
+
+  @IsOptional()
+  @IsString()
+  facePhoto?: string;
+
+  @IsOptional()
+  @IsString()
+  fullBodyPhoto?: string;
+
+  @IsOptional()
+  @IsString()
+  thirdPhoto?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMaxSize(10)
+  additionalPhotos?: string[];
 }
 
 // Photo management DTOs

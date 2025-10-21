@@ -2,10 +2,94 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { ProfileStatus, UserStatus } from '@prisma/client';
 import { CreateProfileDto, UpdateProfileDto } from './profile.dto';
+import { ImageUploadService } from '../image-upload/image-upload.service';
 
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private imageUploadService: ImageUploadService
+  ) {}
+
+  private async uploadProfilePhotos(files: {
+    facePhoto?: Express.Multer.File[];
+    fullBodyPhoto?: Express.Multer.File[];
+    thirdPhoto?: Express.Multer.File[];
+    additionalPhotos?: Express.Multer.File[];
+  }): Promise<{
+    facePhoto?: string;
+    fullBodyPhoto?: string;
+    thirdPhoto?: string;
+    additionalPhotos?: string[];
+  }> {
+    const uploadedFiles: {
+      facePhoto?: string;
+      fullBodyPhoto?: string;
+      thirdPhoto?: string;
+      additionalPhotos?: string[];
+    } = {};
+
+    if (!files) return uploadedFiles;
+
+    const uploadPromises: Promise<void>[] = [];
+
+    // Handle required photos
+    if (files.facePhoto?.[0]) {
+      uploadPromises.push(
+        this.imageUploadService.uploadImage(files.facePhoto[0])
+          .then(result => { uploadedFiles.facePhoto = result.url; })
+      );
+    }
+    
+    if (files.fullBodyPhoto?.[0]) {
+      uploadPromises.push(
+        this.imageUploadService.uploadImage(files.fullBodyPhoto[0])
+          .then(result => { uploadedFiles.fullBodyPhoto = result.url; })
+      );
+    }
+    
+    if (files.thirdPhoto?.[0]) {
+      uploadPromises.push(
+        this.imageUploadService.uploadImage(files.thirdPhoto[0])
+          .then(result => { uploadedFiles.thirdPhoto = result.url; })
+      );
+    }
+
+    // Handle additional photos
+    if (files.additionalPhotos?.length) {
+      uploadPromises.push(
+        this.imageUploadService.uploadMultipleImages(files.additionalPhotos)
+          .then(result => { uploadedFiles.additionalPhotos = result.urls; })
+      );
+    }
+
+    await Promise.all(uploadPromises);
+    return uploadedFiles;
+  }
+
+  async createProfileWithFiles(createProfileDto: CreateProfileDto, files: {
+    facePhoto?: Express.Multer.File[];
+    fullBodyPhoto?: Express.Multer.File[];
+    thirdPhoto?: Express.Multer.File[];
+    additionalPhotos?: Express.Multer.File[];
+  }) {
+    try {
+      // First upload the files
+      const uploadedFiles = await this.uploadProfilePhotos(files);
+
+      // Then create the profile with the file URLs
+      return await this.createProfile(createProfileDto.userId, {
+        ...createProfileDto,
+        ...uploadedFiles,
+        additionalPhotos: uploadedFiles.additionalPhotos || []
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to create profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 
   async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     // Check if user exists and has paid setup fee
@@ -46,6 +130,39 @@ export class ProfileService {
     });
 
     return profile;
+  }
+
+  async updateProfileWithFiles(updateProfileDto: UpdateProfileDto, files: {
+    facePhoto?: Express.Multer.File[];
+    fullBodyPhoto?: Express.Multer.File[];
+    thirdPhoto?: Express.Multer.File[];
+    additionalPhotos?: Express.Multer.File[];
+  }) {
+    try {
+      // Find user by email first
+      const user = await this.prisma.user.findUnique({
+        where: { email: updateProfileDto.email },
+      });
+
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Upload any new files
+      const uploadedFiles = await this.uploadProfilePhotos(files);
+
+      // Update the profile with new URLs and other data
+      return await this.updateProfile(user.id, {
+        ...updateProfileDto,
+        ...uploadedFiles,
+        additionalPhotos: uploadedFiles.additionalPhotos || undefined
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to update profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
@@ -237,124 +354,68 @@ export class ProfileService {
     return this.submitForReview(user.id);
   }
 
-  // NEW METHODS FOR FILE UPLOAD SUPPORT
+  async createProfileWithFiles(createProfileDto: CreateProfileDto, files: {
+    facePhoto?: Express.Multer.File[];
+    fullBodyPhoto?: Express.Multer.File[];
+    thirdPhoto?: Express.Multer.File[];
+    additionalPhotos?: Express.Multer.File[];
+  }) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email: createProfileDto.email },
+      });
 
-  async createProfileWithFiles(createProfileDto: CreateProfileDto, files: any) {
-    // Find user by email from DTO
-    const user = await this.prisma.user.findUnique({
-      where: { email: createProfileDto.email },
-    });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
 
-    if (!user) {
-      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+      // Upload any new files
+      const uploadedFiles = await this.uploadProfilePhotos(files);
+
+      // Create the profile with file URLs
+      return await this.createProfile(user.id, {
+        ...createProfileDto,
+        ...uploadedFiles,
+        additionalPhotos: uploadedFiles.additionalPhotos || []
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to create profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-
-    // Check if profile already exists
-    const existingProfile = await this.prisma.profile.findUnique({
-      where: { userId: user.id },
-    });
-
-    if (existingProfile) {
-      throw new HttpException('Profile already exists for this user', HttpStatus.BAD_REQUEST);
-    }
-
-    // Process uploaded files
-    const photoData: any = {};
-    
-    if (files.facePhoto && files.facePhoto[0]) {
-      photoData.facePhoto = `/uploads/profiles/${files.facePhoto[0].filename}`;
-    }
-    
-    if (files.fullBodyPhoto && files.fullBodyPhoto[0]) {
-      photoData.fullBodyPhoto = `/uploads/profiles/${files.fullBodyPhoto[0].filename}`;
-    }
-    
-    if (files.thirdPhoto && files.thirdPhoto[0]) {
-      photoData.thirdPhoto = `/uploads/profiles/${files.thirdPhoto[0].filename}`;
-    }
-
-    if (files.additionalPhotos && files.additionalPhotos.length > 0) {
-      photoData.additionalPhotos = files.additionalPhotos
-        .slice(0, 10) // Limit to 10 additional photos
-        .map(file => `/uploads/profiles/${file.filename}`);
-    }
-
-    // Create profile with photos and form data
-    const profile = await this.prisma.profile.create({
-      data: {
-        userId: user.id,
-        age: createProfileDto.age,
-        height: createProfileDto.height,
-        bio: createProfileDto.bio,
-        location: createProfileDto.location,
-        ...photoData,
-        status: 'DRAFT',
-      },
-    });
-
-    return this.formatProfileResponse(profile);
   }
 
-  async updateProfileWithFiles(updateProfileDto: UpdateProfileDto, files?: any) {
-    // Find user by email
-    const user = await this.prisma.user.findUnique({
-      where: { email: updateProfileDto.email },
-    });
+  async updateProfileWithFiles(updateProfileDto: UpdateProfileDto, files: {
+    facePhoto?: Express.Multer.File[];
+    fullBodyPhoto?: Express.Multer.File[];
+    thirdPhoto?: Express.Multer.File[];
+    additionalPhotos?: Express.Multer.File[];
+  }) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email: updateProfileDto.email },
+      });
 
-    if (!user) {
-      throw new HttpException('User not found with this email', HttpStatus.NOT_FOUND);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Upload any new files
+      const uploadedFiles = await this.uploadProfilePhotos(files);
+
+      // Update the profile with new URLs and other data
+      return await this.updateProfile(user.id, {
+        ...updateProfileDto,
+        ...uploadedFiles,
+        additionalPhotos: uploadedFiles.additionalPhotos || undefined
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to update profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-
-    // Find existing profile
-    const existingProfile = await this.prisma.profile.findUnique({
-      where: { userId: user.id },
-    });
-
-    if (!existingProfile) {
-      throw new HttpException('Profile not found for this user', HttpStatus.NOT_FOUND);
-    }
-
-    // Process new files if provided
-    const updateData: any = {
-      age: updateProfileDto.age,
-      height: updateProfileDto.height,
-      bio: updateProfileDto.bio,
-      location: updateProfileDto.location,
-    };
-
-    if (files) {
-      if (files.facePhoto && files.facePhoto[0]) {
-        updateData.facePhoto = `/uploads/profiles/${files.facePhoto[0].filename}`;
-      }
-      
-      if (files.fullBodyPhoto && files.fullBodyPhoto[0]) {
-        updateData.fullBodyPhoto = `/uploads/profiles/${files.fullBodyPhoto[0].filename}`;
-      }
-      
-      if (files.thirdPhoto && files.thirdPhoto[0]) {
-        updateData.thirdPhoto = `/uploads/profiles/${files.thirdPhoto[0].filename}`;
-      }
-
-      if (files.additionalPhotos && files.additionalPhotos.length > 0) {
-        // Append new additional photos to existing ones
-        const newAdditionalPhotos = files.additionalPhotos
-          .slice(0, 10)
-          .map(file => `/uploads/profiles/${file.filename}`);
-        
-        const currentAdditional = existingProfile.additionalPhotos || [];
-        const totalPhotos = [...currentAdditional, ...newAdditionalPhotos];
-        
-        updateData.additionalPhotos = totalPhotos.slice(0, 10); // Keep max 10
-      }
-    }
-
-    // Update profile
-    const updatedProfile = await this.prisma.profile.update({
-      where: { userId: user.id },
-      data: updateData,
-    });
-
-    return this.formatProfileResponse(updatedProfile);
   }
 
   async deleteProfile(email: string) {

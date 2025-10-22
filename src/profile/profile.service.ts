@@ -61,7 +61,8 @@ export class ProfileService {
   public async uploadImages(files: Express.Multer.File[]): Promise<ImageReference[]> {
     if (!files || files.length === 0) { return []; }
     
-    const validFiles = files.filter(file => file && file.path);
+    // Fix: Check for either buffer OR path (support both memory and disk storage)
+    const validFiles = files.filter(file => file && (file.buffer || file.path));
     const result = await this.imageUploadService.uploadMultipleImages(validFiles);
     
     return result.urls.map((url: string) => ({ url }));
@@ -102,10 +103,13 @@ export class ProfileService {
     const profile = await this.prisma.profile.create({
       data: {
         userId,
-        age: createProfileDto.age !== undefined ? createProfileDto.age.toString() : null, 
+        age: createProfileDto.age ? createProfileDto.age.toString() : null, 
         height: createProfileDto.height,
         bio: createProfileDto.bio,
         location: createProfileDto.location,
+        startDate: createProfileDto.startDate,
+        endDate: createProfileDto.endDate,
+        dealbreakers: createProfileDto.dealbreakers,
         
         // 🔥 FIXES TS2561 (Property 'image' does not exist): Now works after `prisma generate`
         image: createProfileDto.image.map(img => img.url), 

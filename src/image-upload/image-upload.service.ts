@@ -1,8 +1,9 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
 import FormData from 'form-data';
-import { createReadStream, promises as fs } from 'fs'; // Import promises as fs
+import { createReadStream, promises as fs } from 'fs';
 import { join } from 'path';
+import { Readable } from 'stream';
 
 @Injectable()
 export class ImageUploadService {
@@ -29,10 +30,14 @@ export class ImageUploadService {
   }
 
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {
-    // 🛑 CRITICAL FIX: Ensure file object and path exist
-    if (!file || !file.path) {
-      // This is now caught early in the Controller, but kept here as a fallback
-      throw new Error(`File object or its temporary path is missing. This usually means no file was uploaded.`); 
+    // 🛑 CRITICAL FIX: Handle both memory storage (buffer) and disk storage (path)
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    // Check if we have either buffer (memory storage) or path (disk storage)
+    if (!file.buffer && !file.path) {
+      throw new Error('File object is missing both buffer and path. Upload may have failed.');
     }
 
     let result;
@@ -45,14 +50,26 @@ export class ImageUploadService {
       }
 
       const formData = new FormData();
-      // Create a read stream from the file path
-      const stream = createReadStream(file.path);
-      formData.append('file', stream, {
-        filename: file.originalname,
-        contentType: file.mimetype,
-      });
+      
+      // Handle both memory storage (buffer) and disk storage (path)
+      if (file.buffer) {
+        // Memory storage - create stream from buffer
+        const stream = Readable.from(file.buffer);
+        formData.append('image', stream, {
+          filename: file.originalname,
+          contentType: file.mimetype,
+          knownLength: file.size,
+        });
+      } else if (file.path) {
+        // Disk storage - create stream from file path
+        const stream = createReadStream(file.path);
+        formData.append('image', stream, {
+          filename: file.originalname,
+          contentType: file.mimetype,
+        });
+      }
 
-      const response = await axios.post(`${this.uploadServiceUrl}/upload`, formData, {
+      const response = await axios.post(`${this.uploadServiceUrl}/upload-single`, formData, {
         headers: {
           ...formData.getHeaders(),
         },
@@ -63,24 +80,40 @@ export class ImageUploadService {
       if (response.data && response.data.url) {
         result = { url: response.data.url };
         return result;
+      } else if (response.data && response.data.file && response.data.file.url) {
+        // Handle the structure from your Express.js service: { file: { url: "..." } }
+        result = { url: response.data.file.url };
+        return result;
       } else {
+        console.error('Upload response:', response.data);
         throw new Error('Invalid response from upload service');
       }
     } catch (error) {
-      console.error('Image upload failed:', error.message);
+      console.error('Image upload failed:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: `${this.uploadServiceUrl}/upload-single`
+      });
       throw new HttpException(
-        `Image upload failed: ${error.message}`,
+        `Image upload failed: ${error.response?.data?.message || error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     } finally {
-      // ✅ CRITICAL FIX: Clean up the temporary file
-      await this.cleanupTempFile(file.path); 
+      // ✅ CRITICAL FIX: Clean up the temporary file only if using disk storage
+      if (file.path) {
+        await this.cleanupTempFile(file.path); 
+      }
     }
   }
 
   async uploadMultipleImages(files: Express.Multer.File[]): Promise<{ urls: string[] }> {
-    // Filter out any potential null/undefined entries and those missing a path
-    const validFiles = files ? files.filter(file => file && file.path) : [];
+    // Filter out any potential null/undefined entries and validate files
+    const validFiles = files ? files.filter(file => {
+      if (!file) return false;
+      // Check if we have either buffer (memory storage) or path (disk storage)
+      return file.buffer || file.path;
+    }) : [];
 
     if (validFiles.length === 0) {
       return { urls: [] };

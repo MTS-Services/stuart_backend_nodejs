@@ -56,6 +56,21 @@ export class CreateProfileDto {
     @MaxLength(100)
     location?: string;
 
+    @IsOptional()
+    @IsString()
+    @MaxLength(20)
+    startDate?: string; // Date as string format
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(20)
+    endDate?: string; // Date as string format
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(200)
+    dealbreakers?: string; // Dealbreakers field
+
     @IsString()
     @MaxLength(100)
     bodyType: string; // REQUIRED FIELD

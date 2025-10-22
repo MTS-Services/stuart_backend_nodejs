@@ -51,7 +51,7 @@ export class ProfileController {
 
     // 2. Check for temporary path existence (Multer failure)
     for (const file of images) {
-      if (!file || !file.path) {
+            if (!file || (!file.path && !file.buffer)) {
         throw new HttpException(
           `One or more files were uploaded but missing temporary path. Upload may have failed.`,
           HttpStatus.BAD_REQUEST,

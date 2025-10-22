@@ -6,20 +6,20 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @Module({
-  imports: [
-    MulterModule.register({
-      storage: diskStorage({
-        destination: './uploads/temp',
-        filename: (req, file, cb) => {
-          // Generate unique filename
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-          cb(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
-        },
-      }),
-    }),
-  ],
-  controllers: [ImageUploadController],
-  providers: [ImageUploadService],
-  exports: [ImageUploadService],
+  imports: [
+    MulterModule.register({
+      storage: diskStorage({
+        destination: './uploads/temp',
+        filename: (req, file, cb) => {
+          // Generate unique filename
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+          cb(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
+        },
+      }),
+    }),
+  ],
+  controllers: [ImageUploadController],
+  providers: [ImageUploadService],
+  exports: [ImageUploadService],
 })
 export class ImageUploadModule {}

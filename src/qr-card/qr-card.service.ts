@@ -163,28 +163,25 @@ export class QRCardService {
     }
 
     // Return profile information (without sensitive data)
-    return {
-      success: true,
-      profile: {
-        id: card.profile.id,
-        name: card.profile.user.name,
-        age: card.profile.age,
-        bio: card.profile.bio,
-        location: card.profile.location,
-        facePhoto: card.profile.facePhoto,
-        fullBodyPhoto: card.profile.fullBodyPhoto,
-        thirdPhoto: card.profile.thirdPhoto,
-        additionalPhotos: card.profile.additionalPhotos || [],
-        contactEmail: profileOwnerEmail,
-      },
-      scanId: scan.id,
-      scansRemaining: card.maxScans - (card.scanCount + 1),
-      emailNotifications: {
-        profileOwnerNotified: true,
-        scannerNotified: !!scannerEmail
-      }
-    };
-  }
+return {
+      success: true,
+      profile: {
+        id: card.profile.id,
+        name: card.profile.user.name,
+        age: card.profile.age,
+        bio: card.profile.bio,
+        location: card.profile.location,
+        images: card.profile.image || [], 
+        contactEmail: profileOwnerEmail,
+      },
+      scanId: scan.id,
+      scansRemaining: card.maxScans - (card.scanCount + 1),
+      emailNotifications: {
+        profileOwnerNotified: true,
+        scannerNotified: !!scannerEmail
+      }
+    };
+  }
 
   async getUserCards(userId: number) {
     const cards = await this.prisma.qRCard.findMany({

@@ -42,62 +42,58 @@ enum SubscriptionPlan {
 }
 
 model User {
-  id                Int        @id @default(autoincrement())
-  email             String     @unique
+  id                Int            @id @default(autoincrement())
+  email             String         @unique
   name              String
   phone             String?
-  status            UserStatus @default(WAITLIST)
-  isApproved        Boolean    @default(false)
-  approvedAt       DateTime?
-  paidSetupFee     Boolean    @default(false)
-  stripeCustomerId String?    @unique
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  status            UserStatus     @default(WAITLIST)
+  isApproved        Boolean        @default(false)
+  approvedAt        DateTime?
+  paidSetupFee      Boolean        @default(false)
+  stripeCustomerId  String?        @unique
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   // Relations
-  profile      Profile?
-  qrCards      QRCard[]
-  scans        Scan[]        @relation("ScanViewer")
-  matches      Match[]       @relation("MatchUser")
-  matchedBy    Match[]       @relation("MatchTarget")
-  subscription Subscription?
+  profile           Profile?
+  qrCards           QRCard[]
+  scans             Scan[]         @relation("ScanViewer")
+  matches           Match[]        @relation("MatchUser")
+  matchedBy         Match[]        @relation("MatchTarget")
+  subscription      Subscription?
 
   @@map("users")
 }
 
 model Profile {
-  id              Int           @id @default(autoincrement())
-  userId          Int           @unique
-  age             String?
-  height          String?
-  bodyType        String?
-  area            String?
-  dealbreakers    String?
-  bio             String?
-  startDate       String?
-  endDate         String?
-  location        String?
-  // Required photos (minimum 3)
-  facePhoto       String? // Primary face photo (required)
-  fullBodyPhoto   String? // Primary full body photo (required)  
-  thirdPhoto      String? // Third required photo
-  // Additional photos (up to 10 more)
-  additionalPhotos String[] @default([]) // Additional photo URLs (max 10)
-  displayName     String?
-  email           String?
-  phone           String?
-  status          ProfileStatus @default(DRAFT)
-  reviewedAt      DateTime?
-  reviewedBy      Int? // Admin ID who reviewed
-  rejectionReason String?
-  isActive        Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                Int            @id @default(autoincrement())
+  userId            Int            @unique
+  age               String?
+  height            String?
+  bodyType          String?
+  area              String?
+  dealbreakers      String?
+  bio               String?
+  startDate         String?
+  endDate           String?
+  location          String?
+  // 📸 Consolidated Photo Field (Min 3, Max 13 URLs in app logic)
+  image             String[]       @default([]) // Contains all photo URLs
+  displayName       String?
+  email             String?
+  phone             String?
+  status            ProfileStatus  @default(DRAFT)
+  reviewedAt        DateTime?
+  reviewedBy        Int? // Admin ID who reviewed
+  rejectionReason   String?
+  isActive          Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   // Relations
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewer Admin?   @relation(fields: [reviewedBy], references: [id])
-  qrCards  QRCard[]
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer          Admin?         @relation(fields: [reviewedBy], references: [id])
+  qrCards           QRCard[]
 
   @@map("profiles")
 }
@@ -105,7 +101,7 @@ model Profile {
 model QRCard {
   id        Int      @id @default(autoincrement())
   profileId Int
-  userId    Int // Add direct relation to user
+  userId    Int      // Add direct relation to user
   qrCode    String   @unique // QR code data/URL
   scanCount Int      @default(0)
   maxScans  Int      @default(5)
@@ -131,9 +127,9 @@ model Scan {
   createdAt DateTime @default(now())
 
   // Relations
-  qrCard QRCard @relation(fields: [qrCardId], references: [id], onDelete: Cascade)
-  viewer User?  @relation("ScanViewer", fields: [viewerId], references: [id])
-  match  Match?
+  qrCard  QRCard @relation(fields: [qrCardId], references: [id], onDelete: Cascade)
+  viewer  User?  @relation("ScanViewer", fields: [viewerId], references: [id])
+  match   Match?
 
   @@map("scans")
 }
@@ -163,37 +159,37 @@ model Match {
 }
 
 model Subscription {
-  id                   Int                @id @default(autoincrement())
-  userId               Int                @unique
-  plan                 SubscriptionPlan
-  status               SubscriptionStatus @default(INACTIVE)
-  amount               Decimal            @db.Decimal(10, 2)
-  currency             String             @default("USD")
-  startDate            DateTime?
-  endDate              DateTime?
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                     Int                @id @default(autoincrement())
+  userId                 Int                @unique
+  plan                   SubscriptionPlan
+  status                 SubscriptionStatus @default(INACTIVE)
+  amount                 Decimal            @db.Decimal(10, 2)
+  currency               String             @default("USD")
+  startDate              DateTime?
+  endDate                DateTime?
+  stripeCustomerId       String?
+  stripeSubscriptionId   String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   // Relations
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments Payment[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments  Payment[]
 
   @@map("subscriptions")
 }
 
 model Payment {
-  id                    Int      @id @default(autoincrement())
-  subscriptionId        Int?
-  userId                Int
-  amount                Decimal  @db.Decimal(10, 2)
-  currency              String   @default("USD")
-  type                  String // "setup_fee", "subscription", "refund"
-  status                String // "pending", "completed", "failed"
-  stripePaymentIntentId String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                      Int      @id @default(autoincrement())
+  subscriptionId          Int?
+  userId                  Int
+  amount                  Decimal  @db.Decimal(10, 2)
+  currency                String   @default("USD")
+  type                    String // "setup_fee", "subscription", "refund"
+  status                  String // "pending", "completed", "failed"
+  stripePaymentIntentId   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   // Relations
   subscription Subscription? @relation(fields: [subscriptionId], references: [id])
@@ -202,15 +198,15 @@ model Payment {
 }
 
 model Admin {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  username  String    @unique
-  password  String
-  role      String    @default("admin")
-  isActive  Boolean   @default(true)
-  lastLogin DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id              Int        @id @default(autoincrement())
+  email           String     @unique
+  username        String     @unique
+  password        String
+  role            String     @default("admin")
+  isActive        Boolean    @default(true)
+  lastLogin       DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   // Relations
   reviewedProfiles Profile[]

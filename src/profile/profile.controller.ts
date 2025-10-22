@@ -1,91 +1,144 @@
+// src/profile/profile.controller.ts
+
 import {
-  Controller,
-  Post,
-  Get,
-  Put,
-  Delete,
-  Body,
-  Param,
-  UseInterceptors,
-  UploadedFiles,
-  HttpException,
-  HttpStatus,
-  // ... other imports
+  Controller,
+  Post,
+  Get,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseInterceptors,
+  UploadedFiles,
+  HttpException,
+  HttpStatus,
+  BadRequestException // Retained for clarity
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
-import { ImageUploadService } from '../image-upload/image-upload.service';
-import { CreateProfileDto, UpdateProfileDto } from './profile.dto';
+import { CreateProfileDto, UpdateProfileDto, SubmitProfileDto } from './profile.dto';
 
-// --- File Field Configuration ---
+// --- File Field Configuration (UPDATED) ---
+// Consolidated four fields into one 'image' field with a max count of 13.
 const FILE_FIELDS = [
-  { name: 'facePhoto', maxCount: 1 },
-  { name: 'fullBodyPhoto', maxCount: 1 },
-  { name: 'thirdPhoto', maxCount: 1 },
-  { name: 'additionalPhotos', maxCount: 10 },
+  { name: 'image', maxCount: 13 },
 ];
 
-// --- Required File Keys for Creation ---
-const REQUIRED_PHOTOS = ['facePhoto', 'fullBodyPhoto', 'thirdPhoto'];
+// --- Required Photo Count (UPDATED) ---
+const MINIMUM_REQUIRED_PHOTOS = 3;
 
 @Controller('profile')
 export class ProfileController {
-  constructor(
-    private profileService: ProfileService,
-    private imageUploadService: ImageUploadService 
-  ) {}
+  constructor(
+    private profileService: ProfileService,
+    // REMOVED: ImageUploadService is only needed in the ProfileService.
+  ) {}
 
-  /**
-   * Helper function to check for the presence of required files.
-   * This logic ensures the "File object is missing" error is caught here with a 400.
-   */
-  private validateRequiredFiles(files: { [key: string]: Express.Multer.File[] }) {
-    for (const field of REQUIRED_PHOTOS) {
-      // 🛑 CRITICAL FIX: Check if the file array is missing (undefined) or empty.
-      if (!files || !files[field] || files[field].length === 0) {
-        // Throw a 400 Bad Request if a mandatory file is missing
-        throw new HttpException(
-          `Missing required profile photo: ${field}. Please upload all mandatory files.`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-  }
+  /**
+   * Helper function to check for the presence of required files (min 3, max 13).
+   */
+  private validateRequiredFiles(files: { [key: string]: Express.Multer.File[] }) {
+    const images = files.image || [];
+    const count = images.length;
+    
+    // 1. Check Minimum Count
+    if (count < MINIMUM_REQUIRED_PHOTOS) {
+      throw new HttpException(
+        `Minimum required profile photos not met. You must upload at least ${MINIMUM_REQUIRED_PHOTOS} images.`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
-  // -------------------------
-  // POST /profile (Create Profile)
-  // -------------------------
-  @Post()
-  @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS))
-  async createProfile(
-    @Body() createProfileDto: CreateProfileDto,
-    @UploadedFiles() files: {
-      facePhoto?: Express.Multer.File[];
-      fullBodyPhoto?: Express.Multer.File[];
-      thirdPhoto?: Express.Multer.File[];
-      additionalPhotos?: Express.Multer.File[];
-    }
-  ) {
-    try {
-      // 1. CRITICAL FIX: Validate file presence before calling the service
-      // This MUST throw 400 if files are missing, preventing the service from crashing.
-      this.validateRequiredFiles(files);
+    // 2. Check for temporary path existence (Multer failure)
+    for (const file of images) {
+      if (!file || !file.path) {
+        throw new HttpException(
+          `One or more files were uploaded but missing temporary path. Upload may have failed.`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+  }
 
-      // 2. Call the service
-      return await this.profileService.createProfileWithFiles(createProfileDto, files);
-    } catch (error) {
-      // Throw existing error if it's already an HttpException (like the one from validateRequiredFiles or service)
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      
-      // Wrap unexpected errors in a 500
-      throw new HttpException(
-        `Failed to create profile: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
+  // -------------------------
+  // POST /profile (Create Profile)
+  // -------------------------
+  @Post()
+  // UPDATED: Use the new FILE_FIELDS array
+  @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS)) 
+  async createProfile(
+    @Body() createProfileDto: CreateProfileDto,
+    // UPDATED: Correctly type the files object for the single 'image' field
+    @UploadedFiles() files: { image?: Express.Multer.File[] }
+  ) {
+    try {
+      // 1. CRITICAL: Validate file presence (min 3)
+      this.validateRequiredFiles(files);
 
-  // ... (rest of the controller methods remain the same) ...
+      // 2. Call the service
+      // The service handles file processing and DTO merging
+      return await this.profileService.createProfileWithFiles(createProfileDto, files);
+    } catch (error) {
+      // Handle errors as before
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        `Failed to create profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // -------------------------
+  // GET /profile/:email (Get Profile)
+  // -------------------------
+  @Get(':email')
+  async getProfile(@Param('email') email: string) {
+    return this.profileService.getProfileByEmail(email);
+  }
+
+  // -------------------------
+  // PUT /profile (Update Profile)
+  // -------------------------
+  @Put()
+  // UPDATED: Use the new FILE_FIELDS array
+  @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS)) 
+  async updateProfile(
+    @Body() updateProfileDto: UpdateProfileDto,
+    // UPDATED: Correctly type the files object for the single 'image' field
+    @UploadedFiles() files: { image?: Express.Multer.File[] } 
+  ) {
+    try {
+      // NOTE: File validation (min 3) is deferred to the service for updates, 
+      // as files might be optional if only text fields are being updated.
+      return await this.profileService.updateProfileWithFiles(updateProfileDto, files);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to update profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // -------------------------
+  // DELETE /profile/:email (Delete Profile)
+  // -------------------------
+  @Delete(':email')
+  async deleteProfile(@Param('email') email: string) {
+    return this.profileService.deleteProfile(email);
+  }
+
+  // -------------------------
+  // POST /profile/submit (Submit for Review)
+  // -------------------------
+  @Post('submit')
+  async submitForReview(@Body() submitDto: SubmitProfileDto) {
+    // The service validates if the profile is complete (including min 3 images) before submitting.
+    return this.profileService.submitForReviewByEmail(submitDto.email);
+  }
 }

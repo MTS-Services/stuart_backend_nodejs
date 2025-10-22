@@ -1,21 +1,15 @@
 import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
 import { ImageUploadController } from './image-upload.controller';
 import { ImageUploadService } from './image-upload.service';
-import { MulterModule } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 
 @Module({
   imports: [
     MulterModule.register({
-      storage: diskStorage({
-        destination: './uploads/temp',
-        filename: (req, file, cb) => {
-          // Generate unique filename
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-          cb(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
-        },
-      }),
+      // 🚨 TEMPORARY: NO storage defined means files are stored in memory (buffer), 
+       // but they will NOT have a 'path', which will trigger an error in the service,
+       // but should bypass the *Multer write failure* error from the controller.
+      storage: undefined, 
     }),
   ],
   controllers: [ImageUploadController],

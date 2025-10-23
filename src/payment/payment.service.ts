@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
 import { CreateSubscriptionDto } from './payment.dto';
 import Stripe from 'stripe';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class PaymentService {
@@ -20,7 +20,7 @@ export class PaymentService {
     const { email, paymentMethodId, priceId } = dto;
 
     try {
-      // ✅ 1. Find or create Stripe customer
+      // ✅ 1. Find or create a customer
       const existing = await this.stripe.customers.list({ email, limit: 1 });
       const customer =
         existing.data.length > 0
@@ -33,45 +33,52 @@ export class PaymentService {
               },
             });
 
-      // ✅ 2. Attach payment method
+      // ✅ 2. Attach payment method to customer
       await this.stripe.paymentMethods.attach(paymentMethodId, {
         customer: customer.id,
       });
 
-      // ✅ 3. Create subscription
+      // ✅ 3. Create Stripe subscription (appears in Dashboard → Subscriptions)
       const subscription = await this.stripe.subscriptions.create({
         customer: customer.id,
         items: [{ price: priceId }],
-        payment_behavior: 'default_incomplete',
         expand: ['latest_invoice.payment_intent'],
       });
 
-      // ✅ 4. Extract client secret safely
+      // ✅ 4. Get client secret for front-end confirmation (if needed)
       interface ExpandedInvoice extends Stripe.Invoice {
         payment_intent?: Stripe.PaymentIntent | string;
       }
 
       const invoice = subscription.latest_invoice as ExpandedInvoice;
       let clientSecret: string | null = null;
-
       if (invoice && invoice.payment_intent && typeof invoice.payment_intent !== 'string') {
         clientSecret = invoice.payment_intent.client_secret ?? null;
       }
 
-      // ✅ 5. Update Prisma user record → paidSetupFee = true
-      const user = await this.prisma.user.update({
+      // ✅ 5. Find local user
+      const user = await this.prisma.user.findUnique({
         where: { email },
-        data: {
-          paidSetupFee: true,
-          stripeCustomerId: customer.id,
-        },
       });
 
-      // ✅ 6. Save subscription info to DB
-      await this.prisma.subscription.create({
-        data: {
+      if (!user) throw new InternalServerErrorException('User not found.');
+
+      // ✅ 6. Upsert subscription record in DB
+      await this.prisma.subscription.upsert({
+        where: { userId: user.id },
+        update: {
+          plan: 'MONTHLY', // or derive dynamically from price metadata
+          status: 'ACTIVE',
+          amount: 13.0,
+          currency: 'USD',
+          stripeCustomerId: customer.id,
+          stripeSubscriptionId: subscription.id,
+          startDate: new Date(),
+          endDate: null,
+        },
+        create: {
           userId: user.id,
-          plan: 'MONTHLY', // you can adjust dynamically
+          plan: 'MONTHLY',
           status: 'ACTIVE',
           amount: 13.0,
           currency: 'USD',
@@ -81,14 +88,20 @@ export class PaymentService {
         },
       });
 
-      // ✅ 7. Return response
+      // ✅ 7. Update user's paidSetupFee → true
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { paidSetupFee: true },
+      });
+
+      // ✅ 8. Return response
       return {
         success: true,
         message: 'Subscription created successfully.',
         subscriptionId: subscription.id,
         customerId: customer.id,
         clientSecret,
-        status: subscription.status,
+        stripeStatus: subscription.status,
       };
     } catch (error) {
       console.error('❌ Subscription creation failed:', error);

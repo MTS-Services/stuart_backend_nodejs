@@ -235,7 +235,7 @@ export class EmailService {
           </div>
           
           <a href="${loginUrl}" style="background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
-            Access Dashboard →
+            Payment Link →
           </a>
           
           <p>Welcome to your QR dating journey! 💕</p>

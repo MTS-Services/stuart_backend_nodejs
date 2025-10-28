@@ -163,7 +163,7 @@ export class ProfileService {
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
-    if (profile.status === ProfileStatus.PENDING_REVIEW) { throw new HttpException('Cannot update profile while under review', HttpStatus.BAD_REQUEST); }
+    if (profile.status === ProfileStatus.DRAFT) { throw new HttpException('Cannot update profile while under review', HttpStatus.BAD_REQUEST); }
 
     const updateData: any = {};
     

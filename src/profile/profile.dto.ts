@@ -135,11 +135,10 @@ export class ProfileResponseDto {
     height?: string;
     bio?: string;
     location?: string;
-    // Consolidated image field
     images: ImageReferenceDto[]; 
     status: string;
     photoCount: number;
-    isComplete: boolean; // Has minimum required photos
+    isComplete: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

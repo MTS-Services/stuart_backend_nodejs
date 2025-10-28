@@ -48,7 +48,7 @@ export class CreateProfileDto {
 
     @IsOptional()
     @IsString()
-    @MaxLength(500)
+    @MaxLength(5000)
     bio?: string;
 
     @IsOptional()

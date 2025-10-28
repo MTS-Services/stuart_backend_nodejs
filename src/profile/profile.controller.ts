@@ -107,12 +107,9 @@ export class ProfileController {
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS)) 
   async updateProfile(
     @Body() updateProfileDto: UpdateProfileDto,
-    // UPDATED: Correctly type the files object for the single 'image' field
     @UploadedFiles() files: { image?: Express.Multer.File[] } 
   ) {
     try {
-      // NOTE: File validation (min 3) is deferred to the service for updates, 
-      // as files might be optional if only text fields are being updated.
       return await this.profileService.updateProfileWithFiles(updateProfileDto, files);
     } catch (error) {
       if (error instanceof HttpException) {

@@ -246,7 +246,7 @@ export class ProfileService {
 
     const updatedProfile = await this.prisma.profile.update({
       where: { userId },
-      data: { status: ProfileStatus.PENDING_REVIEW },
+      data: { status: ProfileStatus.DRAFT },
     });
     
     await this.prisma.notification.create({

@@ -92,44 +92,55 @@ export class ProfileService {
     }
   }
 
-  async createProfile(userId: number, createProfileDto: CreateProfileDto) {
-    // ... existing checks ...
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) { throw new HttpException('User not found', HttpStatus.NOT_FOUND); }
-    if (!user.paidSetupFee) { throw new HttpException('Setup fee must be paid before creating profile', HttpStatus.BAD_REQUEST); }
-    const existingProfile = await this.prisma.profile.findUnique({ where: { userId } });
-    if (existingProfile) { throw new HttpException('Profile already exists', HttpStatus.BAD_REQUEST); }
-
-    const profile = await this.prisma.profile.create({
-      data: {
-        userId,
-        age: createProfileDto.age ? createProfileDto.age.toString() : null, 
-        height: createProfileDto.height,
-        bio: createProfileDto.bio,
-        location: createProfileDto.location,
-        startDate: createProfileDto.startDate,
-        endDate: createProfileDto.endDate,
-        dealbreakers: createProfileDto.dealbreakers,
-        
-        // 🔥 FIXES TS2561 (Property 'image' does not exist): Now works after `prisma generate`
-        image: createProfileDto.image.map(img => img.url), 
-        
-        status: ProfileStatus.DRAFT,
-        bodyType: createProfileDto.bodyType,
-        area: createProfileDto.area,
-        displayName: createProfileDto.displayName,
-        email: createProfileDto.email, 
-        phone: createProfileDto.phone,
-      },
-    });
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { status: UserStatus.PROFILE_PENDING },
-    });
-
-    return profile;
+async createProfile(userId: number, createProfileDto: CreateProfileDto) {
+  const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  if (!user) { 
+    throw new HttpException('User not found', HttpStatus.NOT_FOUND); 
   }
+  if (!user.paidSetupFee) { 
+    throw new HttpException('Setup fee must be paid before creating profile', HttpStatus.BAD_REQUEST); 
+  }
+
+  const existingProfile = await this.prisma.profile.findUnique({ where: { userId } });
+  if (existingProfile) { 
+    throw new HttpException('Profile already exists', HttpStatus.BAD_REQUEST); 
+  }
+
+  const profile = await this.prisma.profile.create({
+    data: {
+      userId,
+      age: createProfileDto.age ? createProfileDto.age.toString() : null, 
+      height: createProfileDto.height,
+      bio: createProfileDto.bio,
+      location: createProfileDto.location,
+      startDate: createProfileDto.startDate,
+      endDate: createProfileDto.endDate,
+      dealbreakers: createProfileDto.dealbreakers,
+      image: createProfileDto.image.map(img => img.url), 
+      status: ProfileStatus.DRAFT,
+      bodyType: createProfileDto.bodyType,
+      area: createProfileDto.area,
+      displayName: createProfileDto.displayName,
+      email: createProfileDto.email, 
+      phone: createProfileDto.phone,
+    },
+  });
+
+  await this.prisma.user.update({
+    where: { id: userId },
+    data: { status: UserStatus.PROFILE_PENDING },
+  });
+
+  // 🔹 শুধুমাত্র নির্দিষ্ট তথ্যের object তৈরি
+  const profileInfo = {
+    displayName: createProfileDto.displayName,
+    email: createProfileDto.email,
+    phone: createProfileDto.phone,
+  };
+
+  return { profile, profileInfo };
+}
+
 
   // -------------------------------------------------------------------
   // Profile Update

@@ -23,22 +23,23 @@ import { AdminGuard } from '../auth/admin.guard';
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
-   @Get('dashboard')
-  async getDashboard(
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-  ) {
-    const fromDate = from ? new Date(from) : undefined;
-    const toDate = to ? new Date(to) : undefined;
+@Get('dashboard')
+async getDashboard(
+  @Query('from') from?: string,
+  @Query('to') to?: string,
+) {
+  const fromDate = from ? new Date(from) : undefined;
+  const toDate = to ? new Date(to) : undefined;
 
-    const stats = await this.adminService.getDashboardStats(fromDate, toDate);
+  const stats = await this.adminService.getDashboardStats();
 
-    return {
-      success: true,
-      range: from && to ? { from: fromDate, to: toDate } : 'all-time',
-      data: stats,
-    };
-  }
+  return {
+    success: true,
+    range: from && to ? { from: fromDate, to: toDate } : 'all-time',
+    data: stats,
+  };
+}
+
 
   @Get('test-verified')
   async testVerified() {

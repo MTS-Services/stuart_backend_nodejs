@@ -59,7 +59,7 @@ export class EmailService {
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
         to: email,
-        subject: '💕 Complete Your QR Card Dating App Signup',
+        subject: '💕 Complete Your "Scan Me Maybe" App Signup',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome ${name}! 💕</h2>
@@ -97,7 +97,7 @@ export class EmailService {
     const mailOptions = {
       from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
       to: email,
-      subject: '🎉 Payment Successful! Your QR Cards Are Coming',
+      subject: '🎉 Payment Successful!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Payment Confirmed! 🎉</h2>
@@ -213,7 +213,7 @@ export class EmailService {
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
         to: email,
-        subject: '🎉 Welcome to QR Card Dating!',
+        subject: '🎉 Welcome to "Scan Me Maybe"!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>🎉 Welcome ${name}!</h2>

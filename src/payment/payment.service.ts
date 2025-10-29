@@ -1,117 +1,8 @@
-// import { Injectable, BadRequestException } from '@nestjs/common';
-// import Stripe from 'stripe';
-// import { PrismaService } from '../prisma.service';
-// import { CreateSubscriptionDto } from './payment.dto';
-
-// @Injectable()
-// export class PaymentService {
-//   private stripe: Stripe;
-
-//   constructor(private readonly prisma: PrismaService) {
-//     const stripeKey = process.env.STRIPE_SECRET_KEY || '';
-//     this.stripe = new Stripe(stripeKey, { apiVersion: '2025-09-30.clover' });
-//   }
-
-//   async createOneTimePayment(userId: number, amount: number, paymentMethodId: string) {
-//     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-//     if (!user) throw new BadRequestException('User not found');
-
-//     if (user.paidSetupFee) {
-//       return { message: 'One-time payment already completed' };
-//     }
-
-//     const paymentIntent = await this.stripe.paymentIntents.create({
-//       amount,
-//       currency: 'usd',
-//       payment_method: paymentMethodId,
-//       confirm: true,
-//     });
-
-//     await this.prisma.payment.create({
-//       data: {
-//         userId: user.id,
-//         amount,
-//         stripePaymentId: paymentIntent.id,
-//       },
-//     });
-
-//     await this.prisma.user.update({
-//       where: { id: user.id },
-//       data: { paidSetupFee: true },
-//     });
-
-//     return paymentIntent;
-//   }
-
-//   async createSubscription(userId: number, dto: CreateSubscriptionDto) {
-//     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-//     if (!user) throw new BadRequestException('User not found');
-
-//     let stripeCustomerId = user.stripeCustomerId;
-//     if (!stripeCustomerId) {
-//       const customer = await this.stripe.customers.create({ email: user.email });
-//       stripeCustomerId = customer.id;
-//       await this.prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId } });
-//     }
-
-//     await this.stripe.paymentMethods.attach(dto.paymentMethodId, { customer: stripeCustomerId });
-//     await this.stripe.customers.update(stripeCustomerId, {
-//       invoice_settings: { default_payment_method: dto.paymentMethodId },
-//     });
-
-//     const subscription = await this.stripe.subscriptions.create({
-//       customer: stripeCustomerId,
-//       items: [{ price: dto.priceId }],
-//       expand: ['latest_invoice.payment_intent'],
-//     });
-
-//     const stripeSub = subscription as Stripe.Subscription;
-
-//     const startDate = new Date((stripeSub.start_date ?? Date.now() / 1000) * 1000);
-//     const endDate = new Date(
-//       ((stripeSub.current_period_end ?? stripeSub.start_date ?? Date.now() / 1000) as number) * 1000
-//     );
-
-//     return this.prisma.subscription.create({
-//       data: {
-//         userId: user.id,
-//         stripeSubscriptionId: stripeSub.id,
-//         startDate,
-//         endDate,
-//         plan: dto.plan ?? 'DEFAULT',
-//         status: mapStripeStatusToPrisma(stripeSub.status),
-//       },
-//     });
-//   }
-
-//   async getUserSubscriptions(userId: number) {
-//     return this.prisma.subscription.findMany({ where: { userId } });
-//   }
-// }
-
-// function mapStripeStatusToPrisma(status: Stripe.Subscription.Status) {
-//   switch (status) {
-//     case 'active':
-//       return 'ACTIVE';
-//     case 'incomplete':
-//       return 'INCOMPLETE';
-//     case 'canceled':
-//       return 'CANCELLED';
-//     case 'past_due':
-//       return 'PAST_DUE';
-//     default:
-//       return 'INCOMPLETE';
-//   }
-// }
-
-
-
-
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateSubscriptionDto } from './payment.dto';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma.service';
-
+import { BadRequestException } from '@nestjs/common';
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
@@ -123,6 +14,39 @@ export class PaymentService {
     }
 
     this.stripe = new Stripe(stripeKey);
+  }
+
+  async createOneTimePayment(userId: number, amount: number, paymentMethodId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    if (user.paidSetupFee) {
+      return { message: 'One-time payment already completed' };
+    }
+
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount,
+      currency: 'usd',
+      payment_method: paymentMethodId,
+      confirm: true,
+    });
+
+    await this.prisma.payment.create({
+      data: {
+        userId: user.id,
+        amount,
+        stripePaymentIntentId: paymentIntent.id,
+        type: 'ONE_TIME',
+        status: 'COMPLETED',
+      },
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { paidSetupFee: true },
+    });
+
+    return paymentIntent;
   }
 
   async createSubscription(dto: CreateSubscriptionDto): Promise<any> {

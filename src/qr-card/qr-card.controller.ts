@@ -21,7 +21,7 @@ export class QRCardController {
 
   @Post('generate')
   @UseGuards(AdminGuard)
-  async generateCards(@Request() req, @Body('count') count: number = 50) {
+  async generateCards(@Request() req, @Body('count') count: number = 1) {
     return this.qrCardService.generateQRCards(req.user.id, count);
   }
 
@@ -29,7 +29,7 @@ export class QRCardController {
   @Post('generate/by-email')
   @UseGuards(AdminGuard)
   async generateCardsByEmail(@Body() body: { email: string; count?: number }) {
-    const count = body.count || 50;
+    const count = body.count || 1;
     return this.qrCardService.generateQRCardsByEmail(body.email, count);
   }
 

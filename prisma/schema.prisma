@@ -113,21 +113,23 @@ model QRCard {
 }
 
 model Scan {
-  id        Int      @id @default(autoincrement())
-  qrCardId  Int
-  viewerId  Int? // User who scanned (if registered)
-  ipAddress String? // For tracking anonymous scans
-  userAgent String?
-  location  String? // General location if provided
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  qrCardId   Int
+  viewerId   Int? // User who scanned (if registered)
+  ipAddress  String? // For tracking anonymous scans
+  userAgent  String?
+  location   String? // General location if provided
+  createdAt  DateTime @default(now())
 
   // Relations
   qrCard  QRCard @relation(fields: [qrCardId], references: [id], onDelete: Cascade)
   viewer  User?  @relation("ScanViewer", fields: [viewerId], references: [id])
   match   Match?
 
+  @@index([qrCardId, ipAddress]) // ✅ ADD THIS LINE
   @@map("scans")
 }
+
 
 model Match {
   id              Int       @id @default(autoincrement())

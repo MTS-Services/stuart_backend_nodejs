@@ -395,7 +395,7 @@ async getDashboardStats(from?: Date, to?: Date) {
 
     // Generate 50 QR cards for the approved profile
     const qrCards: any[] = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 1; i++) {
       const uniqueId = randomUUID();
       const card = await this.prisma.qRCard.create({
         data: {
@@ -430,7 +430,7 @@ async getDashboardStats(from?: Date, to?: Date) {
         adminId,
         type: 'profile_approved',
         title: 'Profile Approved - Cards Being Printed!',
-        message: `Profile approved! 50 QR cards generated and queued for printing. Tracking: ${trackingNumber}`,
+        message: `Profile approved! 1 QR cards generated and queued for printing. Tracking: ${trackingNumber}`,
         data: { 
           userId: profile.userId, 
           profileId,

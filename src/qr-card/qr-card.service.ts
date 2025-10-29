@@ -11,7 +11,7 @@ export class QRCardService {
     private emailService: EmailService
   ) {}
 
-  async generateQRCards(userId: number, count: number = 50) {
+  async generateQRCards(userId: number, count: number = 1) {
     // Check if user has approved profile
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -41,7 +41,7 @@ export class QRCardService {
           userId: userId,
           qrCode: uniqueId,
           scanCount: 0,
-          maxScans: 5,
+          maxScans: 250,
           isActive: true,
         },
       });
@@ -246,7 +246,7 @@ return {
   }
 
   // Email-based QR card generation - No approval required for testing
-  async generateQRCardsByEmail(email: string, count: number = 50) {
+  async generateQRCardsByEmail(email: string, count: number = 1) {
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -279,7 +279,7 @@ return {
           userId: user.id,
           qrCode: uniqueId,
           scanCount: 0,
-          maxScans: 5,
+          maxScans: 250,
           isActive: true,
         },
       });

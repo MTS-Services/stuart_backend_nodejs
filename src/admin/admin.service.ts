@@ -89,410 +89,132 @@ export class AdminService {
     return updatedProfile;
   }
 
-  async getDashboardStats() {
-    // Get current time boundaries
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
-    const startOfWeek = new Date(startOfToday.getTime() - (now.getDay() * 24 * 60 * 60 * 1000));
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
+async getDashboardStats(from?: Date, to?: Date) {
+  const range = from && to ? { gte: from, lt: to } : undefined;
 
-    const [
-      // Total counts
+  const [
+    // totals
+    totalUsers,
+    totalProfiles,
+    totalScans,
+    totalCards,
+    totalRevenue,
+
+    // custom range
+    rangeUsers,
+    rangeProfiles,
+    rangeScans,
+    rangeCards,
+    rangeRevenue,
+    rangePaymentCount,
+
+    // status breakdowns
+    waitlistUsers,
+    activeUsers,
+    verifiedUsers,
+    pendingProfiles,
+    approvedProfiles,
+    rejectedProfiles,
+    activeCards,
+
+    // subscriptions
+    activeSubscriptions
+  ] = await Promise.all([
+    this.prisma.user.count(),
+    this.prisma.profile.count(),
+    this.prisma.scan.count(),
+    this.prisma.qRCard.count(),
+    this.prisma.payment.aggregate({
+      where: { status: 'completed' },
+      _sum: { amount: true },
+    }),
+
+    this.prisma.user.count({ where: { createdAt: range } }),
+    this.prisma.profile.count({ where: { createdAt: range } }),
+    this.prisma.scan.count({ where: { createdAt: range } }),
+    this.prisma.qRCard.count({ where: { createdAt: range } }),
+    this.prisma.payment.aggregate({
+      where: { status: 'completed', createdAt: range },
+      _sum: { amount: true },
+    }),
+    this.prisma.payment.count({
+      where: { status: 'completed', createdAt: range },
+    }),
+
+    this.prisma.user.count({ where: { status: UserStatus.WAITLIST } }),
+    this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
+    this.prisma.user.count({ where: { status: UserStatus.VERIFIED } }),
+    this.prisma.profile.count({ where: { status: ProfileStatus.PENDING_REVIEW } }),
+    this.prisma.profile.count({ where: { status: ProfileStatus.APPROVED } }),
+    this.prisma.profile.count({ where: { status: ProfileStatus.REJECTED } }),
+    this.prisma.qRCard.count({ where: { isActive: true } }),
+
+    this.prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
+  ]);
+
+  // projected daily revenue
+  const subs = await this.prisma.subscription.groupBy({
+    by: ['plan'],
+    where: { status: SubscriptionStatus.ACTIVE },
+    _count: { _all: true }
+  });
+
+  let projectedDailyRevenue = 0;
+  subs.forEach(sub => {
+    const count = sub._count._all;
+    if (sub.plan === SubscriptionPlan.MONTHLY)
+      projectedDailyRevenue += (count * 13) / 30;
+    else if (sub.plan === SubscriptionPlan.YEARLY)
+      projectedDailyRevenue += (count * 120) / 365;
+  });
+
+  return {
+    overview: {
       totalUsers,
       totalProfiles,
       totalScans,
       totalCards,
-      totalRevenue,
-      
-      // Today's analytics
-      todayUsers,
-      todayProfiles,
-      todayScans,
-      todayCards,
-      todayRevenue,
-      todayPaymentCount,
-      
-      // Week's analytics
-      weekUsers,
-      weekProfiles,
-      weekScans,
-      weekCards,
-      weeklyRevenue,
-      weeklyPaymentCount,
-      
-      // Month's analytics
-      monthUsers,
-      monthProfiles,
-      monthScans,
-      monthCards,
-      monthlyRevenue,
-      monthlyPaymentCount,
-      
-      // Year's analytics
-      yearUsers,
-      yearProfiles,
-      yearScans,
-      yearCards,
-      yearlyRevenue,
-      
-      // Status-based counts
-      waitlistUsers,
-      activeUsers,
-      verifiedUsers,
-      pendingProfiles,
-      approvedProfiles,
-      rejectedProfiles,
-      activeCards,
-      
-      // Active subscriptions for projected revenue
+      totalRevenue: parseFloat(totalRevenue._sum.amount?.toString() || '0'),
       activeSubscriptions
-    ] = await Promise.all([
-      // Total counts
-      this.prisma.user.count(),
-      this.prisma.profile.count(),
-      this.prisma.scan.count(),
-      this.prisma.qRCard.count(),
-      this.prisma.payment.aggregate({
-        where: { status: 'completed' },
-        _sum: { amount: true },
-      }),
-      
-      // Today's counts
-      this.prisma.user.count({
-        where: {
-          createdAt: {
-            gte: startOfToday,
-            lt: endOfToday
+    },
+    customRange: range
+      ? {
+          from,
+          to,
+          users: rangeUsers,
+          profiles: rangeProfiles,
+          scans: rangeScans,
+          cards: rangeCards,
+          revenue: {
+            amount: parseFloat(rangeRevenue._sum.amount?.toString() || '0'),
+            payments: rangePaymentCount,
+            currency: 'USD'
           }
         }
-      }),
-      this.prisma.profile.count({
-        where: {
-          createdAt: {
-            gte: startOfToday,
-            lt: endOfToday
-          }
-        }
-      }),
-      this.prisma.scan.count({
-        where: {
-          createdAt: {
-            gte: startOfToday,
-            lt: endOfToday
-          }
-        }
-      }),
-      this.prisma.qRCard.count({
-        where: {
-          createdAt: {
-            gte: startOfToday,
-            lt: endOfToday
-          }
-        }
-      }),
-      this.prisma.payment.aggregate({
-        where: {
-          status: 'completed',
-          createdAt: {
-            gte: startOfToday,
-            lt: endOfToday
-          }
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.payment.count({
-        where: {
-          status: 'completed',
-          createdAt: {
-            gte: startOfToday,
-            lt: endOfToday
-          }
-        }
-      }),
-      
-      // Week's counts
-      this.prisma.user.count({
-        where: {
-          createdAt: {
-            gte: startOfWeek,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.profile.count({
-        where: {
-          createdAt: {
-            gte: startOfWeek,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.scan.count({
-        where: {
-          createdAt: {
-            gte: startOfWeek,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.qRCard.count({
-        where: {
-          createdAt: {
-            gte: startOfWeek,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.payment.aggregate({
-        where: {
-          status: 'completed',
-          createdAt: {
-            gte: startOfWeek,
-            lt: now
-          }
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.payment.count({
-        where: {
-          status: 'completed',
-          createdAt: {
-            gte: startOfWeek,
-            lt: now
-          }
-        }
-      }),
-      
-      // Month's counts
-      this.prisma.user.count({
-        where: {
-          createdAt: {
-            gte: startOfMonth,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.profile.count({
-        where: {
-          createdAt: {
-            gte: startOfMonth,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.scan.count({
-        where: {
-          createdAt: {
-            gte: startOfMonth,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.qRCard.count({
-        where: {
-          createdAt: {
-            gte: startOfMonth,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.payment.aggregate({
-        where: {
-          status: 'completed',
-          createdAt: {
-            gte: startOfMonth,
-            lt: now
-          }
-        },
-        _sum: { amount: true },
-      }),
-      this.prisma.payment.count({
-        where: {
-          status: 'completed',
-          createdAt: {
-            gte: startOfMonth,
-            lt: now
-          }
-        }
-      }),
-      
-      // Year's counts
-      this.prisma.user.count({
-        where: {
-          createdAt: {
-            gte: startOfYear,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.profile.count({
-        where: {
-          createdAt: {
-            gte: startOfYear,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.scan.count({
-        where: {
-          createdAt: {
-            gte: startOfYear,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.qRCard.count({
-        where: {
-          createdAt: {
-            gte: startOfYear,
-            lt: now
-          }
-        }
-      }),
-      this.prisma.payment.aggregate({
-        where: {
-          status: 'completed',
-          createdAt: {
-            gte: startOfYear,
-            lt: now
-          }
-        },
-        _sum: { amount: true },
-      }),
-      
-      // Status-based counts
-      this.prisma.user.count({ where: { status: UserStatus.WAITLIST } }),
-      this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
-      this.prisma.user.count({ where: { status: UserStatus.VERIFIED } }),
-      this.prisma.profile.count({ where: { status: ProfileStatus.PENDING_REVIEW } }),
-      this.prisma.profile.count({ where: { status: ProfileStatus.APPROVED } }),
-      this.prisma.profile.count({ where: { status: ProfileStatus.REJECTED } }),
-      this.prisma.qRCard.count({ where: { isActive: true } }),
-      
-      // Active subscriptions for projected revenue
-      this.prisma.subscription.count({
-        where: { status: SubscriptionStatus.ACTIVE }
-      })
-    ]);
+      : null,
+    tomorrowProjection: {
+      projectedRevenue: parseFloat(projectedDailyRevenue.toFixed(2)),
+      currency: 'USD'
+    },
+    userStatus: {
+      waitlist: waitlistUsers,
+      active: activeUsers,
+      verified: verifiedUsers,
+      total: totalUsers
+    },
+    profileStatus: {
+      pending: pendingProfiles,
+      approved: approvedProfiles,
+      rejected: rejectedProfiles,
+      total: totalProfiles
+    },
+    cardStatus: {
+      active: activeCards,
+      total: totalCards
+    }
+  };
+}
 
-    // Calculate projected daily revenue from active subscriptions
-    const subscriptionDetails = await this.prisma.subscription.groupBy({
-      by: ['plan'],
-      where: { status: SubscriptionStatus.ACTIVE },
-      _count: { _all: true }
-    });
-
-    let projectedDailyRevenue = 0;
-    subscriptionDetails.forEach(sub => {
-      const count = sub._count._all;
-      if (sub.plan === SubscriptionPlan.MONTHLY) {
-        projectedDailyRevenue += (count * 13) / 30;
-      } else if (sub.plan === SubscriptionPlan.YEARLY) {
-        projectedDailyRevenue += (count * 120) / 365;
-      }
-    });
-
-    return {
-      // Overview Stats
-      overview: {
-        totalUsers,
-        totalProfiles,
-        totalScans,
-        totalCards,
-        totalRevenue: parseFloat(totalRevenue._sum.amount?.toString() || '0'),
-        activeSubscriptions
-      },
-      
-      // Today's Analytics
-      today: {
-        users: todayUsers,
-        profiles: todayProfiles,
-        scans: todayScans,
-        cards: todayCards,
-        revenue: {
-          amount: parseFloat(todayRevenue._sum.amount?.toString() || '0'),
-          payments: todayPaymentCount,
-          currency: 'USD'
-        }
-      },
-      
-      // Tomorrow's Projections
-      tomorrow: {
-        projectedRevenue: parseFloat(projectedDailyRevenue.toFixed(2)),
-        currency: 'USD',
-        note: 'Based on active subscriptions'
-      },
-      
-      // This Week's Analytics
-      week: {
-        users: weekUsers,
-        profiles: weekProfiles,
-        scans: weekScans,
-        cards: weekCards,
-        revenue: {
-          amount: parseFloat(weeklyRevenue._sum.amount?.toString() || '0'),
-          payments: weeklyPaymentCount,
-          currency: 'USD'
-        }
-      },
-      
-      // This Month's Analytics
-      month: {
-        users: monthUsers,
-        profiles: monthProfiles,
-        scans: monthScans,
-        cards: monthCards,
-        revenue: {
-          amount: parseFloat(monthlyRevenue._sum.amount?.toString() || '0'),
-          payments: monthlyPaymentCount,
-          currency: 'USD'
-        }
-      },
-      
-      // This Year's Analytics
-      year: {
-        users: yearUsers,
-        profiles: yearProfiles,
-        scans: yearScans,
-        cards: yearCards,
-        revenue: {
-          amount: parseFloat(yearlyRevenue._sum.amount?.toString() || '0'),
-          currency: 'USD'
-        }
-      },
-      
-      // Status Breakdown
-      userStatus: {
-        waitlist: waitlistUsers,
-        active: activeUsers,
-        verified: verifiedUsers,
-        total: totalUsers
-      },
-      
-      profileStatus: {
-        pending: pendingProfiles,
-        approved: approvedProfiles,
-        rejected: rejectedProfiles,
-        total: totalProfiles
-      },
-      
-      cardStatus: {
-        active: activeCards,
-        total: totalCards
-      },
-      
-      // Legacy fields for backward compatibility
-      totalUsers,
-      waitlistUsers,
-      pendingProfiles,
-      verifiedProfiles: approvedProfiles,
-      rejectedProfiles,
-      totalScans,
-      activeCards
-    };
-  }
 
   async getPendingProfiles(page: number = 1, limit: number = 10) {
     const profiles = await this.prisma.profile.findMany({

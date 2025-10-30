@@ -1,5 +1,3 @@
-
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -38,57 +36,58 @@ enum SubscriptionPlan {
 }
 
 model User {
-  id                Int            @id @default(autoincrement())
-  email             String         @unique
-  name              String
-  phone             String?
-  status            UserStatus     @default(WAITLIST)
-  isApproved        Boolean        @default(false)
-  approvedAt        DateTime?
-  paidSetupFee      Boolean        @default(false)
-  stripeCustomerId  String?        @unique
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id               Int        @id @default(autoincrement())
+  email            String     @unique
+  name             String
+  phone            String?
+  status           UserStatus @default(WAITLIST)
+  isApproved       Boolean    @default(false)
+  approvedAt       DateTime?
+  paidSetupFee     Boolean    @default(false)
+  stripeCustomerId String?    @unique
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   // Relations
-  profile           Profile?
-  qrCards           QRCard[]
-  scans             Scan[]         @relation("ScanViewer")
-  matches           Match[]        @relation("MatchUser")
-  matchedBy         Match[]        @relation("MatchTarget")
-  subscription      Subscription?
+  profile      Profile?
+  qrCards      QRCard[]
+  scans        Scan[]        @relation("ScanViewer")
+  matches      Match[]       @relation("MatchUser")
+  matchedBy    Match[]       @relation("MatchTarget")
+  subscription Subscription?
 
   @@map("users")
 }
 
 model Profile {
-  id                Int            @id @default(autoincrement())
-  userId            Int            @unique
-  age               String?
-  height            String?
-  bodyType          String?
-  area              String?
-  dealbreakers      String?
-  bio               String?
-  startDate         String?
-  endDate           String?
-  location          String?
-  image             String[]       @default([])
-  displayName       String?
-  email             String?
-  phone             String?
-  status            ProfileStatus  @default(DRAFT)
-  reviewedAt        DateTime?
-  reviewedBy        Int? 
-  rejectionReason   String?
-  isActive          Boolean        @default(false)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id              Int           @id @default(autoincrement())
+  userId          Int           @unique
+  age             String?
+  height          String?
+  bodyType        String?
+  area            String?
+  dealbreakers    String?
+  bio             String?
+  startDate       String?
+  endDate         String?
+  location        String?
+  image           String[]      @default([])
+  displayName     String?
+  email           String?
+  gmail           String?
+  phone           String?
+  status          ProfileStatus @default(DRAFT)
+  reviewedAt      DateTime?
+  reviewedBy      Int?
+  rejectionReason String?
+  isActive        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   // Relations
-  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewer          Admin?         @relation(fields: [reviewedBy], references: [id])
-  qrCards           QRCard[]
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer Admin?   @relation(fields: [reviewedBy], references: [id])
+  qrCards  QRCard[]
 
   @@map("profiles")
 }
@@ -96,7 +95,7 @@ model Profile {
 model QRCard {
   id        Int      @id @default(autoincrement())
   profileId Int
-  userId    Int      // Add direct relation to user
+  userId    Int // Add direct relation to user
   qrCode    String   @unique // QR code data/URL
   scanCount Int      @default(0)
   maxScans  Int      @default(5)
@@ -113,39 +112,38 @@ model QRCard {
 }
 
 model Scan {
-  id         Int      @id @default(autoincrement())
-  qrCardId   Int
-  viewerId   Int? // User who scanned (if registered)
-  ipAddress  String? // For tracking anonymous scans
-  userAgent  String?
-  location   String? // General location if provided
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  qrCardId  Int
+  viewerId  Int? // User who scanned (if registered)
+  ipAddress String? // For tracking anonymous scans
+  userAgent String?
+  location  String? // General location if provided
+  createdAt DateTime @default(now())
 
   // Relations
-  qrCard  QRCard @relation(fields: [qrCardId], references: [id], onDelete: Cascade)
-  viewer  User?  @relation("ScanViewer", fields: [viewerId], references: [id])
-  match   Match?
+  qrCard QRCard @relation(fields: [qrCardId], references: [id], onDelete: Cascade)
+  viewer User?  @relation("ScanViewer", fields: [viewerId], references: [id])
+  match  Match?
 
   @@index([qrCardId, ipAddress]) // ✅ ADD THIS LINE
   @@map("scans")
 }
 
-
 model Match {
-  id              Int       @id @default(autoincrement())
-  scanId          Int       @unique
-  userId          Int       // Person who was scanned (profile owner)
-  targetId        Int       // Person who scanned (viewer)
-  isInterested    Boolean   @default(false)
-  isMutual        Boolean   @default(false)
-  contactShared   Boolean   @default(false)
-  status          String    @default("pending") // "pending", "approved", "rejected"
-  requesterEmail  String?   // Email of person requesting contact
-  requesterName   String?   // Name of person requesting contact  
-  message         String?   // Message from requester
-  approvedAt      DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             Int       @id @default(autoincrement())
+  scanId         Int       @unique
+  userId         Int // Person who was scanned (profile owner)
+  targetId       Int // Person who scanned (viewer)
+  isInterested   Boolean   @default(false)
+  isMutual       Boolean   @default(false)
+  contactShared  Boolean   @default(false)
+  status         String    @default("pending") // "pending", "approved", "rejected"
+  requesterEmail String? // Email of person requesting contact
+  requesterName  String? // Name of person requesting contact  
+  message        String? // Message from requester
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   scan   Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
@@ -156,37 +154,37 @@ model Match {
 }
 
 model Subscription {
-  id                     Int                @id @default(autoincrement())
-  userId                 Int                @unique
-  plan                   SubscriptionPlan
-  status                 SubscriptionStatus @default(INACTIVE)
-  amount                 Decimal            @db.Decimal(10, 2)
-  currency               String             @default("USD")
-  startDate              DateTime?
-  endDate                DateTime?
-  stripeCustomerId       String?
-  stripeSubscriptionId   String?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
+  id                   Int                @id @default(autoincrement())
+  userId               Int                @unique
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus @default(INACTIVE)
+  amount               Decimal            @db.Decimal(10, 2)
+  currency             String             @default("USD")
+  startDate            DateTime?
+  endDate              DateTime?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   // Relations
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments  Payment[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
 
   @@map("subscriptions")
 }
 
 model Payment {
-  id                      Int      @id @default(autoincrement())
-  subscriptionId          Int?
-  userId                  Int
-  amount                  Decimal  @db.Decimal(10, 2)
-  currency                String   @default("USD")
-  type                    String // "setup_fee", "subscription", "refund"
-  status                  String // "pending", "completed", "failed"
-  stripePaymentIntentId   String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  subscriptionId        Int?
+  userId                Int
+  amount                Decimal  @db.Decimal(10, 2)
+  currency              String   @default("USD")
+  type                  String // "setup_fee", "subscription", "refund"
+  status                String // "pending", "completed", "failed"
+  stripePaymentIntentId String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   // Relations
   subscription Subscription? @relation(fields: [subscriptionId], references: [id])
@@ -195,15 +193,17 @@ model Payment {
 }
 
 model Admin {
-  id              Int        @id @default(autoincrement())
-  email           String     @unique
-  username        String     @unique
-  password        String
-  role            String     @default("admin")
-  isActive        Boolean    @default(true)
-  lastLogin       DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  username  String    @unique
+  lastName  String?
+  phone     String?
+  password  String
+  role      String    @default("admin")
+  isActive  Boolean   @default(true)
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
   reviewedProfiles Profile[]

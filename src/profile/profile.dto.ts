@@ -30,6 +30,10 @@ export class CreateProfileDto {
     @IsEmail()
     email: string; // Required for email-based access
 
+        @IsString()
+    @IsEmail()
+    gmail: string;
+
     @IsNumber()
     @Type(() => Number) // Ensure conversion from form-data string
     userId: number; // User ID for profile association

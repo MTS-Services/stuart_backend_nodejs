@@ -32,21 +32,16 @@ export class PaymentController {
   }
 
   // ✅ (Optional) Add endpoint for one-time payments
-  @Post('create-one-time-payment')
-  async createOneTime(
-    @Body()
-    body: {
-      userId: number;
-      amount: number;
-      paymentMethodId: string;
-    },
-  ) {
-    return this.paymentService.createOneTimePayment(
-      body.userId,
-      body.amount,
-      body.paymentMethodId,
-    );
-  }
+@Post('create-one-time-payment')
+async createOneTime(
+  @Body() body: { email: string; amount: number; paymentMethodId: string },
+) {
+  return this.paymentService.createOneTimePayment(
+    body.email,
+    body.amount,
+    body.paymentMethodId,
+  );
+}
 }
 
 

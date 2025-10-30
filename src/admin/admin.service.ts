@@ -1446,10 +1446,10 @@ async getDashboardStats({
   }
 
   async updateAdminProfile(adminId: number, updateData: {
-    firstName?: string;
+    userName?: string;
     lastName?: string;
     email?: string;
-    phoneNumber?: string;
+    phone?: string;
     username?: string;
   }) {
     try {
@@ -1502,8 +1502,8 @@ async getDashboardStats({
       }
 
       // If firstName and lastName are provided, combine them for username if username not explicitly set
-      if (updateData.firstName && updateData.lastName && !updateData.username) {
-        const fullName = `${updateData.firstName} ${updateData.lastName}`.trim();
+      if (updateData.userName && updateData.lastName && !updateData.username) {
+        const fullName = `${updateData.userName} ${updateData.lastName}`.trim();
         if (fullName && fullName !== existingAdmin.username) {
           // Check if this combined name is available
           const nameExists = await this.prisma.admin.findFirst({
@@ -1539,16 +1539,16 @@ async getDashboardStats({
       });
 
       // Return updated profile with split name fields
-      const [firstName = '', lastName = ''] = updatedAdmin.username?.split(' ') || ['', ''];
+      const [userName = '', lastName = ''] = updatedAdmin.username?.split(' ') || ['', ''];
 
       return {
         success: true,
         message: 'Admin profile updated successfully',
         admin: {
           ...updatedAdmin,
-          firstName,
+          userName,
           lastName,
-          phoneNumber: updateData.phoneNumber || '', // Store in admin table if needed
+          phone: updateData.phone || '', // Store in admin table if needed
         }
       };
     } catch (error) {

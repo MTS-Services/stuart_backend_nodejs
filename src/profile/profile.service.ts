@@ -94,34 +94,40 @@ export class ProfileService {
 
 async createProfile(userId: number, createProfileDto: CreateProfileDto) {
   const user = await this.prisma.user.findUnique({ where: { id: userId } });
-  if (!user) { 
-    throw new HttpException('User not found', HttpStatus.NOT_FOUND); 
+  if (!user) {
+    throw new HttpException('User not found', HttpStatus.NOT_FOUND);
   }
-  if (!user.paidSetupFee) { 
-    throw new HttpException('Setup fee must be paid before creating profile', HttpStatus.BAD_REQUEST); 
+
+  if (!user.paidSetupFee) {
+    throw new HttpException(
+      'Setup fee must be paid before creating profile',
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   const existingProfile = await this.prisma.profile.findUnique({ where: { userId } });
-  if (existingProfile) { 
-    throw new HttpException('Profile already exists', HttpStatus.BAD_REQUEST); 
+  if (existingProfile) {
+    throw new HttpException('Profile already exists', HttpStatus.BAD_REQUEST);
   }
 
+  // ✅ Create the profile record
   const profile = await this.prisma.profile.create({
     data: {
       userId,
-      age: createProfileDto.age ? createProfileDto.age.toString() : null, 
+      age: createProfileDto.age ? createProfileDto.age.toString() : null,
       height: createProfileDto.height,
       bio: createProfileDto.bio,
       location: createProfileDto.location,
       startDate: createProfileDto.startDate,
       endDate: createProfileDto.endDate,
       dealbreakers: createProfileDto.dealbreakers,
-      image: createProfileDto.image.map(img => img.url), 
+      image: createProfileDto.image.map((img) => img.url),
       status: ProfileStatus.DRAFT,
       bodyType: createProfileDto.bodyType,
       area: createProfileDto.area,
       displayName: createProfileDto.displayName,
-      email: createProfileDto.email, 
+      email: createProfileDto.email, // saved in DB
+      gmail: createProfileDto.gmail, // saved in DB
       phone: createProfileDto.phone,
     },
   });
@@ -131,10 +137,10 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     data: { status: UserStatus.PROFILE_PENDING },
   });
 
-  // 🔹 শুধুমাত্র নির্দিষ্ট তথ্যের object তৈরি
+  // ✅ Here's the change: always use the incoming email for profileInfo
   const profileInfo = {
     displayName: createProfileDto.displayName,
-    email: createProfileDto.email,
+    gmail: createProfileDto.gmail, // ← Always take from request
     phone: createProfileDto.phone,
   };
 
@@ -186,6 +192,7 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     if (updateProfileDto.area !== undefined) { updateData.area = updateProfileDto.area; }
     if (updateProfileDto.displayName !== undefined) { updateData.displayName = updateProfileDto.displayName; }
     if (updateProfileDto.email !== undefined) { updateData.email = updateProfileDto.email; }
+    if (updateProfileDto.gmail !== undefined) { updateData.gmail = updateProfileDto.gmail; }
     if (updateProfileDto.phone !== undefined) { updateData.phone = updateProfileDto.phone; }
     
     if (updateProfileDto.image !== undefined) {

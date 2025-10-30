@@ -26,45 +26,58 @@ export class PaymentService {
    * Handles one-time setup payment
    */
   async createOneTimePayment(
-    userId: number,
-    amount: number,
-    paymentMethodId: string,
-  ) {
-    // ✅ Validate user
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new BadRequestException('User not found');
+  email: string,
+  amount: number,
+  paymentMethodId: string,
+) {
+  // ✅ Find user by email
+  const user = await this.prisma.user.findUnique({ where: { email } });
+  if (!user) throw new BadRequestException('User not found');
 
-    if (user.paidSetupFee) {
-      return { message: 'One-time payment already completed' };
-    }
-
-    // ✅ Create Stripe payment
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount,
-      currency: 'usd',
-      payment_method: paymentMethodId,
-      confirm: true,
-    });
-
-    // ✅ Save payment in DB
-    await this.prisma.payment.create({
-      data: {
-        userId: user.id,
-        amount,
-        stripePaymentIntentId: paymentIntent.id,
-        type: 'ONE_TIME',
-        status: 'COMPLETED',
-      },
-    });
-
-    // ✅ Update user setup flag
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { paidSetupFee: true },
-    });
-
-    return paymentIntent;
+  if (user.paidSetupFee) {
+    return { message: 'One-time payment already completed' };
   }
+
+  // ✅ Create Stripe PaymentIntent (non-redirect, card-only)
+  const paymentIntent = await this.stripe.paymentIntents.create({
+    amount,
+    currency: 'usd',
+    payment_method: paymentMethodId,
+    confirm: true,
+    automatic_payment_methods: {
+      enabled: true,
+      allow_redirects: 'never',
+    },
+  });
+
+  // ✅ Save payment record
+  await this.prisma.payment.create({
+    data: {
+      userId: user.id,
+      amount,
+      stripePaymentIntentId: paymentIntent.id,
+      type: 'ONE_TIME',
+      status: 'COMPLETED',
+    },
+  });
+
+  // ✅ Update user record
+  await this.prisma.user.update({
+    where: { id: user.id },
+    data: { paidSetupFee: true },
+  });
+
+  // ✅ Return Stripe and user info
+  return {
+    success: true,
+    message: 'One-time payment successful',
+    email: user.email,
+    amount,
+    paymentIntentId: paymentIntent.id,
+    status: paymentIntent.status,
+  };
+}
+
 
   /**
    * Handles recurring subscription creation (Stripe)

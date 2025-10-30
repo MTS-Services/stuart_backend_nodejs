@@ -89,9 +89,18 @@ export class AdminService {
     return updatedProfile;
   }
 
-async getDashboardStats() {
+async getDashboardStats({
+  from,
+  to,
+  range,
+}: {
+  from?: Date;
+  to?: Date;
+  range?: 'today' | 'week' | 'month' | 'year';
+} = {}) {
   const now = new Date();
 
+  // --- Define time boundaries ---
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
 
@@ -103,10 +112,25 @@ async getDashboardStats() {
     today: { from: startOfToday, to: endOfToday },
     week: { from: startOfWeek, to: endOfToday },
     month: { from: startOfMonth, to: endOfToday },
-    year: { from: startOfYear, to: endOfToday }
+    year: { from: startOfYear, to: endOfToday },
   };
 
-  // Fetch totals and status breakdowns
+  // --- Determine which range(s) to use ---
+  let selectedRange: { from: Date; to: Date } | undefined;
+  if (range && ranges[range]) {
+    selectedRange = ranges[range];
+  } else if (from && to) {
+    selectedRange = { from, to };
+  }
+
+  let rangesToUse: [string, { from: Date; to: Date }][];
+  if (selectedRange) {
+    rangesToUse = [[range || 'custom', selectedRange]];
+  } else {
+    rangesToUse = Object.entries(ranges) as [string, { from: Date; to: Date }][];
+  }
+
+  // --- Fetch totals and counts ---
   const [
     totalUsers,
     totalProfiles,
@@ -121,7 +145,7 @@ async getDashboardStats() {
     approvedProfiles,
     rejectedProfiles,
     activeCards,
-    activeSubscriptions
+    activeSubscriptions,
   ] = await Promise.all([
     this.prisma.user.count(),
     this.prisma.profile.count(),
@@ -136,21 +160,25 @@ async getDashboardStats() {
     this.prisma.profile.count({ where: { status: ProfileStatus.APPROVED } }),
     this.prisma.profile.count({ where: { status: ProfileStatus.REJECTED } }),
     this.prisma.qRCard.count({ where: { isActive: true } }),
-
-    this.prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } })
+    this.prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
   ]);
 
-  // Fetch analytics for each range
+  // --- Fetch analytics for selected range(s) ---
   const analytics = await Promise.all(
-    Object.entries(ranges).map(async ([key, { from, to }]) => {
-      const range = { gte: from, lt: to };
+    rangesToUse.map(async ([key, { from, to }]) => {
+      const rangeFilter = { gte: from, lt: to };
       const [users, profiles, scans, cards, revenueAgg, paymentCount] = await Promise.all([
-        this.prisma.user.count({ where: { createdAt: range } }),
-        this.prisma.profile.count({ where: { createdAt: range } }),
-        this.prisma.scan.count({ where: { createdAt: range } }),
-        this.prisma.qRCard.count({ where: { createdAt: range } }),
-        this.prisma.payment.aggregate({ where: { status: 'completed', createdAt: range }, _sum: { amount: true } }),
-        this.prisma.payment.count({ where: { status: 'completed', createdAt: range } })
+        this.prisma.user.count({ where: { createdAt: rangeFilter } }),
+        this.prisma.profile.count({ where: { createdAt: rangeFilter } }),
+        this.prisma.scan.count({ where: { createdAt: rangeFilter } }),
+        this.prisma.qRCard.count({ where: { createdAt: rangeFilter } }),
+        this.prisma.payment.aggregate({
+          where: { status: 'completed', createdAt: rangeFilter },
+          _sum: { amount: true },
+        }),
+        this.prisma.payment.count({
+          where: { status: 'completed', createdAt: rangeFilter },
+        }),
       ]);
 
       return [
@@ -163,29 +191,30 @@ async getDashboardStats() {
           revenue: {
             amount: parseFloat(revenueAgg._sum.amount?.toString() || '0'),
             payments: paymentCount,
-            currency: 'USD'
-          }
-        }
-      ];
-    })
+            currency: 'USD',
+          },
+        },
+      ] as const;
+    }),
   );
 
   const analyticsByRange = Object.fromEntries(analytics);
 
-  // Projected daily revenue from subscriptions
+  // --- Projected daily revenue from subscriptions ---
   const subs = await this.prisma.subscription.groupBy({
     by: ['plan'],
     where: { status: SubscriptionStatus.ACTIVE },
-    _count: { _all: true }
+    _count: { _all: true },
   });
 
   let projectedDailyRevenue = 0;
-  subs.forEach(sub => {
+  subs.forEach((sub) => {
     const count = sub._count._all;
     if (sub.plan === SubscriptionPlan.MONTHLY) projectedDailyRevenue += (count * 13) / 30;
     else if (sub.plan === SubscriptionPlan.YEARLY) projectedDailyRevenue += (count * 120) / 365;
   });
 
+  // --- Return combined result ---
   return {
     overview: {
       totalUsers,
@@ -193,32 +222,31 @@ async getDashboardStats() {
       totalScans,
       totalCards,
       totalRevenue: parseFloat(totalRevenue._sum.amount?.toString() || '0'),
-      activeSubscriptions
+      activeSubscriptions,
     },
     analytics: analyticsByRange,
     tomorrowProjection: {
       projectedRevenue: parseFloat(projectedDailyRevenue.toFixed(2)),
-      currency: 'USD'
+      currency: 'USD',
     },
     userStatus: {
       waitlist: waitlistUsers,
       active: activeUsers,
       verified: verifiedUsers,
-      total: totalUsers
+      total: totalUsers,
     },
     profileStatus: {
       pending: pendingProfiles,
       approved: approvedProfiles,
       rejected: rejectedProfiles,
-      total: totalProfiles
+      total: totalProfiles,
     },
     cardStatus: {
       active: activeCards,
-      total: totalCards
-    }
+      total: totalCards,
+    },
   };
 }
-
 
 
   async getPendingProfiles(page: number = 1, limit: number = 10) {

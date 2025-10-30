@@ -27,15 +27,17 @@ export class AdminController {
 async getDashboard(
   @Query('from') from?: string,
   @Query('to') to?: string,
+  @Query('range') range?: 'today' | 'week' | 'month' | 'year'
 ) {
   const fromDate = from ? new Date(from) : undefined;
   const toDate = to ? new Date(to) : undefined;
 
-  const stats = await this.adminService.getDashboardStats();
+  // Pass range (or from/to) to the service
+  const stats = await this.adminService.getDashboardStats({ from: fromDate, to: toDate, range });
 
   return {
     success: true,
-    range: from && to ? { from: fromDate, to: toDate } : 'all-time',
+    range: range || (from && to ? { from: fromDate, to: toDate } : 'all-time'),
     data: stats,
   };
 }

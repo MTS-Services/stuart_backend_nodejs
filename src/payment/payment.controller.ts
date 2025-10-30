@@ -25,8 +25,28 @@ import { CreateSubscriptionDto } from './payment.dto';
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
+  // ✅ Handles subscription creation request
   @Post('create-subscription')
   async createSubscription(@Body() dto: CreateSubscriptionDto) {
     return this.paymentService.createSubscription(dto);
   }
+
+  // ✅ (Optional) Add endpoint for one-time payments
+  @Post('create-one-time-payment')
+  async createOneTime(
+    @Body()
+    body: {
+      userId: number;
+      amount: number;
+      paymentMethodId: string;
+    },
+  ) {
+    return this.paymentService.createOneTimePayment(
+      body.userId,
+      body.amount,
+      body.paymentMethodId,
+    );
+  }
 }
+
+

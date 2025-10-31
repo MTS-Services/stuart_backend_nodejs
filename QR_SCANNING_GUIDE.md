@@ -9,7 +9,9 @@
 ## How QR Card Scanning Works
 
 ### 1. **QR Code Generation** 📱
+
 When you generate QR cards, each card gets:
+
 - A unique UUID identifier (e.g., `abc-123-def-456`)
 - A base64 QR code image containing a URL
 - The URL format: `https://yourapp.com/scan/abc-123-def-456`
@@ -17,18 +19,20 @@ When you generate QR cards, each card gets:
 ### 2. **Correct Scanning Process** ✅
 
 **Step 1**: Generate QR cards first
+
 ```bash
 POST /qr-cards/generate/by-email
 Body: {"email": "user@example.com", "count": 5}
 ```
 
 **Step 2**: Extract the QR code identifier from the response
+
 ```json
 {
   "cards": [
     {
       "id": 1,
-      "qrCode": "abc-123-def-456",  // ← This is what you need!
+      "qrCode": "abc-123-def-456", // ← This is what you need!
       "qrCodeImage": "data:image/png;base64,iVBORw0K...",
       "scanUrl": "https://yourapp.com/scan/abc-123-def-456"
     }
@@ -37,6 +41,7 @@ Body: {"email": "user@example.com", "count": 5}
 ```
 
 **Step 3**: Use the QR code identifier for scanning
+
 ```bash
 POST /qr-cards/scan/abc-123-def-456
 Body: {"viewerId": null}
@@ -45,11 +50,13 @@ Body: {"viewerId": null}
 ### 3. **What NOT to Do** ❌
 
 ❌ **Wrong**: Using the base64 image data
+
 ```bash
 POST /qr-cards/scan/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKQ...
 ```
 
 ❌ **Wrong**: Using the full scan URL
+
 ```bash
 POST /qr-cards/scan/https://yourapp.com/scan/abc-123-def-456
 ```
@@ -57,7 +64,7 @@ POST /qr-cards/scan/https://yourapp.com/scan/abc-123-def-456
 ### 4. **Real-World Scanning Flow** 🌍
 
 1. **User scans QR code** with phone camera
-2. **QR code contains**: `https://yourapp.com/scan/abc-123-def-456`
+2. **QR code contains**: `app.com/scan/abc-123-def-456`
 3. **Frontend extracts UUID**: `abc-123-def-456`
 4. **API call**: `POST /qr-cards/scan/abc-123-def-456`
 

@@ -26,8 +26,6 @@ async function bootstrap() {
       ? [
           process.env.FRONTEND_URL,
           `https://admin.${process.env.FRONTEND_URL?.replace('https://', '')}`,
-          'https://your-production-domain.com',
-          'https://admin.your-production-domain.com'
         ].filter(Boolean)
       : true, // Allow all origins in development
     credentials: true,

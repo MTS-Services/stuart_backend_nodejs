@@ -30,7 +30,7 @@ export class QRCardService {
     
     for (let i = 0; i < count; i++) {
       const uniqueId = randomUUID();
-      const qrData = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${uniqueId}`;
+      const qrData = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/scan/${uniqueId}`;
       
       // Generate QR code as data URL
       const qrCodeDataUrl = await QRCode.toDataURL(qrData);
@@ -200,7 +200,7 @@ return {
 
     return cards.map(card => ({
       ...card,
-      scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+      scanUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/scan/${card.qrCode}`,
     }));
   }
 
@@ -268,7 +268,7 @@ return {
     
     for (let i = 0; i < count; i++) {
       const uniqueId = randomUUID();
-      const qrData = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${uniqueId}`;
+      const qrData = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/scan/${uniqueId}`;
       
       // Generate QR code as data URL
       const qrCodeDataUrl = await QRCode.toDataURL(qrData);
@@ -360,7 +360,7 @@ return {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/scan/${card.qrCode}`,
       })),
       user: {
         email: user.email,
@@ -396,7 +396,7 @@ return {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/scan/${card.qrCode}`,
         owner: {
           name: card.profile?.user?.name || 'Unknown',
           email: card.profile?.user?.email || 'Unknown',
@@ -446,7 +446,7 @@ return {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/scan/${card.qrCode}`,
         owner: {
           name: card.profile?.user?.name || 'Unknown',
           email: card.profile?.user?.email || 'Unknown',
@@ -488,7 +488,7 @@ return {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/scan/${card.qrCode}`,
+        scanUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/scan/${card.qrCode}`,
         owner: {
           name: card.profile?.user?.name || 'Unknown',
           email: card.profile?.user?.email || 'Unknown',

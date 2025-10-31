@@ -194,8 +194,8 @@ export class ContactService {
     message: string,
     contactRequestId: number,
   ) {
-    const approveUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/contact-request/${contactRequestId}/approve`;
-    const rejectUrl = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/contact-request/${contactRequestId}/reject`;
+    const approveUrl = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/contact-request/${contactRequestId}/approve`;
+    const rejectUrl = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/contact-request/${contactRequestId}/reject`;
 
     const mailOptions = {
       from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',

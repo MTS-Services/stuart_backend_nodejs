@@ -32,13 +32,38 @@ async getDashboard(
   const fromDate = from ? new Date(from) : undefined;
   const toDate = to ? new Date(to) : undefined;
 
-  // Pass range (or from/to) to the service
-  const stats = await this.adminService.getDashboardStats({ from: fromDate, to: toDate, range });
+  // Call the service
+  const stats = await this.adminService.getDashboardStats({
+    from: fromDate,
+    to: toDate,
+    range,
+  });
 
+  // stats = {
+  //   overview: {...},
+  //   analytics: {...},
+  //   userStatus: {...},
+  //   profileStatus: {...},
+  //   ...
+  // }
+
+  // ✅ Extract what you actually need
+  const result = {
+    scans: stats.overview.totalScans,
+    cards: stats.overview.totalCards,
+    waitlist: stats.userStatus.waitlist,
+    active: stats.userStatus.active,
+    verifiedProfiles: stats.profileStatus.approved,
+    users: stats.userStatus.total,
+    totalRevenue: stats.overview.totalRevenue,
+    activeSubscriptions: stats.overview.activeSubscriptions,
+  };
+
+  // ✅ Return only that
   return {
     success: true,
     range: range || (from && to ? { from: fromDate, to: toDate } : 'all-time'),
-    data: stats,
+    data: result,
   };
 }
 

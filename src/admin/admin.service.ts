@@ -247,6 +247,81 @@ async getDashboardStats({
     },
   };
 }
+// async getDashboardStats({
+//   from,
+//   to,
+//   range,
+// }: {
+//   from?: Date;
+//   to?: Date;
+//   range?: 'today' | 'week' | 'month' | 'year';
+// } = {}) {
+//   const now = new Date();
+//   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+//   const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
+//   const startOfWeek = new Date(startOfToday.getTime() - now.getDay() * 24 * 60 * 60 * 1000);
+//   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+//   const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+//   const ranges = {
+//     today: { from: startOfToday, to: endOfToday },
+//     week: { from: startOfWeek, to: endOfToday },
+//     month: { from: startOfMonth, to: endOfToday },
+//     year: { from: startOfYear, to: endOfToday },
+//   };
+
+//   let selectedRange: { from: Date; to: Date } | undefined;
+//   if (range && ranges[range]) {
+//     selectedRange = ranges[range];
+//   } else if (from && to) {
+//     selectedRange = { from, to };
+//   }
+
+//   const rangeFilter = selectedRange
+//     ? { gte: selectedRange.from, lt: selectedRange.to }
+//     : undefined;
+
+//   // --- Fetch required counts ---
+//   const [
+//     totalUsers,
+//     totalScans,
+//     totalCards,
+//     totalRevenueAgg,
+//     waitlistUsers,
+//     activeUsers,
+//     verifiedProfiles,
+//     activeSubscriptions,
+//   ] = await Promise.all([
+//     this.prisma.user.count(),
+// this.prisma.scan.count(
+//   rangeFilter ? { where: { createdAt: rangeFilter } } : undefined
+// ),
+
+//     this.prisma.qRCard.count(),
+//     this.prisma.payment.aggregate({
+//       where: { status: 'completed' },
+//       _sum: { amount: true },
+//     }),
+//     this.prisma.user.count({ where: { status: 'WAITLIST' } }),
+//     this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+//     this.prisma.profile.count({ where: { status: ProfileStatus.APPROVED } }),
+//     this.prisma.subscription.count({ where: { status: 'ACTIVE' } }),
+//   ]);
+
+//   const totalRevenue = parseFloat(totalRevenueAgg._sum.amount?.toString() || '0');
+
+//   return {
+//     scans: totalScans,
+//     cards: totalCards,
+//     waitlist: waitlistUsers,
+//     active: activeUsers,
+//     verifiedProfiles,
+//     users: totalUsers,
+//     totalRevenue,
+//     activeSubscriptions,
+//   };
+// }
+
 
 
   async getPendingProfiles(page: number = 1, limit: number = 10) {

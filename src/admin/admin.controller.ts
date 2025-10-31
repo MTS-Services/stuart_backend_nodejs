@@ -29,43 +29,36 @@ async getDashboard(
   @Query('to') to?: string,
   @Query('range') range?: 'today' | 'week' | 'month' | 'year'
 ) {
+  // ✅ Convert query params to Date if present
   const fromDate = from ? new Date(from) : undefined;
   const toDate = to ? new Date(to) : undefined;
 
-  // Call the service
-  const stats = await this.adminService.getDashboardStats({
-    from: fromDate,
-    to: toDate,
-    range,
-  });
+  // ✅ Fetch stats using optional args
+  const stats = await this.adminService.getDashboardStats({ from: fromDate, to: toDate, range });
 
-  // stats = {
-  //   overview: {...},
-  //   analytics: {...},
-  //   userStatus: {...},
-  //   profileStatus: {...},
-  //   ...
-  // }
+  // ✅ Decide range for the response label
+  const rangeLabel = range || (from && to ? { from: fromDate, to: toDate } : 'all-time');
 
-  // ✅ Extract what you actually need
+  // ✅ Build result object
   const result = {
     scans: stats.overview.totalScans,
     cards: stats.overview.totalCards,
+    users: stats.overview.totalUsers,
+    totalRevenue: stats.overview.totalRevenue,
+    activeSubscriptions: stats.overview.activeSubscriptions,
     waitlist: stats.userStatus.waitlist,
     active: stats.userStatus.active,
     verifiedProfiles: stats.profileStatus.approved,
-    users: stats.userStatus.total,
-    totalRevenue: stats.overview.totalRevenue,
-    activeSubscriptions: stats.overview.activeSubscriptions,
   };
 
-  // ✅ Return only that
   return {
     success: true,
-    range: range || (from && to ? { from: fromDate, to: toDate } : 'all-time'),
+    range: rangeLabel,
     data: result,
   };
 }
+
+
 
 
   @Get('test-verified')

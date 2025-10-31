@@ -615,7 +615,7 @@ async getDashboardStats({
     });
 
     // Generate edit link for the user
-    const editLink = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/profile/edit`;
+    const editLink = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}`;
 
     // Send rejection email with feedback and edit link
     try {

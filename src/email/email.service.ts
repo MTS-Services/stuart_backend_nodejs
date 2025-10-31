@@ -189,7 +189,7 @@ export class EmailService {
           
           <p>Don't worry - this is common! Just make the requested changes and resubmit.</p>
           
-          <a href="${editLink}/checkout/setup-profile/edit"  style="background: #ffc107; color: #212529; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
+          <a href="${editLink}/checkout/setup-profile/edit${email}"  style="background: #ffc107; color: #212529; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
             Edit Profile →
           </a>
           

@@ -227,9 +227,9 @@ model Notification {
 model EmailTemplate {
   id               Int      @id @default(autoincrement())
   name             String   @unique // registration_approved, registration_rejected, profile_approved, profile_rejected
-  subject          String   // Static subject line
-  customizableText String   // Only part admin can edit
-  staticTemplate   String   // Static HTML structure that cannot be changed
+  subject          String // Static subject line
+  customizableText String // Only part admin can edit
+  staticTemplate   String // Static HTML structure that cannot be changed
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

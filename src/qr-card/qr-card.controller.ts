@@ -171,4 +171,11 @@ export class QRCardController {
       }
     };
   }
+
+  // Check scan limits for a QR code (Debug/Admin endpoint)
+  @Get('scan-limits/:qrCode')
+  @UseGuards(AdminGuard)
+  async checkScanLimits(@Param('qrCode') qrCode: string, @Ip() ipAddress: string) {
+    return this.qrCardService.checkScanLimits(qrCode, ipAddress);
+  }
 }

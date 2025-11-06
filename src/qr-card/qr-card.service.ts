@@ -101,12 +101,32 @@ export class QRCardService {
       throw new HttpException('This QR card is no longer active', HttpStatus.BAD_REQUEST);
     }
 
+    // Check if card has reached maximum total scans (250)
     if (card.scanCount >= card.maxScans) {
       return {
         success: false,
-        message: 'This card has been used 5 times and is no longer available',
+        message: 'This card has reached its maximum scan limit (250 scans) and is no longer available',
         limitReached: true,
       };
+    }
+
+    // Check IP-based scan limit (max 5 scans per IP address per card)
+    if (viewerInfo.ipAddress) {
+      const ipScanCount = await this.prisma.scan.count({
+        where: {
+          qrCardId: card.id,
+          ipAddress: viewerInfo.ipAddress,
+        },
+      });
+
+      if (ipScanCount >= 5) {
+        return {
+          success: false,
+          message: 'This IP address has already scanned this card 5 times (maximum allowed per IP)',
+          ipLimitReached: true,
+          scansFromThisIP: ipScanCount,
+        };
+      }
     }
 
     // Record the scan
@@ -494,6 +514,59 @@ return {
           email: card.profile?.user?.email || 'Unknown',
         },
       })),
+    };
+  }
+
+  // Method to check scan limits for a specific QR code and IP address
+  async checkScanLimits(qrCode: string, ipAddress?: string) {
+    const card = await this.prisma.qRCard.findUnique({
+      where: { qrCode },
+      include: {
+        profile: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!card) {
+      throw new HttpException('QR card not found', HttpStatus.NOT_FOUND);
+    }
+
+    let ipScanCount = 0;
+    if (ipAddress) {
+      ipScanCount = await this.prisma.scan.count({
+        where: {
+          qrCardId: card.id,
+          ipAddress: ipAddress,
+        },
+      });
+    }
+
+    return {
+      qrCode: card.qrCode,
+      totalScans: card.scanCount,
+      maxTotalScans: card.maxScans,
+      scansRemaining: card.maxScans - card.scanCount,
+      ipAddress: ipAddress || 'Not provided',
+      scansFromThisIP: ipScanCount,
+      ipScansRemaining: Math.max(0, 5 - ipScanCount),
+      canScan: card.isActive && card.scanCount < card.maxScans && ipScanCount < 5,
+      limitReasons: {
+        totalLimitReached: card.scanCount >= card.maxScans,
+        ipLimitReached: ipScanCount >= 5,
+        cardInactive: !card.isActive,
+      },
+      owner: {
+        name: card.profile.user.name,
+        email: card.profile.user.email,
+      },
     };
   }
 }

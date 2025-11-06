@@ -98,7 +98,7 @@ model QRCard {
   userId    Int // Add direct relation to user
   qrCode    String   @unique // QR code data/URL
   scanCount Int      @default(0)
-  maxScans  Int      @default(5)
+  maxScans  Int      @default(250)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

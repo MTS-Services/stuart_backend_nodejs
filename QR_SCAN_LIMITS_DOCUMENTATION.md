@@ -1,16 +1,19 @@
 # QR Card Scan Limits Implementation
 
 ## Overview
+
 This document describes the implementation of QR card scan limits that provide two-tier protection against abuse while maintaining usability.
 
 ## Scan Limit Rules
 
 ### 1. Total Card Limit: 250 scans per QR card
+
 - Each QR card can be scanned a maximum of 250 times
 - This is a hard limit - once reached, the card becomes unavailable
 - Prevents overall abuse and ensures fair usage across all cards
 
 ### 2. IP-based Limit: 5 scans per IP address per QR card
+
 - Any single IP address can scan the same QR card up to 5 times
 - After 5 scans, that specific IP is blocked from scanning that card
 - Different IP addresses can still scan the card (up to their own 5-scan limit)
@@ -19,6 +22,7 @@ This document describes the implementation of QR card scan limits that provide t
 ## Implementation Details
 
 ### Database Schema
+
 ```prisma
 model QRCard {
   id        Int      @id @default(autoincrement())
@@ -34,12 +38,13 @@ model Scan {
   qrCardId  Int
   ipAddress String?
   // ... other fields
-  
+
   @@index([qrCardId, ipAddress]) // Optimizes IP-based queries
 }
 ```
 
 ### Service Logic (QRCardService.scanQRCard)
+
 1. **Card Validation**: Check if QR card exists and is active
 2. **Total Limit Check**: Verify card hasn't exceeded 250 total scans
 3. **IP Limit Check**: Count scans from the requesting IP address
@@ -49,6 +54,7 @@ model Scan {
 ### API Responses
 
 #### Successful Scan
+
 ```json
 {
   "success": true,
@@ -67,6 +73,7 @@ model Scan {
 ```
 
 #### Total Limit Reached (250 scans)
+
 ```json
 {
   "success": false,
@@ -76,6 +83,7 @@ model Scan {
 ```
 
 #### IP Limit Reached (5 scans per IP)
+
 ```json
 {
   "success": false,
@@ -88,6 +96,7 @@ model Scan {
 ## API Endpoints
 
 ### Scan QR Code
+
 ```
 POST /qr-cards/scan/{qrCode}
 POST /qr-cards/scan/{qrCode}/{scannerEmail}
@@ -96,6 +105,7 @@ POST /qr-cards/scan/{qrCode}/{scannerEmail}
 **Headers**: The IP address is automatically detected from request headers
 
 **Body** (for first endpoint):
+
 ```json
 {
   "scannerEmail": "scanner@example.com"
@@ -103,11 +113,13 @@ POST /qr-cards/scan/{qrCode}/{scannerEmail}
 ```
 
 ### Check Scan Limits (Admin Only)
+
 ```
 GET /qr-cards/scan-limits/{qrCode}
 ```
 
 **Response**:
+
 ```json
 {
   "qrCode": "uuid-here",
@@ -133,12 +145,14 @@ GET /qr-cards/scan-limits/{qrCode}
 ## Migration Applied
 
 A database migration was created to update existing QR cards:
+
 - Changed default `maxScans` from 5 to 250
 - Migration name: `20251106053016_update_max_scans_to_250`
 
 ## Testing
 
 ### Manual Testing
+
 1. Generate a QR card
 2. Scan it 5 times from the same IP - 6th scan should be blocked
 3. Scan from different IP - should succeed
@@ -146,7 +160,9 @@ A database migration was created to update existing QR cards:
 5. All further scans should be blocked regardless of IP
 
 ### Automated Testing
+
 Run the test script:
+
 ```bash
 node test-ip-limits.js
 ```

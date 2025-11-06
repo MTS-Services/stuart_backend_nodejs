@@ -358,6 +358,33 @@ async getDashboard(
   ) {
     return this.adminService.changeAdminPassword(req.user.id, changePasswordDto);
   }
+
+  // ========================
+  // Customizable Email Template Management
+  // ========================
+
+  @Post('templates/initialize')
+  async initializeCustomizableTemplates() {
+    return this.adminService.initializeCustomizableTemplates();
+  }
+
+  @Get('templates')
+  async getCustomizableTemplates() {
+    return this.adminService.getCustomizableTemplates();
+  }
+
+  @Get('templates/:name')
+  async getCustomizableTemplate(@Param('name') name: string) {
+    return this.adminService.getCustomizableTemplate(name);
+  }
+
+  @Put('templates/:name')
+  async updateCustomizableText(
+    @Param('name') name: string,
+    @Body('customizableText') customizableText: string
+  ) {
+    return this.adminService.updateCustomizableText(name, customizableText);
+  }
 }
 
 // 🔧 DEBUG CONTROLLER - No authentication required for testing

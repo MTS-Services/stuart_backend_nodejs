@@ -2708,6 +2708,364 @@
       ]
     },
     {
+      "name": "📧 Customizable Email Templates",
+      "item": [
+        {
+          "name": "🎬 Initialize Email Templates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Templates initialized successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Email templates initialized');",
+                  "    console.log('📧 Templates ready:', response.count || 'unknown count');",
+                  "} else {",
+                  "    console.log('❌ Failed to initialize templates');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/initialize",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "initialize"]
+            }
+          }
+        },
+        {
+          "name": "📋 Get All Email Templates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Templates retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Retrieved templates:', response.count || 'unknown count');",
+                  "    if (response.templates && response.templates.length > 0) {",
+                  "        response.templates.forEach((template, index) => {",
+                  "            console.log(`📧 ${index + 1}. ${template.name} - Active: ${template.is_active}`);",
+                  "            console.log(`   Subject: ${template.subject}`);",
+                  "        });",
+                  "        // Store first template name for other requests",
+                  "        pm.globals.set('template_name', response.templates[0].name);",
+                  "    }",
+                  "} else {",
+                  "    console.log('❌ Failed to retrieve templates');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates"]
+            }
+          }
+        },
+        {
+          "name": "👀 Get Registration Approved Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Template retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Template Details:');",
+                  "    console.log('📧 Name:', response.template.name);",
+                  "    console.log('📝 Subject:', response.template.subject);",
+                  "    console.log('✏️ Customizable Text (first 100 chars):', response.template.customizable_text.substring(0, 100) + '...');",
+                  "    console.log('✅ Active:', response.template.is_active);",
+                  "} else {",
+                  "    console.log('❌ Template not found');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/registration_approved",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "registration_approved"]
+            }
+          }
+        },
+        {
+          "name": "👀 Get Registration Rejected Template",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/registration_rejected",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "registration_rejected"]
+            }
+          }
+        },
+        {
+          "name": "👀 Get Profile Approved Template",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/profile_approved",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "profile_approved"]
+            }
+          }
+        },
+        {
+          "name": "👀 Get Profile Rejected Template",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/profile_rejected",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "profile_rejected"]
+            }
+          }
+        },
+        {
+          "name": "✏️ Update Registration Approved Text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Template updated successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Template updated successfully');",
+                  "    console.log('📝 Updated:', response.template.name);",
+                  "    console.log('🕒 Last modified:', response.timestamp);",
+                  "} else if (pm.response.code === 404) {",
+                  "    console.log('❌ Template not found');",
+                  "} else {",
+                  "    console.log('❌ Failed to update template');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customizableText\": \"🎉 Fantastic news! Your registration has been approved and you're now part of our exclusive QR Dating community. You can create your profile and start making amazing connections today!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/registration_approved",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "registration_approved"]
+            }
+          }
+        },
+        {
+          "name": "✏️ Update Registration Rejected Text",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customizableText\": \"We appreciate your interest in joining QR Dating App. Unfortunately, your registration doesn't meet our current requirements. Please review our community guidelines and feel free to reapply when ready.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/registration_rejected",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "registration_rejected"]
+            }
+          }
+        },
+        {
+          "name": "✏️ Update Profile Approved Text",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customizableText\": \"🌟 Excellent! Your profile looks amazing and has been approved. You can now generate QR cards, share your unique code, and start connecting with other awesome members in your area.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/profile_approved",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "profile_approved"]
+            }
+          }
+        },
+        {
+          "name": "✏️ Update Profile Rejected Text",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customizableText\": \"Your profile needs some improvements before we can approve it. Please check the feedback below, make the necessary updates, and resubmit when ready. We're here to help you create the perfect profile!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/templates/profile_rejected",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "templates", "profile_rejected"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "� Contact & Matching",
       "item": [
         {

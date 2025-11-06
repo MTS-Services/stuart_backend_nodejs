@@ -555,15 +555,15 @@ export class AdminService {
     // Generate tracking number for shipping
     const trackingNumber = `QR-${Date.now()}-${profile.userId}`;
 
-    // Send approval email with tracking
+    // Send profile approved email with tracking
     try {
-      await this.emailService.sendApprovalEmail(
-        profile.user.email,
-        profile.user.name || 'User',
-        trackingNumber,
-      );
+      await this.emailService.sendCustomizableEmail('profile_approved', profile.user.email, {
+        userName: profile.user.name || 'User',
+        currentDate: new Date().toLocaleDateString(),
+        profileUrl: `${process.env.APP_URL || 'https://yourapp.com'}/profile`,
+      });
     } catch (error) {
-      console.error('Failed to send approval email:', error);
+      console.error('Failed to send profile approved email:', error);
     }
 
     // Create notification for user
@@ -651,16 +651,16 @@ export class AdminService {
     // Generate edit link for the user
     const editLink = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}`;
 
-    // Send rejection email with feedback and edit link
+    // Send profile rejected email with feedback and edit link
     try {
-      await this.emailService.sendRejectionEmail(
-        profile.user.email,
-        profile.user.name || 'User',
-        reason,
-        editLink,
-      );
+      await this.emailService.sendCustomizableEmail('profile_rejected', profile.user.email, {
+        userName: profile.user.name || 'User',
+        rejectionReason: reason,
+        currentDate: new Date().toLocaleDateString(),
+        editProfileUrl: editLink,
+      });
     } catch (error) {
-      console.error('Failed to send rejection email:', error);
+      console.error('Failed to send profile rejected email:', error);
     }
 
     // Create notification for user
@@ -932,14 +932,15 @@ export class AdminService {
       },
     });
 
-    // Send welcome email (non-blocking - don't fail the approval if email fails)
+    // Send registration approved email (non-blocking)
     try {
-      await this.emailService.sendWelcomeEmail(
-        user.email,
-        user.name,
-      );
+      await this.emailService.sendCustomizableEmail('registration_approved', user.email, {
+        userName: user.name,
+        currentDate: new Date().toLocaleDateString(),
+        appUrl: process.env.APP_URL || 'https://yourapp.com',
+      });
     } catch (error) {
-      console.error('Failed to send welcome email:', error.message);
+      console.error('Failed to send registration approved email:', error.message);
       // Continue execution - email failure shouldn't block user approval
     }
 
@@ -982,12 +983,17 @@ export class AdminService {
       },
     });
 
-    // Send rejection email
-    await this.emailService.sendUserRejectionEmail(
-      user.email,
-      user.name,
-      reason,
-    );
+    // Send registration rejected email
+    try {
+      await this.emailService.sendCustomizableEmail('registration_rejected', user.email, {
+        userName: user.name,
+        rejectionReason: reason,
+        currentDate: new Date().toLocaleDateString(),
+        supportUrl: process.env.SUPPORT_URL || 'https://yourapp.com/support',
+      });
+    } catch (error) {
+      console.error('Failed to send registration rejected email:', error.message);
+    }
 
     // Create notification
     await this.prisma.notification.create({
@@ -1729,6 +1735,97 @@ export class AdminService {
       }
       throw new HttpException(
         `Failed to change password: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // ========================
+  // Customizable Email Template Management
+  // ========================
+
+  async initializeCustomizableTemplates() {
+    return await this.emailService.initializeCustomizableTemplates();
+  }
+
+  async getCustomizableTemplates() {
+    try {
+      const templates = await this.prisma.$queryRaw`
+        SELECT * FROM email_templates ORDER BY name ASC
+      `;
+      return {
+        success: true,
+        templates,
+        count: (templates as any[]).length
+      };
+    } catch (error) {
+      throw new HttpException(
+        `Failed to fetch templates: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async getCustomizableTemplate(name: string) {
+    try {
+      const template = await this.prisma.$queryRaw`
+        SELECT * FROM email_templates WHERE name = ${name}
+      `;
+      
+      if (!template || (template as any[]).length === 0) {
+        throw new HttpException(
+          `Template '${name}' not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+      
+      return {
+        success: true,
+        template: (template as any[])[0]
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to fetch template: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async updateCustomizableText(name: string, customizableText: string) {
+    try {
+      const result = await this.prisma.$queryRaw`
+        UPDATE email_templates 
+        SET customizable_text = ${customizableText}, updated_at = NOW()
+        WHERE name = ${name}
+      `;
+
+      // Check if any rows were updated
+      const template = await this.prisma.$queryRaw`
+        SELECT * FROM email_templates WHERE name = ${name}
+      `;
+
+      if (!template || (template as any[]).length === 0) {
+        throw new HttpException(
+          `Template '${name}' not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      return {
+        success: true,
+        message: `Template '${name}' updated successfully`,
+        template: (template as any[])[0],
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to update template: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

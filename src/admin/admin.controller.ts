@@ -379,11 +379,12 @@ async getDashboard(
   }
 
   @Put('templates/:name')
-  async updateCustomizableText(
+  async updateCustomizableTemplate(
     @Param('name') name: string,
-    @Body('customizableText') customizableText: string
+    @Body('subject') subject: string,
+    @Body('body') body: string
   ) {
-    return this.adminService.updateCustomizableText(name, customizableText);
+    return this.adminService.updateCustomizableTemplate(name, subject, body);
   }
 }
 

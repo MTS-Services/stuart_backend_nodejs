@@ -1794,11 +1794,11 @@ export class AdminService {
     }
   }
 
-  async updateCustomizableText(name: string, customizableText: string) {
+  async updateCustomizableTemplate(name: string, subject: string, body: string) {
     try {
       const result = await this.prisma.$queryRaw`
         UPDATE email_templates 
-        SET customizable_text = ${customizableText}, updated_at = NOW()
+        SET subject = ${subject}, body = ${body}, updated_at = NOW()
         WHERE name = ${name}
       `;
 

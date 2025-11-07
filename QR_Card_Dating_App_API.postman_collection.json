@@ -2819,7 +2819,7 @@
                   "    console.log('✅ Template Details:');",
                   "    console.log('📧 Name:', response.template.name);",
                   "    console.log('📝 Subject:', response.template.subject);",
-                  "    console.log('✏️ Customizable Text (first 100 chars):', response.template.customizable_text.substring(0, 100) + '...');",
+                  "    console.log('📧 Body (first 100 chars):', response.template.body.substring(0, 100) + '...');",
                   "    console.log('✅ Active:', response.template.is_active);",
                   "} else {",
                   "    console.log('❌ Template not found');",
@@ -2961,7 +2961,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customizableText\": \"🎉 Fantastic news! Your registration has been approved and you're now part of our exclusive QR Dating community. You can create your profile and start making amazing connections today!\"\n}"
+              "raw": "{\n  \"subject\": \"🎉 Welcome to QR Dating App - Registration Approved!\",\n  \"body\": \"🎉 Fantastic news! Your registration has been approved and you're now part of our exclusive QR Dating community. You can create your profile and start making amazing connections today!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/admin/templates/registration_approved",
@@ -2992,7 +2992,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customizableText\": \"We appreciate your interest in joining QR Dating App. Unfortunately, your registration doesn't meet our current requirements. Please review our community guidelines and feel free to reapply when ready.\"\n}"
+              "raw": "{\n  \"subject\": \"❌ QR Dating App - Registration Update\",\n  \"body\": \"We appreciate your interest in joining QR Dating App. Unfortunately, your registration doesn't meet our current requirements. Please review our community guidelines and feel free to reapply when ready.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/admin/templates/registration_rejected",
@@ -3023,7 +3023,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customizableText\": \"🌟 Excellent! Your profile looks amazing and has been approved. You can now generate QR cards, share your unique code, and start connecting with other awesome members in your area.\"\n}"
+              "raw": "{\n  \"subject\": \"✅ Profile Approved - You're Ready to Connect!\",\n  \"body\": \"🌟 Excellent! Your profile looks amazing and has been approved. You can now generate QR cards, share your unique code, and start connecting with other awesome members in your area.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/admin/templates/profile_approved",
@@ -3054,7 +3054,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customizableText\": \"Your profile needs some improvements before we can approve it. Please check the feedback below, make the necessary updates, and resubmit when ready. We're here to help you create the perfect profile!\"\n}"
+              "raw": "{\n  \"subject\": \"📝 Profile Review - Updates Required\",\n  \"body\": \"Your profile needs some improvements before we can approve it. Please check the feedback below, make the necessary updates, and resubmit when ready. We're here to help you create the perfect profile!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/admin/templates/profile_rejected",

@@ -408,126 +408,22 @@ export class EmailService {
       {
         name: 'registration_approved',
         subject: '🎉 Welcome to QR Dating App - Registration Approved!',
-        customizableText: 'Congratulations! Your registration has been approved. You can now create your profile and start connecting with other members.',
-        staticTemplate: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Registration Approved!</h1>
-            </div>
-            <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; margin-bottom: 20px;">Hello {{userName}}!</h2>
-              <div style="background-color: #e8f5e8; border-left: 4px solid #4caf50; padding: 15px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333;">{{customizableText}}</p>
-              </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{appUrl}}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">Start Your Journey</a>
-              </div>
-              <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
-                Welcome to the QR Dating App community!<br>
-                <strong>Date:</strong> {{currentDate}}
-              </p>
-            </div>
-          </div>
-        `
+        body: 'Congratulations! Your registration has been approved. You can now create your profile and start connecting with other members.'
       },
       {
         name: 'registration_rejected',
         subject: '❌ QR Dating App - Registration Update',
-        customizableText: 'We regret to inform you that your registration has been rejected. Please review our terms and conditions and feel free to reapply.',
-        staticTemplate: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">Registration Update</h1>
-            </div>
-            <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; margin-bottom: 20px;">Hello {{userName}},</h2>
-              <div style="background-color: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333;">{{customizableText}}</p>
-              </div>
-              <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 14px; color: #666;"><strong>Reason:</strong> {{rejectionReason}}</p>
-              </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{supportUrl}}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">Contact Support</a>
-              </div>
-              <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
-                Thank you for your interest in QR Dating App<br>
-                <strong>Date:</strong> {{currentDate}}
-              </p>
-            </div>
-          </div>
-        `
+        body: 'We regret to inform you that your registration has been rejected. Please review our terms and conditions and feel free to reapply.'
       },
       {
         name: 'profile_approved',
         subject: '✅ Profile Approved - You\'re Ready to Connect!',
-        customizableText: 'Great news! Your profile has been approved and is now live. You can start generating QR cards and connecting with other members.',
-        staticTemplate: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">✅ Profile Approved!</h1>
-            </div>
-            <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; margin-bottom: 20px;">Congratulations {{userName}}!</h2>
-              <div style="background-color: #e8f5e8; border-left: 4px solid #4caf50; padding: 15px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333;">{{customizableText}}</p>
-              </div>
-              <div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0; color: #333;">🚀 What's Next?</h3>
-                <ul style="color: #555; line-height: 1.8;">
-                  <li>Generate your QR cards</li>
-                  <li>Share your QR code with potential matches</li>
-                  <li>Start making meaningful connections</li>
-                </ul>
-              </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{profileUrl}}" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">View Your Profile</a>
-              </div>
-              <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
-                Happy connecting! 💕<br>
-                <strong>Approved on:</strong> {{currentDate}}
-              </p>
-            </div>
-          </div>
-        `
+        body: 'Great news! Your profile has been approved and is now live. You can start generating QR cards and connecting with other members.'
       },
       {
         name: 'profile_rejected',
         subject: '📝 Profile Review - Updates Required',
-        customizableText: 'Your profile needs some updates before it can be approved. Please review the feedback below and resubmit your profile.',
-        staticTemplate: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">📝 Profile Review</h1>
-            </div>
-            <div style="background-color: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; margin-bottom: 20px;">Hello {{userName}},</h2>
-              <div style="background-color: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333;">{{customizableText}}</p>
-              </div>
-              <div style="background-color: #ffebee; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <h4 style="margin-top: 0; color: #d32f2f;">Feedback:</h4>
-                <p style="margin: 0; font-size: 14px; color: #666;">{{rejectionReason}}</p>
-              </div>
-              <div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0; color: #333;">💡 Tips for Approval:</h3>
-                <ul style="color: #555; line-height: 1.8;">
-                  <li>Use clear, recent photos</li>
-                  <li>Write a genuine, interesting bio</li>
-                  <li>Fill out all required fields</li>
-                  <li>Follow community guidelines</li>
-                </ul>
-              </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{editProfileUrl}}" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">Update Profile</a>
-              </div>
-              <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
-                We're here to help you succeed! 🌟<br>
-                <strong>Reviewed on:</strong> {{currentDate}}
-              </p>
-            </div>
-          </div>
-        `
+        body: 'Your profile needs some updates before it can be approved. Please review the feedback below and resubmit your profile.'
       }
     ];
 
@@ -535,8 +431,8 @@ export class EmailService {
       try {
         // Try to insert, if it exists, skip
         await this.prisma.$queryRaw`
-          INSERT INTO email_templates (name, subject, customizable_text, static_template, is_active, created_at, updated_at)
-          VALUES (${template.name}, ${template.subject}, ${template.customizableText}, ${template.staticTemplate}, true, NOW(), NOW())
+          INSERT INTO email_templates (name, subject, body, is_active, created_at, updated_at)
+          VALUES (${template.name}, ${template.subject}, ${template.body}, true, NOW(), NOW())
           ON CONFLICT (name) DO NOTHING
         `;
       } catch (error) {
@@ -555,10 +451,10 @@ export class EmailService {
     return (result as any[])[0] || null;
   }
 
-  async updateCustomizableText(name: string, customizableText: string) {
+  async updateCustomizableTemplate(name: string, subject: string, body: string) {
     await this.prisma.$queryRaw`
       UPDATE email_templates 
-      SET customizable_text = ${customizableText}, updated_at = NOW()
+      SET subject = ${subject}, body = ${body}, updated_at = NOW()
       WHERE name = ${name}
     `;
     return this.getCustomizableTemplate(name);
@@ -571,30 +467,31 @@ export class EmailService {
         throw new Error(`Template '${templateName}' not found or inactive`);
       }
 
-      // Replace variables in both customizable text and static template
-      let htmlContent = template.static_template;
-      let customText = template.customizable_text;
-
-      // Replace variables in customizable text first
+      // Replace variables in subject and body
+      let finalSubject = template.subject;
+      let finalBody = template.body;
+      
       Object.entries(variables).forEach(([key, value]) => {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-        customText = customText.replace(regex, String(value));
-      });
-
-      // Now replace {{customizableText}} in the static template
-      htmlContent = htmlContent.replace(/\{\{customizableText\}\}/g, customText);
-
-      // Replace other variables in the static template
-      Object.entries(variables).forEach(([key, value]) => {
-        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-        htmlContent = htmlContent.replace(regex, String(value));
+        finalSubject = finalSubject.replace(regex, String(value));
+        finalBody = finalBody.replace(regex, String(value));
       });
 
       const mailOptions = {
         from: `"QR Dating App" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
         to,
-        subject: template.subject,
-        html: htmlContent,
+        subject: finalSubject,
+        text: finalBody, // Simple text email
+        html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-bottom: 20px;">QR Dating App</h2>
+            <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 20px;">${finalBody}</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #666; text-align: center; margin: 0;">
+              © QR Dating App ${new Date().getFullYear()}. All rights reserved.
+            </p>
+          </div>
+        </div>`, // Simple HTML wrapper
       };
 
       const result = await this.transporter.sendMail(mailOptions);

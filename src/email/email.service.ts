@@ -408,22 +408,189 @@ export class EmailService {
       {
         name: 'registration_approved',
         subject: '🎉 Welcome to QR Dating App - Registration Approved!',
-        body: 'Congratulations! Your registration has been approved. You can now create your profile and start connecting with other members.'
+        body: 'Congratulations! Your registration has been approved. You can now create your profile and start connecting with other members.',
+        htmlTemplate: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{subject}}</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #f0f8ff; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .header { text-align: center; padding: 20px 0; border-bottom: 3px solid #4CAF50; margin-bottom: 30px; }
+        .header h1 { color: #4CAF50; font-size: 28px; margin: 0; font-weight: bold; }
+        .content { font-size: 16px; line-height: 1.8; color: #333333; }
+        .highlight-box { background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center; }
+        .highlight-box h2 { margin: 0 0 10px 0; font-size: 22px; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+        .button { display: inline-block; background: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 QR Dating App</h1>
+        </div>
+        <div class="content">
+            <div class="highlight-box">
+                <h2>Welcome {{userName}}!</h2>
+                <p>Your registration has been approved!</p>
+            </div>
+            <p>{{body}}</p>
+            <p>We're excited to have you join our community of singles looking for meaningful connections through QR card dating!</p>
+        </div>
+        <div class="footer">
+            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`
       },
       {
         name: 'registration_rejected',
         subject: '❌ QR Dating App - Registration Update',
-        body: 'We regret to inform you that your registration has been rejected. Please review our terms and conditions and feel free to reapply.'
+        body: 'We regret to inform you that your registration has been rejected. Please review our terms and conditions and feel free to reapply.',
+        htmlTemplate: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{subject}}</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #fff5f5; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .header { text-align: center; padding: 20px 0; border-bottom: 3px solid #f44336; margin-bottom: 30px; }
+        .header h1 { color: #f44336; font-size: 28px; margin: 0; font-weight: bold; }
+        .content { font-size: 16px; line-height: 1.8; color: #333333; }
+        .highlight-box { background: linear-gradient(135deg, #f44336, #d32f2f); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center; }
+        .highlight-box h2 { margin: 0 0 10px 0; font-size: 22px; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+        .info-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 QR Dating App</h1>
+        </div>
+        <div class="content">
+            <div class="highlight-box">
+                <h2>Hello {{userName}}</h2>
+                <p>Registration Update</p>
+            </div>
+            <p>{{body}}</p>
+            <div class="info-box">
+                <p><strong>Reason:</strong> {{rejectionReason}}</p>
+            </div>
+            <p>Thank you for your interest in our platform. If you have any questions, please feel free to contact our support team.</p>
+        </div>
+        <div class="footer">
+            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`
       },
       {
         name: 'profile_approved',
         subject: '✅ Profile Approved - You\'re Ready to Connect!',
-        body: 'Great news! Your profile has been approved and is now live. You can start generating QR cards and connecting with other members.'
+        body: 'Great news! Your profile has been approved and is now live. You can start generating QR cards and connecting with other members.',
+        htmlTemplate: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{subject}}</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); margin-top: 20px; margin-bottom: 20px; }
+        .header { text-align: center; padding: 20px 0; margin-bottom: 30px; }
+        .header h1 { color: #667eea; font-size: 32px; margin: 0; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        .content { font-size: 16px; line-height: 1.8; color: #333333; }
+        .success-box { background: linear-gradient(135deg, #56ab2f, #a8e6cf); color: white; padding: 30px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 8px 25px rgba(86, 171, 47, 0.3); }
+        .success-box h2 { margin: 0 0 15px 0; font-size: 24px; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #667eea; font-size: 12px; color: #666; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 18px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; margin: 25px 0; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); transition: transform 0.3s ease; }
+        .cta-button:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ QR Dating App</h1>
+        </div>
+        <div class="content">
+            <div class="success-box">
+                <h2>🎉 Congratulations {{userName}}!</h2>
+                <p>Your profile is now approved and live!</p>
+            </div>
+            <p>{{body}}</p>
+            <p>Your journey to meaningful connections starts now. Create QR cards and start meeting amazing people!</p>
+            <div style="text-align: center;">
+                <a href="{{dashboardUrl}}" class="cta-button">Generate QR Cards →</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`
       },
       {
         name: 'profile_rejected',
         subject: '📝 Profile Review - Updates Required',
-        body: 'Your profile needs some updates before it can be approved. Please review the feedback below and resubmit your profile.'
+        body: 'Your profile needs some updates before it can be approved. Please review the feedback below and resubmit your profile.',
+        htmlTemplate: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{subject}}</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%); }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); margin-top: 20px; margin-bottom: 20px; }
+        .header { text-align: center; padding: 20px 0; margin-bottom: 30px; }
+        .header h1 { color: #e17055; font-size: 32px; margin: 0; font-weight: bold; }
+        .content { font-size: 16px; line-height: 1.8; color: #333333; }
+        .review-box { background: linear-gradient(135deg, #fdcb6e, #e17055); color: white; padding: 30px; border-radius: 12px; margin: 25px 0; box-shadow: 0 8px 25px rgba(225, 112, 85, 0.3); }
+        .review-box h2 { margin: 0 0 15px 0; font-size: 24px; text-align: center; }
+        .feedback-box { background: rgba(255, 255, 255, 0.2); padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid white; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #e17055; font-size: 12px; color: #666; }
+        .edit-button { display: inline-block; background: linear-gradient(135deg, #00b894, #00cec9); color: white; padding: 18px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; margin: 25px 0; box-shadow: 0 8px 25px rgba(0, 184, 148, 0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 QR Dating App</h1>
+        </div>
+        <div class="content">
+            <div class="review-box">
+                <h2>Profile Review for {{userName}}</h2>
+                <p>{{body}}</p>
+                <div class="feedback-box">
+                    <strong>Feedback:</strong><br>
+                    {{rejectionReason}}
+                </div>
+            </div>
+            <p>Don't worry! These updates will help make your profile even better. Just make the requested changes and resubmit.</p>
+            <div style="text-align: center;">
+                <a href="{{editProfileUrl}}" class="edit-button">Edit Profile →</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`
       }
     ];
 
@@ -431,8 +598,8 @@ export class EmailService {
       try {
         // Try to insert, if it exists, skip
         await this.prisma.$queryRaw`
-          INSERT INTO email_templates (name, subject, body, is_active, created_at, updated_at)
-          VALUES (${template.name}, ${template.subject}, ${template.body}, true, NOW(), NOW())
+          INSERT INTO email_templates (name, subject, body, html_template, is_active, created_at, updated_at)
+          VALUES (${template.name}, ${template.subject}, ${template.body}, ${template.htmlTemplate}, true, NOW(), NOW())
           ON CONFLICT (name) DO NOTHING
         `;
       } catch (error) {
@@ -440,8 +607,8 @@ export class EmailService {
       }
     }
 
-    console.log('✅ Customizable email templates initialized');
-    return { message: 'Customizable email templates initialized successfully', count: defaultTemplates.length };
+    console.log('✅ Customizable HTML email templates initialized');
+    return { message: 'Customizable HTML email templates initialized successfully', count: defaultTemplates.length };
   }
 
   async getCustomizableTemplate(name: string) {
@@ -451,12 +618,20 @@ export class EmailService {
     return (result as any[])[0] || null;
   }
 
-  async updateCustomizableTemplate(name: string, subject: string, body: string) {
-    await this.prisma.$queryRaw`
-      UPDATE email_templates 
-      SET subject = ${subject}, body = ${body}, updated_at = NOW()
-      WHERE name = ${name}
-    `;
+  async updateCustomizableTemplate(name: string, subject: string, body: string, htmlTemplate?: string) {
+    if (htmlTemplate) {
+      await this.prisma.$queryRaw`
+        UPDATE email_templates 
+        SET subject = ${subject}, body = ${body}, html_template = ${htmlTemplate}, updated_at = NOW()
+        WHERE name = ${name}
+      `;
+    } else {
+      await this.prisma.$queryRaw`
+        UPDATE email_templates 
+        SET subject = ${subject}, body = ${body}, updated_at = NOW()
+        WHERE name = ${name}
+      `;
+    }
     return this.getCustomizableTemplate(name);
   }
 
@@ -467,22 +642,28 @@ export class EmailService {
         throw new Error(`Template '${templateName}' not found or inactive`);
       }
 
-      // Replace variables in subject and body
+      // Add default variables if not provided
+      const defaultVariables = {
+        currentYear: new Date().getFullYear().toString(),
+        appName: 'QR Dating App',
+        ...variables
+      };
+
+      // Replace variables in subject, body, and HTML template
       let finalSubject = template.subject;
       let finalBody = template.body;
+      let finalHtml = template.html_template || template.htmlTemplate || '';
       
-      Object.entries(variables).forEach(([key, value]) => {
+      Object.entries(defaultVariables).forEach(([key, value]) => {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
         finalSubject = finalSubject.replace(regex, String(value));
         finalBody = finalBody.replace(regex, String(value));
+        finalHtml = finalHtml.replace(regex, String(value));
       });
 
-      const mailOptions = {
-        from: `"QR Dating App" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
-        to,
-        subject: finalSubject,
-        text: finalBody, // Simple text email
-        html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+      // Fallback to simple HTML if no custom template
+      if (!finalHtml) {
+        finalHtml = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
           <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <h2 style="color: #333; margin-bottom: 20px;">QR Dating App</h2>
             <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 20px;">${finalBody}</p>
@@ -491,7 +672,15 @@ export class EmailService {
               © QR Dating App ${new Date().getFullYear()}. All rights reserved.
             </p>
           </div>
-        </div>`, // Simple HTML wrapper
+        </div>`;
+      }
+
+      const mailOptions = {
+        from: `"QR Dating App" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
+        to,
+        subject: finalSubject,
+        text: finalBody, // Plain text fallback
+        html: finalHtml, // Full customizable HTML template
       };
 
       const result = await this.transporter.sendMail(mailOptions);

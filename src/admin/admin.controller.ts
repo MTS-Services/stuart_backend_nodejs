@@ -382,9 +382,10 @@ async getDashboard(
   async updateCustomizableTemplate(
     @Param('name') name: string,
     @Body('subject') subject: string,
-    @Body('body') body: string
+    @Body('body') body: string,
+    @Body('htmlTemplate') htmlTemplate?: string
   ) {
-    return this.adminService.updateCustomizableTemplate(name, subject, body);
+    return this.adminService.updateCustomizableTemplate(name, subject, body, htmlTemplate);
   }
 }
 

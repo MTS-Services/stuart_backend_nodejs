@@ -1794,13 +1794,21 @@ export class AdminService {
     }
   }
 
-  async updateCustomizableTemplate(name: string, subject: string, body: string) {
+  async updateCustomizableTemplate(name: string, subject: string, body: string, htmlTemplate?: string) {
     try {
-      const result = await this.prisma.$queryRaw`
-        UPDATE email_templates 
-        SET subject = ${subject}, body = ${body}, updated_at = NOW()
-        WHERE name = ${name}
-      `;
+      if (htmlTemplate) {
+        await this.prisma.$queryRaw`
+          UPDATE email_templates 
+          SET subject = ${subject}, body = ${body}, html_template = ${htmlTemplate}, updated_at = NOW()
+          WHERE name = ${name}
+        `;
+      } else {
+        await this.prisma.$queryRaw`
+          UPDATE email_templates 
+          SET subject = ${subject}, body = ${body}, updated_at = NOW()
+          WHERE name = ${name}
+        `;
+      }
 
       // Check if any rows were updated
       const template = await this.prisma.$queryRaw`

@@ -225,13 +225,14 @@ model Notification {
 }
 
 model EmailTemplate {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique // registration_approved, registration_rejected, profile_approved, profile_rejected
-  subject   String // Admin can edit subject line
-  body      String // Admin can edit body content
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  name         String   @unique // registration_approved, registration_rejected, profile_approved, profile_rejected
+  subject      String   // Admin can edit subject line
+  body         String   // Admin can edit plain text body content
+  htmlTemplate String   @map("html_template") @db.Text // Admin can edit full HTML template with CSS styling
+  isActive     Boolean  @map("is_active") @default(true)
+  createdAt    DateTime @map("created_at") @default(now())
+  updatedAt    DateTime @map("updated_at") @updatedAt
 
   @@map("email_templates")
 }

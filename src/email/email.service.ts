@@ -646,6 +646,11 @@ export class EmailService {
       const defaultVariables = {
         currentYear: new Date().getFullYear().toString(),
         appName: 'QR Dating App',
+        subject: template.subject, // Add the template's own subject as a variable
+        body: template.body, // Add the template's own body as a variable
+        dashboardUrl: process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com',
+        editProfileUrl: process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com',
+        rejectionReason: variables.rejectionReason || 'Please check your profile details.',
         ...variables
       };
 
@@ -656,9 +661,9 @@ export class EmailService {
       
       Object.entries(defaultVariables).forEach(([key, value]) => {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-        finalSubject = finalSubject.replace(regex, String(value));
-        finalBody = finalBody.replace(regex, String(value));
-        finalHtml = finalHtml.replace(regex, String(value));
+        finalSubject = finalSubject.replace(regex, String(value || ''));
+        finalBody = finalBody.replace(regex, String(value || ''));
+        finalHtml = finalHtml.replace(regex, String(value || ''));
       });
 
       // Fallback to simple HTML if no custom template

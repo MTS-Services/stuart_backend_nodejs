@@ -559,8 +559,8 @@ export class AdminService {
     try {
       await this.emailService.sendCustomizableEmail('profile_approved', profile.user.email, {
         userName: profile.user.name || 'User',
-        currentDate: new Date().toLocaleDateString(),
-        profileUrl: `${process.env.APP_URL || 'https://yourapp.com'}/profile`,
+        dashboardUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/dashboard`,
+        currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {
       console.error('Failed to send profile approved email:', error);
@@ -656,8 +656,8 @@ export class AdminService {
       await this.emailService.sendCustomizableEmail('profile_rejected', profile.user.email, {
         userName: profile.user.name || 'User',
         rejectionReason: reason,
-        currentDate: new Date().toLocaleDateString(),
         editProfileUrl: editLink,
+        currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {
       console.error('Failed to send profile rejected email:', error);
@@ -936,8 +936,8 @@ export class AdminService {
     try {
       await this.emailService.sendCustomizableEmail('registration_approved', user.email, {
         userName: user.name,
-        currentDate: new Date().toLocaleDateString(),
-        appUrl: process.env.APP_URL || 'https://yourapp.com',
+        dashboardUrl: process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com',
+        currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {
       console.error('Failed to send registration approved email:', error.message);
@@ -988,8 +988,7 @@ export class AdminService {
       await this.emailService.sendCustomizableEmail('registration_rejected', user.email, {
         userName: user.name,
         rejectionReason: reason,
-        currentDate: new Date().toLocaleDateString(),
-        supportUrl: process.env.SUPPORT_URL || 'https://yourapp.com/support',
+        currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {
       console.error('Failed to send registration rejected email:', error.message);

@@ -96,7 +96,7 @@ export class EmailService {
     }
 
     try {
-      const signupUrl = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/complete-signup?token=${signupToken}`;
+      const signupUrl = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/complete-signup?token=${signupToken}`;
       
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
@@ -160,7 +160,7 @@ export class EmailService {
           
           <p>Start creating your profile now to speed up the process!</p>
           
-          <a href="${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/profile" style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
+          <a href="${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/profile" style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">
             Create Profile →
           </a>
         </div>
@@ -247,7 +247,7 @@ export class EmailService {
     }
 
     try {
-      const loginUrl = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/checkout/${email}`;
+      const loginUrl = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/checkout/${email}`;
       
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
@@ -688,7 +688,7 @@ export class EmailService {
       }
 
       const customButtonConfig = this.extractButtonConfigFromTemplate(template.html_template || template.htmlTemplate || '');
-      const baseUrl = process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com';
+      const baseUrl = process.env.FRONTEND_URL || 'https://scanmemaybe.com';
       const userEmail = to;
 
       const sanitizeVariables = (vars: Record<string, any>) => {

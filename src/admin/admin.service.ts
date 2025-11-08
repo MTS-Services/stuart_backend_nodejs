@@ -559,7 +559,7 @@ export class AdminService {
     try {
       await this.emailService.sendCustomizableEmail('profile_approved', profile.user.email, {
         userName: profile.user.name || 'User',
-        dashboardUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/dashboard`,
+        dashboardUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/dashboard`,
         currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {
@@ -649,7 +649,7 @@ export class AdminService {
     });
 
     // Generate edit link for the user
-    const editLink = `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}`;
+    const editLink = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}`;
 
     // Send profile rejected email with feedback and edit link
     try {
@@ -936,8 +936,8 @@ export class AdminService {
     try {
       await this.emailService.sendCustomizableEmail('registration_approved', user.email, {
         userName: user.name,
-        dashboardUrl: process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com',
-        paymentUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/checkout/${user.email}`,
+        dashboardUrl: process.env.FRONTEND_URL || 'https://scanmemaybe.com',
+        paymentUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/checkout/${user.email}`,
         currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {

@@ -18,7 +18,7 @@ export class TestController {
     try {
       const result = await this.emailService.sendCustomizableEmail('registration_approved', email, {
         userName: name,
-        paymentUrl: `https://stuart05frontend.mtscorporate.com/checkout/${email}`,
+        paymentUrl: `https://scanmemaybe.com/checkout/${email}`,
         currentYear: new Date().getFullYear().toString(),
       });
 

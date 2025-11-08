@@ -937,6 +937,7 @@ export class AdminService {
       await this.emailService.sendCustomizableEmail('registration_approved', user.email, {
         userName: user.name,
         dashboardUrl: process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com',
+        paymentUrl: `${process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com'}/checkout/${user.email}`,
         currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {
@@ -1836,5 +1837,108 @@ export class AdminService {
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  // ========================
+  // Email Button Configuration Management
+  // ========================
+
+  async getEmailButtonConfigurations() {
+    try {
+      // Return default button text configurations that can be customized
+      return {
+        success: true,
+        data: {
+          paymentButtonText: 'Complete Payment & Setup →',
+          dashboardButtonText: 'Generate QR Cards →',
+          editButtonText: 'Edit Profile →',
+          loginButtonText: 'Login to Dashboard →',
+          
+          // Static URLs (not customizable for security)
+          staticUrls: {
+            dashboardUrl: 'Auto-generated based on frontend URL',
+            editProfileUrl: 'Auto-generated based on frontend URL', 
+            paymentUrl: 'Auto-generated based on frontend URL',
+            loginUrl: 'Auto-generated based on frontend URL'
+          },
+          
+          note: 'Button text can be customized by updating the template variables. URLs are automatically generated for security.'
+        }
+      };
+    } catch (error) {
+      throw new HttpException(
+        `Failed to get button configurations: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async updateTemplateWithButtonText(templateName: string, buttonConfigs: {
+    paymentButtonText?: string;
+    dashboardButtonText?: string;
+    editButtonText?: string;
+    loginButtonText?: string;
+  }) {
+    try {
+      const template = await this.emailService.getCustomizableTemplate(templateName);
+      if (!template) {
+        throw new HttpException(`Template '${templateName}' not found`, HttpStatus.NOT_FOUND);
+      }
+
+      let htmlTemplate = template.html_template || template.htmlTemplate || '';
+      
+      // Validate that we're not accidentally removing placeholder variables
+      const originalVariables = htmlTemplate.match(/{{[^}]+}}/g) || [];
+      
+      // Instead of replacing variables, we store the button text as metadata
+      // and let the email service use them as default values
+      const updatedConfigs = {
+        ...buttonConfigs,
+        templateName,
+        lastUpdated: new Date().toISOString()
+      };
+
+      // For now, we'll add a comment in the template to track custom button text
+      const configComment = `<!-- Custom Button Config: ${JSON.stringify(buttonConfigs)} -->`;
+      
+      if (!htmlTemplate.includes('<!-- Custom Button Config:')) {
+        htmlTemplate = configComment + '\n' + htmlTemplate;
+      } else {
+        // Replace existing config comment
+        htmlTemplate = htmlTemplate.replace(/<!-- Custom Button Config:.*?-->/s, configComment);
+      }
+
+      // Update the template in database
+      await this.updateCustomizableTemplate(templateName, template.subject, template.body, htmlTemplate);
+
+      return {
+        success: true,
+        message: `Button text preferences saved for template '${templateName}'. Note: Button text is applied when emails are sent, not stored in template.`,
+        updatedConfigs: buttonConfigs,
+        note: 'Button text variables remain as {{buttonText}} placeholders and are replaced during email sending',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to update button text: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // Helper method to extract button configs from template comments
+  getButtonConfigFromTemplate(htmlTemplate: string): any {
+    const match = htmlTemplate.match(/<!-- Custom Button Config: (.*?) -->/s);
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
   }
 }

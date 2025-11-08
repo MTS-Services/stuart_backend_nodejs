@@ -9,6 +9,7 @@ import { AdminModule } from './admin/admin.module';
 import { PaymentModule } from './payment/payment.module';
 import { ContactModule } from './contact/contact.module';
 import { ImageUploadModule } from './image-upload/image-upload.module';
+import { TestModule } from './test/test.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ImageUploadModule } from './image-upload/image-upload.module';
     PaymentModule,
     ContactModule,
     ImageUploadModule,
+    TestModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -18,6 +18,47 @@ export class EmailService {
         sendMail: async (options) => {
           console.log('📧 Mock Email Service - Would send email to:', options.to);
           console.log('📝 Subject:', options.subject);
+          
+          // Log more details for debugging
+          if (options.html) {
+            console.log('📧 HTML Content Preview:');
+            const hasUnreplacedVars = options.html.includes('{{');
+            console.log('   - Contains unreplaced variables:', hasUnreplacedVars);
+            
+            if (hasUnreplacedVars) {
+              const vars = options.html.match(/{{[^}]+}}/g);
+              console.log('   - Unreplaced variables:', vars);
+              console.log('❌ CRITICAL: Variables not replaced! Check sendCustomizableEmail method');
+            }
+            
+            const hasButton = options.html.includes('<a href=');
+            console.log('   - Contains button links:', hasButton);
+            
+            if (options.html.includes('paymentUrl')) {
+              console.log('   - Contains payment URL reference');
+            }
+            
+            // Show a snippet of the button area
+            const buttonMatch = options.html.match(/<a[^>]*>.*?<\/a>/s);
+            if (buttonMatch) {
+              console.log('   - Button HTML snippet:', buttonMatch[0].substring(0, 150));
+              
+              // Check if button has the correct text
+              if (buttonMatch[0].includes('{{paymentButtonText}}')) {
+                console.log('❌ BUTTON ERROR: paymentButtonText variable not replaced!');
+              } else if (buttonMatch[0].includes('💳 Complete Payment')) {
+                console.log('✅ BUTTON OK: Payment button text replaced correctly');
+              }
+            }
+            
+            // Save the HTML to a file so we can inspect it
+            const fs = require('fs');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `debug-email-${timestamp}.html`;
+            fs.writeFileSync(filename, options.html);
+            console.log(`💾 Email HTML saved to: ${filename}`);
+          }
+          
           return { messageId: 'mock-' + Date.now() };
         }
       } as any;
@@ -86,10 +127,8 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('📧 Signup link email sent successfully to:', email);
       return result;
     } catch (error) {
-      console.error('❌ Failed to send signup link email to:', email, error.message);
       throw new Error(`Failed to send signup link email: ${error.message}`);
     }
   }
@@ -204,7 +243,6 @@ export class EmailService {
 
   async sendWelcomeEmail(email: string, name: string) {
     if (!this.isEmailConfigured()) {
-      console.log('⚠️ Email not configured - skipping welcome email to:', email);
       return { message: 'Email service not configured' };
     }
 
@@ -245,17 +283,14 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Welcome email sent successfully to:', email);
       return result;
     } catch (error) {
-      console.error('❌ Failed to send welcome email to:', email, error.message);
       throw new Error(`Failed to send welcome email: ${error.message}`);
     }
   }
 
   async sendUserRejectionEmail(email: string, name: string, reason: string) {
     if (!this.isEmailConfigured()) {
-      console.log('⚠️ Email not configured - skipping rejection email to:', email);
       return { message: 'Email service not configured' };
     }
 
@@ -287,10 +322,8 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('📧 Rejection email sent successfully to:', email);
       return result;
     } catch (error) {
-      console.error('❌ Failed to send rejection email to:', email, error.message);
       throw new Error(`Failed to send rejection email: ${error.message}`);
     }
   }
@@ -340,10 +373,8 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('📧 QR scan notification sent successfully to:', email);
       return result;
     } catch (error) {
-      console.error('❌ Failed to send QR scan notification to:', email, error.message);
       throw new Error(`Failed to send QR scan notification: ${error.message}`);
     }
   }
@@ -391,10 +422,8 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('📧 Profile info sent successfully to scanner:', scannerEmail);
       return result;
     } catch (error) {
-      console.error('❌ Failed to send profile info to scanner:', scannerEmail, error.message);
       throw new Error(`Failed to send profile info: ${error.message}`);
     }
   }
@@ -441,6 +470,22 @@ export class EmailService {
             </div>
             <p>{{body}}</p>
             <p>We're excited to have you join our community of singles looking for meaningful connections through QR card dating!</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{paymentUrl}}" class="button" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 18px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3); display: inline-block;">
+                    {{paymentButtonText}}
+                </a>
+            </div>
+            
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+                <h3 style="color: #4CAF50; margin-top: 0;">🎯 Next Steps:</h3>
+                <ol style="color: #333; line-height: 1.6;">
+                    <li>Click the payment button above</li>
+                    <li>Complete your $69 setup fee</li>
+                    <li>Create your amazing profile</li>
+                    <li>Get your 50 physical QR cards delivered!</li>
+                </ol>
+            </div>
         </div>
         <div class="footer">
             <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
@@ -532,7 +577,7 @@ export class EmailService {
             <p>{{body}}</p>
             <p>Your journey to meaningful connections starts now. Create QR cards and start meeting amazing people!</p>
             <div style="text-align: center;">
-                <a href="{{dashboardUrl}}" class="cta-button">Generate QR Cards →</a>
+                <a href="{{dashboardUrl}}" class="cta-button">{{dashboardButtonText}}</a>
             </div>
         </div>
         <div class="footer">
@@ -582,7 +627,7 @@ export class EmailService {
             </div>
             <p>Don't worry! These updates will help make your profile even better. Just make the requested changes and resubmit.</p>
             <div style="text-align: center;">
-                <a href="{{editProfileUrl}}" class="edit-button">Edit Profile →</a>
+                <a href="{{editProfileUrl}}" class="edit-button">{{editButtonText}}</a>
             </div>
         </div>
         <div class="footer">
@@ -642,29 +687,128 @@ export class EmailService {
         throw new Error(`Template '${templateName}' not found or inactive`);
       }
 
-      // Add default variables if not provided
+      const customButtonConfig = this.extractButtonConfigFromTemplate(template.html_template || template.htmlTemplate || '');
+      const baseUrl = process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com';
+      const userEmail = to;
+
+      const sanitizeVariables = (vars: Record<string, any>) => {
+        const cleaned: Record<string, any> = {};
+        for (const [k, v] of Object.entries(vars || {})) {
+          if (typeof v === 'string') {
+            const looksLikeToken = /\{\{\s*\w+\s*\}\}/.test(v) || /%7B%7B.*%7D%7D/i.test(v) || /&#123;#?\w*;?\}?/i.test(v);
+            cleaned[k] = looksLikeToken ? undefined : v;
+          } else {
+            cleaned[k] = v;
+          }
+        }
+        return cleaned;
+      };
+
+      const safeVars = sanitizeVariables(variables);
+
       const defaultVariables = {
         currentYear: new Date().getFullYear().toString(),
         appName: 'QR Dating App',
-        subject: template.subject, // Add the template's own subject as a variable
-        body: template.body, // Add the template's own body as a variable
-        dashboardUrl: process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com',
-        editProfileUrl: process.env.FRONTEND_URL || 'https://stuart05frontend.mtscorporate.com',
-        rejectionReason: variables.rejectionReason || 'Please check your profile details.',
-        ...variables
+        subject: template.subject,
+        body: template.body,
+        userEmail: userEmail,
+        email: userEmail,
+        dashboardUrl: `${baseUrl}/dashboard`,
+        editProfileUrl: `${baseUrl}/profile/edit`,
+        paymentUrl: safeVars.paymentUrl || `${baseUrl}/checkout/${userEmail}`,
+        loginUrl: `${baseUrl}/login`,
+        checkoutUrl: `${baseUrl}/checkout/${userEmail}`,
+        paymentButtonText: customButtonConfig.paymentButtonText || '💳 Complete Payment & Setup →',
+        dashboardButtonText: customButtonConfig.dashboardButtonText || '🎯 Generate QR Cards →',
+        editButtonText: customButtonConfig.editButtonText || '✏️ Edit Profile →',
+        loginButtonText: customButtonConfig.loginButtonText || '🔐 Login to Dashboard →',
+        rejectionReason: safeVars.rejectionReason || 'Please check your profile details.',
+        ...safeVars
       };
 
-      // Replace variables in subject, body, and HTML template
       let finalSubject = template.subject;
       let finalBody = template.body;
       let finalHtml = template.html_template || template.htmlTemplate || '';
       
+      const replaceVar = (html: string, key: string, value: any) => {
+        const valStr = String(value ?? '');
+        const patterns = [
+          new RegExp(`\\{\\{${key}\\}\\}`, 'g'),
+          new RegExp(`%7B%7B${key}%7D%7D`, 'gi'),
+          new RegExp(`%257B%257B${key}%257D%257D`, 'gi'),
+          new RegExp(`&#123;\\s*&#123;\\s*${key}\\s*&#125;\\s*&#125;`, 'gi'),
+        ];
+        patterns.forEach(r => { html = html.replace(r, valStr); });
+        return html;
+      };
+
+      const preDecode = (html: string) => {
+        return html
+          .replace(/%7B%7B/gi, '{{')
+          .replace(/%257B%257B/gi, '{{')
+          .replace(/%7D%7D/gi, '}}')
+          .replace(/%257D%257D/gi, '}}');
+      };
+      finalHtml = preDecode(finalHtml);
+
       Object.entries(defaultVariables).forEach(([key, value]) => {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
         finalSubject = finalSubject.replace(regex, String(value || ''));
         finalBody = finalBody.replace(regex, String(value || ''));
-        finalHtml = finalHtml.replace(regex, String(value || ''));
+        finalHtml = replaceVar(finalHtml, key, value);
       });
+
+      finalHtml = finalHtml.replace(/\{\{paymentButtonText\}\}/g, defaultVariables.paymentButtonText);
+      finalHtml = finalHtml.replace(/\{\{dashboardButtonText\}\}/g, defaultVariables.dashboardButtonText);
+      finalHtml = finalHtml.replace(/\{\{editButtonText\}\}/g, defaultVariables.editButtonText);
+      finalHtml = finalHtml.replace(/\{\{loginButtonText\}\}/g, defaultVariables.loginButtonText);
+      finalHtml = finalHtml.replace(/\{\{paymentUrl\}\}/g, defaultVariables.paymentUrl);
+      finalHtml = finalHtml.replace(/\{\{dashboardUrl\}\}/g, defaultVariables.dashboardUrl);
+      finalHtml = finalHtml.replace(/\{\{editProfileUrl\}\}/g, defaultVariables.editProfileUrl);
+      finalHtml = finalHtml.replace(/\{\{loginUrl\}\}/g, defaultVariables.loginUrl);
+      finalHtml = finalHtml.replace(/\{\{checkoutUrl\}\}/g, defaultVariables.checkoutUrl);
+      finalHtml = finalHtml.replace(/\{\{userEmail\}\}/g, defaultVariables.userEmail);
+      finalHtml = finalHtml.replace(/\{\{email\}\}/g, defaultVariables.email);
+      finalHtml = finalHtml.replace(/\{\{userName\}\}/g, variables.userName || 'User');
+      finalHtml = finalHtml.replace(/\{\{currentYear\}\}/g, defaultVariables.currentYear);
+      finalHtml = finalHtml.replace(/\{\{body\}\}/g, defaultVariables.body);
+      finalHtml = finalHtml.replace(/\{\{subject\}\}/g, defaultVariables.subject);
+      finalHtml = finalHtml.replace(/\{\{appName\}\}/g, defaultVariables.appName);
+      
+      if (defaultVariables.rejectionReason) {
+        finalHtml = finalHtml.replace(/\{\{rejectionReason\}\}/g, defaultVariables.rejectionReason);
+      }
+
+      const replaceEncodedPlaceholders = (html: string) => {
+        html = html.replace(/%7B%7B\s*([a-zA-Z0-9_]+)\s*%7D%7D/gi, (_m, key) => String((defaultVariables as any)[key] ?? ''));
+        html = html.replace(/%257B%257B\s*([a-zA-Z0-9_]+)\s*%257D%257D/gi, (_m, key) => String((defaultVariables as any)[key] ?? ''));
+        html = html.replace(/&#123;\s*&#123;\s*([a-zA-Z0-9_]+)\s*&#125;\s*&#125;/gi, (_m, key) => String((defaultVariables as any)[key] ?? ''));
+        return html;
+      };
+      finalHtml = replaceEncodedPlaceholders(finalHtml);
+      
+      const finalCheck = finalHtml.includes('{{');
+      if (finalCheck) {
+        const finalVars = finalHtml.match(/\{\{[^}]+\}\}/g) || [];
+        finalVars.forEach(variable => {
+          const cleanVar = variable.replace(/[{}]/g, '');
+          finalHtml = finalHtml.replace(new RegExp(`\\{\\{${cleanVar}\\}\\}`, 'g'), `[${cleanVar}]`);
+        });
+      }
+
+      finalHtml = finalHtml.replace(/href="[^"]*\{\{\s*paymentUrl\s*\}\}[^"]*"/gi, `href="${defaultVariables.paymentUrl}"`);
+      finalHtml = finalHtml.replace(/href="[^"]*%7B%7B\s*paymentUrl\s*%7D%7D[^"]*"/gi, `href="${defaultVariables.paymentUrl}"`);
+
+      const ensureSafeUrl = (url: string, fallback: string) => {
+        if (!url || typeof url !== 'string') return fallback;
+        if (url.includes('{{') || /%7B%7B.*%7D%7D/i.test(url)) return fallback;
+        if (!/^https?:\/\//i.test(url)) return fallback;
+        return url;
+      };
+      defaultVariables.paymentUrl = ensureSafeUrl(String(defaultVariables.paymentUrl), `${baseUrl}/checkout/${userEmail}`);
+      defaultVariables.dashboardUrl = ensureSafeUrl(String(defaultVariables.dashboardUrl), `${baseUrl}/dashboard`);
+      defaultVariables.editProfileUrl = ensureSafeUrl(String(defaultVariables.editProfileUrl), `${baseUrl}/profile/edit`);
+      defaultVariables.loginUrl = ensureSafeUrl(String(defaultVariables.loginUrl), `${baseUrl}/login`);
 
       // Fallback to simple HTML if no custom template
       if (!finalHtml) {
@@ -681,7 +825,7 @@ export class EmailService {
       }
 
       const mailOptions = {
-        from: `"QR Dating App" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
+        from: process.env.FROM_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER || 'noreply@qrcardating.com',
         to,
         subject: finalSubject,
         text: finalBody, // Plain text fallback
@@ -689,11 +833,24 @@ export class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`📧 Customizable email sent: ${templateName} to ${to}`);
       return result;
     } catch (error) {
-      console.error(`❌ Failed to send customizable email: ${templateName}`, error.message);
+      console.error('❌ Failed to send customizable email:', error.message);
       throw new Error(`Failed to send email: ${error.message}`);
     }
+  }
+
+  // Helper method to extract button config from template HTML comments
+  private extractButtonConfigFromTemplate(htmlTemplate: string): any {
+    const match = htmlTemplate.match(/<!-- Custom Button Config: (.*?) -->/s);
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch (e) {
+        console.warn('Failed to parse button config from template:', e.message);
+        return {};
+      }
+    }
+    return {};
   }
 }

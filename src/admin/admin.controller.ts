@@ -16,6 +16,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
 import { UpdateAdminProfileDto, ChangeAdminPasswordDto } from './dto/admin-profile.dto';
 import { PaginationQueryDto } from './dto/profile-status.dto';
+import type { EmailButtonConfigDto } from './dto/email-button-config.dto';
 import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('admin')
@@ -386,6 +387,23 @@ async getDashboard(
     @Body('htmlTemplate') htmlTemplate?: string
   ) {
     return this.adminService.updateCustomizableTemplate(name, subject, body, htmlTemplate);
+  }
+
+  // ========================
+  // Email Button Configuration Management
+  // ========================
+
+  @Get('templates/button-configs')
+  async getEmailButtonConfigurations() {
+    return this.adminService.getEmailButtonConfigurations();
+  }
+
+  @Put('templates/:name/button-text')
+  async updateTemplateButtonText(
+    @Param('name') name: string,
+    @Body() buttonConfigs: EmailButtonConfigDto
+  ) {
+    return this.adminService.updateTemplateWithButtonText(name, buttonConfigs);
   }
 }
 

@@ -1,10 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the `posts` table. If the table is not empty, all the data it contains will be lost.
-  - Added the required column `password` to the `users` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('WAITLIST', 'PAID_SETUP', 'PROFILE_PENDING', 'VERIFIED', 'REJECTED', 'ACTIVE');
 
@@ -17,29 +10,41 @@ CREATE TYPE "SubscriptionStatus" AS ENUM ('INACTIVE', 'ACTIVE', 'CANCELLED', 'EX
 -- CreateEnum
 CREATE TYPE "SubscriptionPlan" AS ENUM ('MONTHLY', 'YEARLY');
 
--- DropForeignKey
-ALTER TABLE "public"."posts" DROP CONSTRAINT "posts_authorId_fkey";
+-- CreateTable
+CREATE TABLE "users" (
+    "id" SERIAL NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "phone" TEXT,
+    "status" "UserStatus" NOT NULL DEFAULT 'WAITLIST',
+    "isApproved" BOOLEAN NOT NULL DEFAULT false,
+    "approvedAt" TIMESTAMP(3),
+    "paidSetupFee" BOOLEAN NOT NULL DEFAULT false,
+    "stripeCustomerId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
--- AlterTable
-ALTER TABLE "users" ADD COLUMN     "paidSetupFee" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "password" TEXT NOT NULL,
-ADD COLUMN     "phone" TEXT,
-ADD COLUMN     "status" "UserStatus" NOT NULL DEFAULT 'WAITLIST';
-
--- DropTable
-DROP TABLE "public"."posts";
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "profiles" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "age" INTEGER,
+    "age" TEXT,
     "height" TEXT,
+    "bodyType" TEXT,
+    "area" TEXT,
+    "dealbreakers" TEXT,
     "bio" TEXT,
+    "startDate" TEXT,
+    "endDate" TEXT,
     "location" TEXT,
-    "photos" TEXT[],
-    "facePhoto" TEXT,
-    "fullBodyPhoto" TEXT,
+    "image" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "displayName" TEXT,
+    "email" TEXT,
+    "gmail" TEXT,
+    "phone" TEXT,
     "status" "ProfileStatus" NOT NULL DEFAULT 'DRAFT',
     "reviewedAt" TIMESTAMP(3),
     "reviewedBy" INTEGER,
@@ -58,7 +63,7 @@ CREATE TABLE "qr_cards" (
     "userId" INTEGER NOT NULL,
     "qrCode" TEXT NOT NULL,
     "scanCount" INTEGER NOT NULL DEFAULT 0,
-    "maxScans" INTEGER NOT NULL DEFAULT 5,
+    "maxScans" INTEGER NOT NULL DEFAULT 250,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -88,6 +93,11 @@ CREATE TABLE "matches" (
     "isInterested" BOOLEAN NOT NULL DEFAULT false,
     "isMutual" BOOLEAN NOT NULL DEFAULT false,
     "contactShared" BOOLEAN NOT NULL DEFAULT false,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "requesterEmail" TEXT,
+    "requesterName" TEXT,
+    "message" TEXT,
+    "approvedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -133,6 +143,8 @@ CREATE TABLE "admins" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
     "username" TEXT NOT NULL,
+    "lastName" TEXT,
+    "phone" TEXT,
     "password" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'admin',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
@@ -157,11 +169,34 @@ CREATE TABLE "notifications" (
     CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "email_templates" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "subject" TEXT NOT NULL,
+    "body" TEXT NOT NULL,
+    "html_template" TEXT NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "email_templates_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_stripeCustomerId_key" ON "users"("stripeCustomerId");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "profiles_userId_key" ON "profiles"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "qr_cards_qrCode_key" ON "qr_cards"("qrCode");
+
+-- CreateIndex
+CREATE INDEX "scans_qrCardId_ipAddress_idx" ON "scans"("qrCardId", "ipAddress");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "matches_scanId_key" ON "matches"("scanId");
@@ -174,6 +209,9 @@ CREATE UNIQUE INDEX "admins_email_key" ON "admins"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "admins_username_key" ON "admins"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "email_templates_name_key" ON "email_templates"("name");
 
 -- AddForeignKey
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -545,7 +545,7 @@ export class AdminService {
           userId: profile.userId,
           qrCode: uniqueId,
           scanCount: 0,
-          maxScans: 5,
+          maxScans: 250, // ✅ Fixed: Each card allows 250 total scans from 50+ IPs (5 scans per IP)
           isActive: true,
         },
       });
@@ -2030,7 +2030,7 @@ export class AdminService {
             userId: user.id,
             qrCode: uniqueId,
             scanCount: 0,
-            maxScans: 5,
+            maxScans: 250, // ✅ Fixed: Each card allows 250 total scans from 50+ IPs (5 scans per IP)
             isActive: true,
           },
         });

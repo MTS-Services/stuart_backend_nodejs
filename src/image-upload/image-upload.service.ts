@@ -29,6 +29,21 @@ export class ImageUploadService {
     }
   }
 
+  // Helper function to ensure URL is HTTP (not HTTPS) to avoid SSL certificate issues
+  private ensureHttpUrl(url: string): string {
+    if (!url) return url;
+    
+    // If URL starts with https://, replace with http://
+    if (url.startsWith('https://')) {
+      const httpUrl = url.replace('https://', 'http://');
+      console.log(`[Image Upload] Converted HTTPS to HTTP: ${httpUrl}`);
+      return httpUrl;
+    }
+    
+    // If already HTTP or relative URL, return as is
+    return url;
+  }
+
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {
     // 🛑 CRITICAL FIX: Handle both memory storage (buffer) and disk storage (path)
     if (!file) {
@@ -78,11 +93,15 @@ export class ImageUploadService {
       });
 
       if (response.data && response.data.url) {
-        result = { url: response.data.url };
+        // Ensure URL is HTTP (not HTTPS) to avoid certificate issues
+        const imageUrl = this.ensureHttpUrl(response.data.url);
+        result = { url: imageUrl };
         return result;
       } else if (response.data && response.data.file && response.data.file.url) {
         // Handle the structure from your Express.js service: { file: { url: "..." } }
-        result = { url: response.data.file.url };
+        // Ensure URL is HTTP (not HTTPS) to avoid certificate issues
+        const imageUrl = this.ensureHttpUrl(response.data.file.url);
+        result = { url: imageUrl };
         return result;
       } else {
         console.error('Upload response:', response.data);

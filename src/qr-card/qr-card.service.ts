@@ -119,14 +119,20 @@ export class QRCardService {
         },
       });
 
+      console.log(`[QR Scan] Card: ${qrCode}, IP: ${viewerInfo.ipAddress}, IP Scan Count: ${ipScanCount}/5, Total Card Scans: ${card.scanCount}/${card.maxScans}`);
+
       if (ipScanCount >= 5) {
         return {
           success: false,
-          message: 'This IP address has already scanned this card 5 times (maximum allowed per IP)',
+          message: `This IP address (${viewerInfo.ipAddress.substring(0, 10)}...) has already scanned this card 5 times. Maximum 5 scans per IP address allowed.`,
           ipLimitReached: true,
           scansFromThisIP: ipScanCount,
+          totalCardScans: card.scanCount,
+          maxScans: card.maxScans,
         };
       }
+    } else {
+      console.warn(`[QR Scan] Warning: No IP address captured for scan of card ${qrCode}`);
     }
 
     // Record the scan
@@ -140,10 +146,18 @@ export class QRCardService {
     });
 
     // Update scan count
-    await this.prisma.qRCard.update({
+    const updatedCard = await this.prisma.qRCard.update({
       where: { id: card.id },
       data: { scanCount: card.scanCount + 1 },
     });
+
+    // Get updated IP scan count for this IP
+    const updatedIpScanCount = viewerInfo.ipAddress ? await this.prisma.scan.count({
+      where: {
+        qrCardId: card.id,
+        ipAddress: viewerInfo.ipAddress,
+      },
+    }) : 0;
 
     // Send email notification to both profile owner and scanner (if email provided)
     const profileOwnerEmail = card.profile.user.email;
@@ -183,27 +197,30 @@ export class QRCardService {
     }
 
     // Return profile information (without sensitive data)
-return {
-      success: true,
-      profile: {
-        id: card.profile.id,
-        name: card.profile.user.name,
-        age: card.profile.age,
-        bio: card.profile.bio,
-        location: card.profile.location,
-        images: card.profile.image || [], 
-        contactEmail: profileOwnerEmail,
-      },
-      scanId: scan.id,
-      scansRemaining: card.maxScans - (card.scanCount + 1),
-      emailNotifications: {
-        profileOwnerNotified: true,
-        scannerNotified: !!scannerEmail
-      }
-    };
-  }
-
-  async getUserCards(userId: number) {
+    return {
+      success: true,
+      profile: {
+        id: card.profile.id,
+        name: card.profile.user.name,
+        age: card.profile.age,
+        bio: card.profile.bio,
+        location: card.profile.location,
+        images: card.profile.image || [], 
+        contactEmail: profileOwnerEmail,
+      },
+      scanId: scan.id,
+      scansRemaining: updatedCard.maxScans - updatedCard.scanCount,
+      totalScans: updatedCard.scanCount,
+      maxScans: updatedCard.maxScans,
+      ipScansRemaining: viewerInfo.ipAddress ? 5 - updatedIpScanCount : null,
+      ipScansUsed: updatedIpScanCount,
+      yourIpAddress: viewerInfo.ipAddress ? `${viewerInfo.ipAddress.substring(0, 10)}...` : 'Unknown',
+      emailNotifications: {
+        profileOwnerNotified: true,
+        scannerNotified: !!scannerEmail
+      }
+    };
+  }  async getUserCards(userId: number) {
     const cards = await this.prisma.qRCard.findMany({
       where: { userId },
       include: {

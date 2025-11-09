@@ -87,12 +87,17 @@ export class QRCardController {
     @Param('qrCode') qrCode: string,
     @Body() body: { viewerId?: number; scannerEmail?: string },
     @Ip() ipAddress?: string,
-    @Headers('user-agent') userAgent?: string
+    @Headers('user-agent') userAgent?: string,
+    @Headers('x-forwarded-for') xForwardedFor?: string,
+    @Headers('x-real-ip') xRealIp?: string
   ) {
+    // Get real IP address (check forwarded headers first for proxy support)
+    const realIp = xForwardedFor?.split(',')[0].trim() || xRealIp || ipAddress;
+    
     return this.qrCardService.scanQRCard(qrCode, {
       viewerId: body.viewerId,
       scannerEmail: body.scannerEmail,
-      ipAddress,
+      ipAddress: realIp,
       userAgent,
     });
   }
@@ -104,14 +109,47 @@ export class QRCardController {
     @Param('scannerEmail') scannerEmail: string,
     @Body() body: { viewerId?: number } = {},
     @Ip() ipAddress?: string,
-    @Headers('user-agent') userAgent?: string
+    @Headers('user-agent') userAgent?: string,
+    @Headers('x-forwarded-for') xForwardedFor?: string,
+    @Headers('x-real-ip') xRealIp?: string
   ) {
+    // Get real IP address (check forwarded headers first for proxy support)
+    const realIp = xForwardedFor?.split(',')[0].trim() || xRealIp || ipAddress;
+    
     return this.qrCardService.scanQRCard(qrCode, {
       viewerId: body.viewerId,
       scannerEmail: decodeURIComponent(scannerEmail),
-      ipAddress,
+      ipAddress: realIp,
       userAgent,
     });
+  }
+
+  // Debug endpoint to check IP detection
+  @Get('debug/check-ip')
+  async checkIp(
+    @Ip() ipAddress?: string,
+    @Headers('x-forwarded-for') xForwardedFor?: string,
+    @Headers('x-real-ip') xRealIp?: string,
+    @Headers('user-agent') userAgent?: string
+  ) {
+    const realIp = xForwardedFor?.split(',')[0].trim() || xRealIp || ipAddress;
+    
+    return {
+      message: 'IP Detection Debug Info',
+      detectedIp: realIp,
+      rawData: {
+        nestJsIp: ipAddress,
+        xForwardedFor: xForwardedFor || 'Not provided',
+        xRealIp: xRealIp || 'Not provided',
+        userAgent: userAgent || 'Not provided'
+      },
+      ipPriority: [
+        '1. X-Forwarded-For (first IP)',
+        '2. X-Real-IP',
+        '3. Direct connection IP'
+      ],
+      note: 'This is the IP that will be used for scan limits (5 scans per IP, 250 total per card)'
+    };
   }
 
   // Debug endpoint to help understand QR code structure

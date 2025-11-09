@@ -1941,4 +1941,150 @@ export class AdminService {
     }
     return {};
   }
+
+  // ========================
+  // Add Dummy User Feature
+  // ========================
+  async createDummyUser(data: {
+    email: string;
+    name: string;
+    phone: string;
+    age: number;
+    height: string;
+    bodyType: string;
+    dealbreakers: string;
+    bio: string;
+    location: string;
+    images: string[];
+    gender?: string;
+    interests?: string[];
+  }) {
+    try {
+      // Check if user already exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: data.email },
+      });
+
+      if (existingUser) {
+        throw new HttpException(
+          'User with this email already exists',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      // Create user with ACTIVE status and all approvals
+      const user = await this.prisma.user.create({
+        data: {
+          email: data.email,
+          name: data.name,
+          phone: data.phone,
+          status: UserStatus.VERIFIED, // Set to VERIFIED so it appears in User Edit
+          isApproved: true, // Mark as approved
+          approvedAt: new Date(), // Set approval timestamp
+          paidSetupFee: true, // Mark setup fee as paid
+        },
+      });
+
+
+      // Create profile with APPROVED status and dummy data
+      const profile = await this.prisma.profile.create({
+        data: {
+          userId: user.id,
+          age: String(data.age),
+          height: data.height,
+          bodyType: data.bodyType,
+          dealbreakers: data.dealbreakers,
+          bio: data.bio,
+          location: data.location,
+          image: data.images,
+          displayName: data.name,
+          email: data.email,
+          phone: data.phone,
+          status: ProfileStatus.APPROVED,
+          isActive: true,
+        },
+      });
+
+      // Create active subscription (dummy payment)
+      const subscription = await this.prisma.subscription.create({
+        data: {
+          userId: user.id,
+          plan: SubscriptionPlan.MONTHLY,
+          status: SubscriptionStatus.ACTIVE,
+          amount: 69.00,
+          currency: 'USD',
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+          stripeSubscriptionId: `dummy_${randomUUID()}`,
+          stripeCustomerId: `dummy_cus_${randomUUID()}`,
+        },
+      });
+
+      // Generate 1 QR card for the user (following approveProfile logic)
+      const qrCards: any[] = [];
+      for (let i = 0; i < 1; i++) {
+        const uniqueId = randomUUID();
+        const card = await this.prisma.qRCard.create({
+          data: {
+            profileId: profile.id,
+            userId: user.id,
+            qrCode: uniqueId,
+            scanCount: 0,
+            maxScans: 5,
+            isActive: true,
+          },
+        });
+        qrCards.push(card);
+      }
+
+      // Send welcome email
+      try {
+        await this.emailService.sendCustomizableEmail(
+          'registration_approved',
+          user.email,
+          {
+            userName: user.name,
+            userEmail: user.email,
+            paymentUrl: `${process.env.FRONTEND_URL}/dashboard`,
+          }
+        );
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError.message);
+        // Don't fail the user creation if email fails
+      }
+
+      return {
+        success: true,
+        message: 'Dummy user created successfully',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          status: user.status,
+        },
+        profile: {
+          id: profile.id,
+          status: profile.status,
+          age: profile.age,
+          location: profile.location,
+          isActive: profile.isActive,
+        },
+        subscription: {
+          id: subscription.id,
+          plan: subscription.plan,
+          status: subscription.status,
+          endDate: subscription.endDate,
+        },
+        qrCardsGenerated: qrCards.length,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to create dummy user: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 }

@@ -405,6 +405,29 @@ async getDashboard(
   ) {
     return this.adminService.updateTemplateWithButtonText(name, buttonConfigs);
   }
+
+  // ========================
+  // Add Dummy User Endpoint
+  // ========================
+  @Post('users/create-dummy')
+  async createDummyUser(
+    @Body() data: {
+      email: string;
+      name: string;
+      phone: string;
+      age: number;
+      height: string;
+      bodyType: string;
+      dealbreakers: string;
+      bio: string;
+      location: string;
+      images: string[];
+      gender?: string;
+      interests?: string[];
+    }
+  ) {
+    return this.adminService.createDummyUser(data);
+  }
 }
 
 // 🔧 DEBUG CONTROLLER - No authentication required for testing

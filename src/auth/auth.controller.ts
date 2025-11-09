@@ -39,4 +39,36 @@ export class AuthController {
   async adminLogin(@Request() req) {
     return this.authService.loginAdmin(req.user);
   }
+
+  @Post('admin/forgot-password')
+  async forgotPassword(@Body() body: { email: string }) {
+    try {
+      await this.authService.sendPasswordResetEmail(body.email);
+      return {
+        success: true,
+        message: 'Password reset link has been sent to your email',
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to send reset email',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('admin/reset-password')
+  async resetPassword(@Body() body: { token: string; newPassword: string }) {
+    try {
+      await this.authService.resetPassword(body.token, body.newPassword);
+      return {
+        success: true,
+        message: 'Password has been reset successfully',
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to reset password',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
 }

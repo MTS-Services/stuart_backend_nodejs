@@ -2,11 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { config } from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 config(); // Load environment variables
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
+  // Trust proxy - important for getting real IP addresses behind reverse proxies
+  app.set('trust proxy', true);
   
   // Enable validation globally
   app.useGlobalPipes(new ValidationPipe({
@@ -26,7 +30,7 @@ async function bootstrap() {
       ? [
           process.env.FRONTEND_URL,
           `https://admin.${process.env.FRONTEND_URL?.replace('https://', '')}`,
-        ].filter(Boolean)
+        ].filter((url): url is string => Boolean(url))
       : true, // Allow all origins in development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

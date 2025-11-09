@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AdminLocalStrategy } from './local.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { PrismaService } from '../prisma.service';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PrismaService } from '../prisma.service';
       secret: process.env.JWT_SECRET || 'defaultSecret',
       signOptions: { expiresIn: '24h' },
     }),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, AdminLocalStrategy, JwtStrategy, PrismaService],

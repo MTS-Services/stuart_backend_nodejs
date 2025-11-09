@@ -89,6 +89,28 @@ export class EmailService {
     return hasUser && hasPass;
   }
 
+  async sendEmail(to: string, subject: string, html: string) {
+    if (!this.isEmailConfigured()) {
+      console.log('⚠️ Email not configured - skipping email to:', to);
+      return { message: 'Email service not configured' };
+    }
+
+    try {
+      const mailOptions = {
+        from: process.env.FROM_EMAIL || 'noreply@qrcardating.com',
+        to,
+        subject,
+        html,
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      return result;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw new Error('Failed to send email');
+    }
+  }
+
   async sendSignupLink(email: string, name: string, signupToken: string) {
     if (!this.isEmailConfigured()) {
       console.log('⚠️ Email not configured - skipping signup link email to:', email);

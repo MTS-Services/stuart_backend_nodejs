@@ -152,6 +152,12 @@ export class QRCardController {
     };
   }
 
+  // Debug endpoint to check card status
+  @Get('debug/card-status/:qrCode')
+  async getCardStatus(@Param('qrCode') qrCode: string) {
+    return this.qrCardService.getCardDebugInfo(qrCode);
+  }
+
   // Debug endpoint to help understand QR code structure
   @Get('debug/scan-help')
   async getScanHelp() {

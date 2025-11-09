@@ -25,16 +25,21 @@ async function bootstrap() {
   }));
   
   // Enable CORS for production
+  const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? [
+        process.env.FRONTEND_URL,
+        `https://admin.${process.env.FRONTEND_URL?.replace('https://', '')}`,
+        process.env.IMAGE_UPLOAD_SERVICE_URL, // Allow image upload service
+      ].filter((url): url is string => Boolean(url))
+    : true; // Allow all origins in development
+
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? [
-          process.env.FRONTEND_URL,
-          `https://admin.${process.env.FRONTEND_URL?.replace('https://', '')}`,
-        ].filter((url): url is string => Boolean(url))
-      : true, // Allow all origins in development
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Length', 'X-JSON'],
+    maxAge: 86400, // 24 hours
   });
   
   const port = process.env.PORT || 3000;

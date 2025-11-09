@@ -101,16 +101,29 @@ export class QRCardService {
       throw new HttpException('This QR card is no longer active', HttpStatus.BAD_REQUEST);
     }
 
+    console.log(`[QR Scan Start] Card: ${qrCode}, Current Total Scans: ${card.scanCount}/${card.maxScans}, IP: ${viewerInfo.ipAddress}`);
+
     // Check if card has reached maximum total scans (250)
     if (card.scanCount >= card.maxScans) {
+      // Get unique IP count to show how many different IPs have scanned
+      const uniqueIpCount = await this.prisma.scan.groupBy({
+        by: ['ipAddress'],
+        where: { qrCardId: card.id },
+        _count: true,
+      });
+
       return {
         success: false,
-        message: 'This card has reached its maximum scan limit (250 scans) and is no longer available',
+        message: `This card has reached its maximum scan limit (${card.maxScans} scans total). The card has been scanned by ${uniqueIpCount.length} different IP addresses.`,
         limitReached: true,
+        totalScans: card.scanCount,
+        maxScans: card.maxScans,
+        uniqueIPs: uniqueIpCount.length,
       };
     }
 
     // Check IP-based scan limit (max 5 scans per IP address per card)
+    // Allow scans when count is 0,1,2,3,4 (total 5 scans), block when count >= 5
     if (viewerInfo.ipAddress) {
       const ipScanCount = await this.prisma.scan.count({
         where: {
@@ -119,12 +132,13 @@ export class QRCardService {
         },
       });
 
-      console.log(`[QR Scan] Card: ${qrCode}, IP: ${viewerInfo.ipAddress}, IP Scan Count: ${ipScanCount}/5, Total Card Scans: ${card.scanCount}/${card.maxScans}`);
+      console.log(`[QR Scan] Card: ${qrCode}, IP: ${viewerInfo.ipAddress}, Previous IP Scan Count: ${ipScanCount}/5, Total Card Scans: ${card.scanCount}/${card.maxScans}`);
 
+      // Block if this IP has already scanned 5 times (count would be 5 or more)
       if (ipScanCount >= 5) {
         return {
           success: false,
-          message: `This IP address (${viewerInfo.ipAddress.substring(0, 10)}...) has already scanned this card 5 times. Maximum 5 scans per IP address allowed.`,
+          message: `This IP address has already scanned this card the maximum 5 times. Each IP can scan up to 5 times. Try from a different network.`,
           ipLimitReached: true,
           scansFromThisIP: ipScanCount,
           totalCardScans: card.scanCount,
@@ -197,7 +211,7 @@ export class QRCardService {
     }
 
     // Return profile information (without sensitive data)
-    return {
+    const response = {
       success: true,
       profile: {
         id: card.profile.id,
@@ -220,6 +234,16 @@ export class QRCardService {
         scannerNotified: !!scannerEmail
       }
     };
+
+    console.log(`[QR Scan Success] Returning response:`, {
+      scansRemaining: response.scansRemaining,
+      totalScans: response.totalScans,
+      maxScans: response.maxScans,
+      ipScansUsed: response.ipScansUsed,
+      ipScansRemaining: response.ipScansRemaining
+    });
+
+    return response;
   }  async getUserCards(userId: number) {
     const cards = await this.prisma.qRCard.findMany({
       where: { userId },
@@ -583,6 +607,85 @@ export class QRCardService {
       owner: {
         name: card.profile.user.name,
         email: card.profile.user.email,
+      },
+    };
+  }
+
+  // Get detailed debug information about a card
+  async getCardDebugInfo(qrCode: string) {
+    const card = await this.prisma.qRCard.findUnique({
+      where: { qrCode },
+      include: {
+        profile: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+        scans: {
+          select: {
+            id: true,
+            ipAddress: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+
+    if (!card) {
+      throw new HttpException('QR card not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Group scans by IP address
+    const ipGroups = await this.prisma.scan.groupBy({
+      by: ['ipAddress'],
+      where: { qrCardId: card.id },
+      _count: true,
+    });
+
+    const ipDetails = ipGroups.map(group => ({
+      ip: group.ipAddress || 'Unknown',
+      scanCount: group._count,
+      canScanMore: group._count < 5,
+      scansRemaining: Math.max(0, 5 - group._count),
+    }));
+
+    return {
+      cardInfo: {
+        qrCode: card.qrCode,
+        isActive: card.isActive,
+        totalScans: card.scanCount,
+        maxScans: card.maxScans,
+        scansRemaining: card.maxScans - card.scanCount,
+        percentageUsed: ((card.scanCount / card.maxScans) * 100).toFixed(2) + '%',
+      },
+      ipStatistics: {
+        uniqueIPs: ipGroups.length,
+        minUniqueIPsNeeded: 50,
+        ipDetails: ipDetails,
+      },
+      owner: {
+        name: card.profile.user.name,
+        email: card.profile.user.email,
+      },
+      recentScans: card.scans.slice(0, 10).map(scan => ({
+        id: scan.id,
+        ip: scan.ipAddress || 'Unknown',
+        timestamp: scan.createdAt,
+      })),
+      limits: {
+        totalLimit: `${card.scanCount}/${card.maxScans} scans used`,
+        totalLimitReached: card.scanCount >= card.maxScans,
+        expectedMinimumIPs: 50,
+        currentUniqueIPs: ipGroups.length,
       },
     };
   }

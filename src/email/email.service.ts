@@ -550,9 +550,6 @@ export class EmailService {
                 <p>Registration Update</p>
             </div>
             <p>{{body}}</p>
-            <div class="info-box">
-                <p><strong>Reason:</strong> {{rejectionReason}}</p>
-            </div>
             <p>Thank you for your interest in our platform. If you have any questions, please feel free to contact our support team.</p>
         </div>
         <div class="footer">

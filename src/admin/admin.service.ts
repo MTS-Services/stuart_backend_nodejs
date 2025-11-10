@@ -557,10 +557,16 @@ export class AdminService {
       },
     });
 
+    // ✅ Return success response format that frontend expects
     return {
-      ...updatedProfile,
-      qrCardsGenerated: qrCards.length,
-      trackingNumber,
+      success: true,
+      message: 'Profile approved successfully!',
+      data: {
+        ...updatedProfile,
+        qrCardsGenerated: qrCards.length,
+        trackingNumber,
+        user: profile.user,
+      },
     };
   }
 
@@ -624,7 +630,16 @@ export class AdminService {
       },
     });
 
-    return updatedProfile;
+    // ✅ Return success response format that frontend expects
+    return {
+      success: true,
+      message: 'Profile rejected successfully!',
+      data: {
+        ...updatedProfile,
+        editLink,
+        user: profile.user,
+      },
+    };
   }
 
   async getVerifiedProfiles(page: number = 1, limit: number = 10) {

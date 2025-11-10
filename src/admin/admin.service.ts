@@ -487,34 +487,9 @@ export class AdminService {
       throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
     }
 
-    // 🚀 AUTO-SUBMIT: If profile is DRAFT, automatically submit for review first
-    if (profile.status === ProfileStatus.DRAFT) {
-      console.log(`🔄 Auto-submitting DRAFT profile ${profileId} for review before approval`);
-      
-      profile = await this.prisma.profile.update({
-        where: { id: profileId },
-        data: { status: ProfileStatus.PENDING_REVIEW },
-        include: { user: true },
-      });
-
-      // Create notification for auto-submission
-      await this.prisma.notification.create({
-        data: {
-          adminId: 1, // Default admin ID
-          type: 'profile_auto_submitted',
-          title: 'Profile Auto-Submitted for Review',
-          message: `Profile ${profileId} was automatically submitted for review during approval process`,
-          data: {
-            profileId: profileId,
-            userId: profile.userId,
-            autoSubmitted: true,
-          },
-        },
-      });
-    }
-
-    if (profile.status !== ProfileStatus.PENDING_REVIEW) {
-      const statusMessage = `Profile status is ${profile.status}, expected PENDING_REVIEW`;
+    // Check if profile is in DRAFT status (ready for approval)
+    if (profile.status !== ProfileStatus.DRAFT) {
+      const statusMessage = `Profile status is ${profile.status}, expected DRAFT`;
       throw new HttpException(statusMessage, HttpStatus.BAD_REQUEST);
     }
 
@@ -599,34 +574,9 @@ export class AdminService {
       throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
     }
 
-    // 🚀 AUTO-SUBMIT: If profile is DRAFT, automatically submit for review first
-    if (profile.status === ProfileStatus.DRAFT) {
-      console.log(`🔄 Auto-submitting DRAFT profile ${profileId} for review before rejection`);
-      
-      profile = await this.prisma.profile.update({
-        where: { id: profileId },
-        data: { status: ProfileStatus.PENDING_REVIEW },
-        include: { user: true },
-      });
-
-      // Create notification for auto-submission
-      await this.prisma.notification.create({
-        data: {
-          adminId: 1, // Default admin ID
-          type: 'profile_auto_submitted',
-          title: 'Profile Auto-Submitted for Review',
-          message: `Profile ${profileId} was automatically submitted for review during rejection process`,
-          data: {
-            profileId: profileId,
-            userId: profile.userId,
-            autoSubmitted: true,
-          },
-        },
-      });
-    }
-
-    if (profile.status !== ProfileStatus.PENDING_REVIEW) {
-      const statusMessage = `Profile status is ${profile.status}, expected PENDING_REVIEW`;
+    // Check if profile is in DRAFT status (ready for rejection)
+    if (profile.status !== ProfileStatus.DRAFT) {
+      const statusMessage = `Profile status is ${profile.status}, expected DRAFT`;
       throw new HttpException(statusMessage, HttpStatus.BAD_REQUEST);
     }
 
@@ -649,7 +599,7 @@ export class AdminService {
     });
 
     // Generate edit link for the user
-    const editLink = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}`;
+    const editLink = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/checkout/setup-profile/edit/${profile.user.email}`;
 
     // Send profile rejected email with feedback and edit link
     try {
@@ -724,7 +674,6 @@ export class AdminService {
     if (status && status !== 'ALL') {
       // Map status to ProfileStatus enum
       const statusMap = {
-        'PENDING': ProfileStatus.PENDING_REVIEW,
         'APPROVED': ProfileStatus.APPROVED,
         'REJECTED': ProfileStatus.REJECTED,
         'DRAFT': ProfileStatus.DRAFT
@@ -787,7 +736,6 @@ export class AdminService {
 
     const stats = {
       total: totalCount,
-      pending: statusStats.find(s => s.status === ProfileStatus.PENDING_REVIEW)?._count.status || 0,
       approved: statusStats.find(s => s.status === ProfileStatus.APPROVED)?._count.status || 0,
       rejected: statusStats.find(s => s.status === ProfileStatus.REJECTED)?._count.status || 0,
       draft: statusStats.find(s => s.status === ProfileStatus.DRAFT)?._count.status || 0,
@@ -806,7 +754,7 @@ export class AdminService {
       stats,
       filters: {
         status: status || 'ALL',
-        availableStatuses: ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'DRAFT']
+        availableStatuses: ['ALL', 'APPROVED', 'REJECTED', 'DRAFT']
       }
     };
   }

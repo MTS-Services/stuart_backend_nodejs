@@ -518,7 +518,7 @@ export class EmailService {
       },
       {
         name: 'registration_rejected',
-        subject: '❌ QR Dating App - Registration Update',
+        subject: 'QR Dating App - Registration Update',
         body: 'We regret to inform you that your registration has been rejected. Please review our terms and conditions and feel free to reapply.',
         htmlTemplate: `
 <!DOCTYPE html>

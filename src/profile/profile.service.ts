@@ -180,7 +180,11 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
-    if (profile.status === ProfileStatus.DRAFT) { throw new HttpException('Cannot update profile while under review', HttpStatus.BAD_REQUEST); }
+    
+    // Prevent updates only when profile is under review, not when it's draft
+    if (profile.status === ProfileStatus.PENDING_REVIEW) { 
+      throw new HttpException('Cannot update profile while under review', HttpStatus.BAD_REQUEST); 
+    }
 
     const updateData: any = {};
     
@@ -197,6 +201,17 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     
     if (updateProfileDto.image !== undefined) {
         updateData.image = updateProfileDto.image.map(img => img.url);
+    }
+
+    // When user updates their profile after rejection, set status back to DRAFT for admin review
+    if (profile.status === ProfileStatus.REJECTED) {
+      updateData.status = ProfileStatus.DRAFT;
+      
+      // Also update user status to indicate profile is pending review
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { status: UserStatus.PROFILE_PENDING },
+      });
     }
 
     return this.prisma.profile.update({
@@ -325,6 +340,10 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       area: profile.area,
       displayName: profile.displayName,
       phone: profile.phone,
+      gmail: profile.gmail,
+      dealbreakers: profile.dealbreakers,
+      startDate: profile.startDate,
+      endDate: profile.endDate,
       images: allImages.map((url: string) => ({ url })), 
       status: profile.status,
       photoCount,

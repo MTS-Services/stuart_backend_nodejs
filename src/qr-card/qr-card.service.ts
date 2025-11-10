@@ -138,7 +138,7 @@ export class QRCardService {
       if (ipScanCount >= 5) {
         return {
           success: false,
-          message: `This IP address has already scanned this card the maximum 5 times. Each IP can scan up to 5 times. Try from a different network.`,
+          message: `This IP address has already scanned this card the maximum 5 times.`,
           ipLimitReached: true,
           scansFromThisIP: ipScanCount,
           totalCardScans: card.scanCount,

@@ -11,6 +11,8 @@ type ImageReference = { url: string };
 
 @Injectable()
 export class ProfileService {
+  private readonly BETA_TESTING_MODE = true; // 🚨 Set to false after beta testing
+
   constructor(
     private prisma: PrismaService,
     private imageUploadService: ImageUploadService
@@ -21,7 +23,7 @@ export class ProfileService {
   // -------------------------------------------------------------------
   private validateProfileFields(profile: any): { isValid: boolean; missingFields: string[] } {
     const requiredFields = [
-      'age', 'height', 'bodyType', 'area', 'bio', 'location', 
+      'age', 'height', 'bodyType', 'county', 'bio', 'location', 
       'displayName', 'email', 'phone'
     ];
     
@@ -98,11 +100,33 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     throw new HttpException('User not found', HttpStatus.NOT_FOUND);
   }
 
+  // 🚨 BETA TESTING: Bypass payment check or auto-mark as paid
   if (!user.paidSetupFee) {
-    throw new HttpException(
-      'Setup fee must be paid before creating profile',
-      HttpStatus.BAD_REQUEST,
-    );
+    if (this.BETA_TESTING_MODE) {
+      console.log('🚨 BETA MODE: Auto-marking user as paid for profile creation');
+      
+      // Auto-mark user as paid during beta testing
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { paidSetupFee: true },
+      });
+
+      // Create a fake payment record for consistency
+      await this.prisma.payment.create({
+        data: {
+          userId: userId,
+          amount: 0,
+          stripePaymentIntentId: `beta_profile_bypass_${userId}_${Date.now()}`,
+          type: 'ONE_TIME',
+          status: 'COMPLETED',
+        },
+      });
+    } else {
+      throw new HttpException(
+        'Setup fee must be paid before creating profile',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   const existingProfile = await this.prisma.profile.findUnique({ where: { userId } });
@@ -115,6 +139,8 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     data: {
       userId,
       age: createProfileDto.age ? createProfileDto.age.toString() : null,
+      birthMonth: createProfileDto.birthMonth,
+      birthYear: createProfileDto.birthYear,
       height: createProfileDto.height,
       bio: createProfileDto.bio,
       location: createProfileDto.location,
@@ -124,7 +150,8 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       image: createProfileDto.image.map((img) => img.url),
       status: ProfileStatus.DRAFT,
       bodyType: createProfileDto.bodyType,
-      area: createProfileDto.area,
+      area: null, // Set to null since we're only using county now
+      county: createProfileDto.county,
       displayName: createProfileDto.displayName,
       email: createProfileDto.email, // saved in DB
       gmail: createProfileDto.gmail, // saved in DB
@@ -159,13 +186,40 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       const user = await this.prisma.user.findUnique({ where: { email: updateProfileDto.email } });
       if (!user) { throw new HttpException('User not found', HttpStatus.NOT_FOUND); }
 
-      const uploadedImageReferences = await this.uploadImages(files.image || []);
+      // Get existing profile to preserve existing images
+      const existingProfile = await this.prisma.profile.findUnique({ where: { userId: user.id } });
+      if (!existingProfile) {
+        throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
+      }
 
       const updateData = { ...updateProfileDto };
 
-      if (uploadedImageReferences.length > 0) {
-        updateData.image = uploadedImageReferences; 
+      // Handle images: merge existing images with new uploads
+      if (files.image && files.image.length > 0) {
+        const uploadedImageReferences = await this.uploadImages(files.image);
+        
+        // Get existing images
+        const existingImages = existingProfile.image || [];
+        
+        // Check total image limit (3 required + up to 10 optional = 13 max)
+        const totalImages = existingImages.length + uploadedImageReferences.length;
+        if (totalImages > 13) {
+          throw new HttpException(
+            `Total image limit exceeded. You have ${existingImages.length} existing images and are trying to add ${uploadedImageReferences.length} more. Maximum allowed is 13 images.`,
+            HttpStatus.BAD_REQUEST
+          );
+        }
+
+        // Merge existing images with new uploads
+        const allImages = [
+          ...existingImages.map(url => ({ url })),
+          ...uploadedImageReferences
+        ];
+        
+        updateData.image = allImages;
+        console.log(`🖼️ Image update: ${existingImages.length} existing + ${uploadedImageReferences.length} new = ${allImages.length} total`);
       }
+      // If no new images uploaded, preserve existing images by not updating the image field
       
       return await this.updateProfile(user.id, updateData);
 
@@ -189,11 +243,16 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     const updateData: any = {};
     
     if (updateProfileDto.age !== undefined) { updateData.age = updateProfileDto.age.toString(); }
+    if (updateProfileDto.birthMonth !== undefined) { updateData.birthMonth = updateProfileDto.birthMonth; }
+    if (updateProfileDto.birthYear !== undefined) { updateData.birthYear = updateProfileDto.birthYear; }
     if (updateProfileDto.height !== undefined) { updateData.height = updateProfileDto.height; }
     if (updateProfileDto.bio !== undefined) { updateData.bio = updateProfileDto.bio; }
     if (updateProfileDto.location !== undefined) { updateData.location = updateProfileDto.location; }
     if (updateProfileDto.bodyType !== undefined) { updateData.bodyType = updateProfileDto.bodyType; }
-    if (updateProfileDto.area !== undefined) { updateData.area = updateProfileDto.area; }
+    if (updateProfileDto.county !== undefined) { 
+      updateData.county = updateProfileDto.county; 
+      updateData.area = null; // Set area to null when county is provided
+    }
     if (updateProfileDto.displayName !== undefined) { updateData.displayName = updateProfileDto.displayName; }
     if (updateProfileDto.email !== undefined) { updateData.email = updateProfileDto.email; }
     if (updateProfileDto.gmail !== undefined) { updateData.gmail = updateProfileDto.gmail; }
@@ -267,6 +326,51 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       },
     });
   }
+
+  async deletePhotoByIndex(userId: number, imageIndex: number) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
+    
+    const currentImages = profile.image || []; 
+    
+    if (imageIndex < 0 || imageIndex >= currentImages.length) {
+        throw new HttpException('Invalid image index.', HttpStatus.BAD_REQUEST);
+    }
+    
+    // if (currentImages.length <= 3) {
+    //     throw new HttpException('Cannot delete photo: minimum of 3 images required.', HttpStatus.BAD_REQUEST);
+    // }
+
+    const updatedImages = currentImages.filter((_, index) => index !== imageIndex);
+
+    return this.prisma.profile.update({
+      where: { userId },
+      data: { image: updatedImages },
+    });
+  }
+
+  async reorderImages(userId: number, newImageOrder: string[]) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
+    
+    const currentImages = profile.image || []; 
+    
+    // Validate that all current images are included in the new order
+    if (newImageOrder.length !== currentImages.length) {
+        throw new HttpException('New image order must contain exactly the same number of images.', HttpStatus.BAD_REQUEST);
+    }
+
+    // Validate that all URLs in the new order exist in current images
+    const missingUrls = newImageOrder.filter(url => !currentImages.includes(url));
+    if (missingUrls.length > 0) {
+        throw new HttpException('New image order contains URLs not found in current images.', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.prisma.profile.update({
+      where: { userId },
+      data: { image: newImageOrder },
+    });
+  }
   
   // -------------------------
   // Submission and Retrieval Methods
@@ -305,7 +409,47 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
 
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
 
-    return this.formatProfileResponse(profile);
+    // Auto-clear expired travel mode data
+    const updatedProfile = await this.checkAndClearExpiredTravelMode(profile);
+
+    return this.formatProfileResponse(updatedProfile);
+  }
+
+  // Helper method to check and clear expired travel mode
+  private async checkAndClearExpiredTravelMode(profile: any) {
+    // Check if travel mode data exists and if end date has passed
+    if (profile.endDate) {
+      try {
+        const currentDate = new Date();
+        const travelEndDate = new Date(profile.endDate);
+        
+        // If end date has passed, clear travel mode data
+        if (travelEndDate < currentDate) {
+          const updatedProfile = await this.prisma.profile.update({
+            where: { id: profile.id },
+            data: {
+              startDate: null,
+              endDate: null,
+              location: null,
+            },
+            include: {
+              user: { select: { id: true, email: true, name: true, status: true, createdAt: true } },
+            },
+          });
+          return updatedProfile;
+        }
+      } catch (error) {
+        // If date parsing fails, log error but don't block the response
+        console.error('Error parsing travel dates for auto-clear:', error);
+      }
+    }
+    
+    return profile;
+  }
+
+  // Helper method to get user by email
+  async getUserByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
   }
 
   async deleteProfile(email: string) {
@@ -333,11 +477,13 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       userId: profile.userId,
       email: profile.user?.email || profile.email,
       age: profile.age ? parseInt(profile.age, 10) : undefined,
+      birthMonth: profile.birthMonth,
+      birthYear: profile.birthYear,
       height: profile.height,
       bio: profile.bio,
       location: profile.location,
       bodyType: profile.bodyType,
-      area: profile.area,
+      county: profile.county,
       displayName: profile.displayName,
       phone: profile.phone,
       gmail: profile.gmail,

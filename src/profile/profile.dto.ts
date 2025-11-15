@@ -46,9 +46,23 @@ export class CreateProfileDto {
     age?: number;
 
     @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(1)
+    @Max(12)
+    birthMonth?: number; // Birth month (1-12)
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(1900)
+    @Max(new Date().getFullYear() - 18)
+    birthYear?: number; // Birth year
+
+    @IsOptional()
     @IsString()
     @MaxLength(20)
-    height?: string;
+    height?: string; // Format: "5'10"" (feet'inches")
 
     @IsOptional()
     @IsString()
@@ -81,7 +95,7 @@ export class CreateProfileDto {
 
     @IsString()
     @MaxLength(100)
-    area: string; // REQUIRED FIELD
+    county: string; // REQUIRED FIELD - County
 
     @IsString()
     @MaxLength(50)

@@ -900,7 +900,9 @@ export class AdminService {
       await this.emailService.sendCustomizableEmail('registration_approved', user.email, {
         userName: user.name,
         dashboardUrl: process.env.FRONTEND_URL || 'https://scanmemaybe.com',
-        paymentUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/checkout/${user.email}`,
+        // 🚨 BETA TESTING: Direct to profile setup instead of payment
+        paymentUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/checkout/setup-profile/${user.email}`,
+        paymentButtonText: 'Complete Profile', // Override button text
         currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {
@@ -953,6 +955,7 @@ export class AdminService {
         userName: user.name,
         rejectionReason: reason,
         currentYear: new Date().getFullYear().toString(),
+        editProfileUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile/edit`,
       });
     } catch (error) {
       console.error('Failed to send registration rejected email:', error.message);
@@ -1913,10 +1916,14 @@ export class AdminService {
     name: string;
     phone: string;
     age: number;
+    birthMonth?: number;
+    birthYear?: number;
     height: string;
     bodyType: string;
     dealbreakers: string;
     bio: string;
+    area?: string;
+    county?: string;
     location: string;
     images: string[];
     gender?: string;
@@ -1954,10 +1961,14 @@ export class AdminService {
         data: {
           userId: user.id,
           age: String(data.age),
+          birthMonth: data.birthMonth,
+          birthYear: data.birthYear,
           height: data.height,
           bodyType: data.bodyType,
           dealbreakers: data.dealbreakers,
           bio: data.bio,
+          area: data.area || null,
+          county: data.county || null,
           location: data.location,
           image: data.images,
           displayName: data.name,

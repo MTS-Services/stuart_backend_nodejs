@@ -8,6 +8,12 @@ import { CreateSubscriptionDto } from './payment.dto';
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
+  // 🚨 BETA TESTING: Direct payment bypass endpoint
+  @Post('beta-bypass')
+  async betaBypass(@Body() body: { email: string }) {
+    return this.paymentService.bypassPaymentForBeta(body.email);
+  }
+
   // ✅ Handles subscription creation request
   @Post('create-subscription')
   async createSubscription(@Body() dto: CreateSubscriptionDto) {

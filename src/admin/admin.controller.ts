@@ -416,10 +416,14 @@ async getDashboard(
       name: string;
       phone: string;
       age: number;
+      birthMonth?: number;
+      birthYear?: number;
       height: string;
       bodyType: string;
       dealbreakers: string;
       bio: string;
+      area?: string;
+      county?: string;
       location: string;
       images: string[];
       gender?: string;

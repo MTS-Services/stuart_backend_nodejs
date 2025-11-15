@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../prisma.service';
 
@@ -458,7 +458,7 @@ export class EmailService {
     const defaultTemplates = [
       {
         name: 'registration_approved',
-        subject: '🎉 Welcome to QR Dating App - Registration Approved!',
+        subject: '🎉 Welcome to Scan Me Maybe - Registration Approved!',
         body: 'Congratulations! Your registration has been approved. You can now create your profile and start connecting with other members.',
         htmlTemplate: `
 <!DOCTYPE html>
@@ -468,22 +468,135 @@ export class EmailService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{subject}}</title>
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #f0f8ff; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
-        .header { text-align: center; padding: 20px 0; border-bottom: 3px solid #4CAF50; margin-bottom: 30px; }
-        .header h1 { color: #4CAF50; font-size: 28px; margin: 0; font-weight: bold; }
-        .content { font-size: 16px; line-height: 1.8; color: #333333; }
-        .highlight-box { background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center; }
-        .highlight-box h2 { margin: 0 0 10px 0; font-size: 22px; }
-        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
-        .button { display: inline-block; background: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 20px 0; }
-        .button:hover { background: #45a049; }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #2c2c2c; 
+            color: #ffffff; 
+            line-height: 1.6; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #333333; 
+            border-radius: 12px; 
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+        }
+        .header { 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            text-align: center; 
+            padding: 30px 20px; 
+            color: #ffffff; 
+        }
+        .header h1 { 
+            color: #ffffff; 
+            font-size: 28px; 
+            margin: 0; 
+            font-weight: bold; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .content { 
+            padding: 30px 20px; 
+            font-size: 16px; 
+            line-height: 1.8; 
+            color: #ffffff; 
+        }
+        .highlight-box { 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            color: #ffffff; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin: 25px 0; 
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+        .highlight-box h2 { 
+            margin: 0 0 15px 0; 
+            font-size: 24px; 
+            font-weight: bold;
+        }
+        .footer { 
+            background-color: #2c2c2c;
+            text-align: center; 
+            padding: 20px; 
+            font-size: 12px; 
+            color: #cccccc; 
+        }
+        .button { 
+            display: inline-block; 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            color: #ffffff !important; 
+            padding: 18px 35px; 
+            text-decoration: none; 
+            border-radius: 30px; 
+            font-weight: bold; 
+            font-size: 16px;
+            margin: 25px auto;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+            transition: transform 0.3s ease;
+            text-align: center;
+            min-width: 200px;
+            display: block;
+            width: fit-content;
+        }
+        .button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(255, 107, 53, 0.5);
+        }
+        .info-box {
+            background-color: #404040;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ff6b35;
+        }
+        .info-box h3 {
+            color: #ff6b35;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .info-box ol, .info-box ul {
+            color: #ffffff;
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 0;
+                border-radius: 8px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .header {
+                padding: 25px 15px;
+            }
+            .highlight-box {
+                padding: 20px 15px;
+                margin: 20px 0;
+            }
+            .button {
+                padding: 16px 25px;
+                font-size: 14px;
+                width: calc(100% - 30px);
+                max-width: 100%;
+                margin: 25px auto;
+            }
+            .info-box {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎉 QR Dating App</h1>
+            <h1>🎉 Scan Me Maybe</h1>
         </div>
         <div class="content">
             <div class="highlight-box">
@@ -494,23 +607,23 @@ export class EmailService {
             <p>We're excited to have you join our community of singles looking for meaningful connections through QR card dating!</p>
             
             <div style="text-align: center; margin: 30px 0;">
-                <a href="{{paymentUrl}}" class="button" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 18px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3); display: inline-block;">
-                    {{paymentButtonText}}
+                <a href="{{paymentUrl}}" class="button">
+                    Complete Profile 🚀
                 </a>
             </div>
             
-            <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
-                <h3 style="color: #4CAF50; margin-top: 0;">🎯 Next Steps:</h3>
-                <ol style="color: #333; line-height: 1.6;">
-                    <li>Click the payment button above</li>
-                    <li>Complete your $69 setup fee</li>
-                    <li>Create your amazing profile</li>
-                    <li>Get your 50 physical QR cards delivered!</li>
+            <div class="info-box">
+                <h3>🎯 Next Steps:</h3>
+                <ol>
+                    <li>Click the button above to complete your profile</li>
+                    <li>Set up your amazing profile details</li>
+                    <li>Get ready to connect with other members!</li>
+                    <li>Start your dating journey with QR cards</li>
                 </ol>
             </div>
         </div>
         <div class="footer">
-            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+            <p>© {{currentYear}} Scan Me Maybe. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -518,7 +631,7 @@ export class EmailService {
       },
       {
         name: 'registration_rejected',
-        subject: 'QR Dating App - Registration Update',
+        subject: 'Scan Me Maybe - Registration Update',
         body: 'We regret to inform you that your registration has been rejected. Please review our terms and conditions and feel free to reapply.',
         htmlTemplate: `
 <!DOCTYPE html>
@@ -528,21 +641,134 @@ export class EmailService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{subject}}</title>
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #fff5f5; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
-        .header { text-align: center; padding: 20px 0; border-bottom: 3px solid #f44336; margin-bottom: 30px; }
-        .header h1 { color: #f44336; font-size: 28px; margin: 0; font-weight: bold; }
-        .content { font-size: 16px; line-height: 1.8; color: #333333; }
-        .highlight-box { background: linear-gradient(135deg, #f44336, #d32f2f); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center; }
-        .highlight-box h2 { margin: 0 0 10px 0; font-size: 22px; }
-        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
-        .info-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #2c2c2c; 
+            color: #ffffff; 
+            line-height: 1.6; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #333333; 
+            border-radius: 12px; 
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+        }
+        .header { 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            text-align: center; 
+            padding: 30px 20px; 
+            color: #ffffff; 
+        }
+        .header h1 { 
+            color: #ffffff; 
+            font-size: 28px; 
+            margin: 0; 
+            font-weight: bold; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .content { 
+            padding: 30px 20px; 
+            font-size: 16px; 
+            line-height: 1.8; 
+            color: #ffffff; 
+        }
+        .highlight-box { 
+            background: linear-gradient(135deg, #d32f2f, #f44336); 
+            color: #ffffff; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin: 25px 0; 
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
+        }
+        .highlight-box h2 { 
+            margin: 0 0 15px 0; 
+            font-size: 24px; 
+            font-weight: bold;
+        }
+        .footer { 
+            background-color: #2c2c2c;
+            text-align: center; 
+            padding: 20px; 
+            font-size: 12px; 
+            color: #cccccc; 
+        }
+        .info-box {
+            background-color: #404040;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ff6b35;
+        }
+        .info-box h4 {
+            color: #ff6b35;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .info-box p {
+            color: #ffffff;
+            margin-bottom: 0;
+        }
+        .button { 
+            display: inline-block; 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            color: #ffffff !important; 
+            padding: 18px 35px; 
+            text-decoration: none; 
+            border-radius: 30px; 
+            font-weight: bold; 
+            font-size: 16px;
+            margin: 25px auto;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+            transition: transform 0.3s ease;
+            text-align: center;
+            min-width: 200px;
+            display: block;
+            width: fit-content;
+        }
+        .button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(255, 107, 53, 0.5);
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 0;
+                border-radius: 8px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .header {
+                padding: 25px 15px;
+            }
+            .highlight-box {
+                padding: 20px 15px;
+                margin: 20px 0;
+            }
+            .button {
+                padding: 16px 25px;
+                font-size: 14px;
+                width: calc(100% - 30px);
+                max-width: 100%;
+                margin: 25px auto;
+            }
+            .info-box {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📋 QR Dating App</h1>
+            <h1>� Scan Me Maybe</h1>
         </div>
         <div class="content">
             <div class="highlight-box">
@@ -551,9 +777,20 @@ export class EmailService {
             </div>
             <p>{{body}}</p>
             <p>Thank you for your interest in our platform. If you have any questions, please feel free to contact our support team.</p>
+            
+            <div class="info-box">
+                <h4>💡 What's Next?</h4>
+                <p>You can edit your profile information and try registering again. We're here to help you succeed!</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{editProfileUrl}}" class="button">
+                    Edit Your Profile
+                </a>
+            </div>
         </div>
         <div class="footer">
-            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+            <p>© {{currentYear}} Scan Me Maybe. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -571,22 +808,115 @@ export class EmailService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{subject}}</title>
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); margin-top: 20px; margin-bottom: 20px; }
-        .header { text-align: center; padding: 20px 0; margin-bottom: 30px; }
-        .header h1 { color: #667eea; font-size: 32px; margin: 0; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
-        .content { font-size: 16px; line-height: 1.8; color: #333333; }
-        .success-box { background: linear-gradient(135deg, #56ab2f, #a8e6cf); color: white; padding: 30px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 8px 25px rgba(86, 171, 47, 0.3); }
-        .success-box h2 { margin: 0 0 15px 0; font-size: 24px; }
-        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #667eea; font-size: 12px; color: #666; }
-        .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 18px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; margin: 25px 0; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); transition: transform 0.3s ease; }
-        .cta-button:hover { transform: translateY(-2px); }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #2c2c2c; 
+            color: #ffffff; 
+            line-height: 1.6; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #333333; 
+            border-radius: 12px; 
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+        }
+        .header { 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            text-align: center; 
+            padding: 30px 20px; 
+            color: #ffffff; 
+        }
+        .header h1 { 
+            color: #ffffff; 
+            font-size: 28px; 
+            margin: 0; 
+            font-weight: bold; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .content { 
+            padding: 30px 20px; 
+            font-size: 16px; 
+            line-height: 1.8; 
+            color: #ffffff; 
+        }
+        .success-box { 
+            background: linear-gradient(135deg, #56ab2f, #7cb342); 
+            color: #ffffff; 
+            padding: 30px; 
+            border-radius: 12px; 
+            margin: 25px 0; 
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(86, 171, 47, 0.3);
+        }
+        .success-box h2 { 
+            margin: 0 0 15px 0; 
+            font-size: 24px; 
+            font-weight: bold;
+        }
+        .footer { 
+            background-color: #2c2c2c;
+            text-align: center; 
+            padding: 20px; 
+            font-size: 12px; 
+            color: #cccccc; 
+        }
+        .cta-button { 
+            display: inline-block; 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            color: #ffffff !important; 
+            padding: 18px 35px; 
+            text-decoration: none; 
+            border-radius: 30px; 
+            font-weight: bold; 
+            font-size: 16px;
+            margin: 25px auto;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+            transition: transform 0.3s ease;
+            text-align: center;
+            min-width: 200px;
+            display: block;
+            width: fit-content;
+        }
+        .cta-button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(255, 107, 53, 0.5);
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 0;
+                border-radius: 8px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .header {
+                padding: 25px 15px;
+            }
+            .success-box {
+                padding: 20px 15px;
+                margin: 20px 0;
+            }
+            .cta-button {
+                padding: 16px 25px;
+                font-size: 14px;
+                width: calc(100% - 30px);
+                max-width: 100%;
+                margin: 25px auto;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>✨ QR Dating App</h1>
+            <h1>✨ Scan Me Maybe</h1>
         </div>
         <div class="content">
             <div class="success-box">
@@ -595,12 +925,12 @@ export class EmailService {
             </div>
             <p>{{body}}</p>
             <p>Your journey to meaningful connections starts now. Create QR cards and start meeting amazing people!</p>
-            <div style="text-align: center;">
+            <div style="text-align: center; margin: 30px 0;">
                 <a href="{{dashboardUrl}}" class="cta-button">{{dashboardButtonText}}</a>
             </div>
         </div>
         <div class="footer">
-            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+            <p>© {{currentYear}} Scan Me Maybe. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -618,22 +948,128 @@ export class EmailService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{subject}}</title>
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%); }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); margin-top: 20px; margin-bottom: 20px; }
-        .header { text-align: center; padding: 20px 0; margin-bottom: 30px; }
-        .header h1 { color: #e17055; font-size: 32px; margin: 0; font-weight: bold; }
-        .content { font-size: 16px; line-height: 1.8; color: #333333; }
-        .review-box { background: linear-gradient(135deg, #fdcb6e, #e17055); color: white; padding: 30px; border-radius: 12px; margin: 25px 0; box-shadow: 0 8px 25px rgba(225, 112, 85, 0.3); }
-        .review-box h2 { margin: 0 0 15px 0; font-size: 24px; text-align: center; }
-        .feedback-box { background: rgba(255, 255, 255, 0.2); padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid white; }
-        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #e17055; font-size: 12px; color: #666; }
-        .edit-button { display: inline-block; background: linear-gradient(135deg, #00b894, #00cec9); color: white; padding: 18px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; margin: 25px 0; box-shadow: 0 8px 25px rgba(0, 184, 148, 0.3); }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #2c2c2c; 
+            color: #ffffff; 
+            line-height: 1.6; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #333333; 
+            border-radius: 12px; 
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+        }
+        .header { 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            text-align: center; 
+            padding: 30px 20px; 
+            color: #ffffff; 
+        }
+        .header h1 { 
+            color: #ffffff; 
+            font-size: 28px; 
+            margin: 0; 
+            font-weight: bold; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .content { 
+            padding: 30px 20px; 
+            font-size: 16px; 
+            line-height: 1.8; 
+            color: #ffffff; 
+        }
+        .review-box { 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            color: #ffffff; 
+            padding: 30px; 
+            border-radius: 12px; 
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+        .review-box h2 { 
+            margin: 0 0 15px 0; 
+            font-size: 24px; 
+            text-align: center;
+            font-weight: bold;
+        }
+        .feedback-box { 
+            background-color: #404040; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 15px 0; 
+            border-left: 4px solid #ff6b35;
+        }
+        .feedback-box strong {
+            color: #ff8c42;
+        }
+        .footer { 
+            background-color: #2c2c2c;
+            text-align: center; 
+            padding: 20px; 
+            font-size: 12px; 
+            color: #cccccc; 
+        }
+        .edit-button { 
+            display: inline-block; 
+            background: linear-gradient(135deg, #ff6b35, #ff8c42); 
+            color: #ffffff !important; 
+            padding: 18px 35px; 
+            text-decoration: none; 
+            border-radius: 30px; 
+            font-weight: bold; 
+            font-size: 16px;
+            margin: 25px auto;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+            transition: transform 0.3s ease;
+            text-align: center;
+            min-width: 200px;
+            display: block;
+            width: fit-content;
+        }
+        .edit-button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(255, 107, 53, 0.5);
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 0;
+                border-radius: 8px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .header {
+                padding: 25px 15px;
+            }
+            .review-box {
+                padding: 20px 15px;
+                margin: 20px 0;
+            }
+            .feedback-box {
+                padding: 15px;
+            }
+            .edit-button {
+                padding: 16px 25px;
+                font-size: 14px;
+                width: calc(100% - 30px);
+                max-width: 100%;
+                margin: 25px auto;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📝 QR Dating App</h1>
+            <h1>� Scan Me Maybe</h1>
         </div>
         <div class="content">
             <div class="review-box">
@@ -650,7 +1086,7 @@ export class EmailService {
             </div>
         </div>
         <div class="footer">
-            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+            <p>© {{currentYear}} Scan Me Maybe. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -727,7 +1163,7 @@ export class EmailService {
 
       const defaultVariables = {
         currentYear: new Date().getFullYear().toString(),
-        appName: 'QR Dating App',
+        appName: 'Scan Me Maybe',
         subject: template.subject,
         body: template.body,
         userEmail: userEmail,
@@ -833,11 +1269,11 @@ export class EmailService {
       if (!finalHtml) {
         finalHtml = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
           <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h2 style="color: #333; margin-bottom: 20px;">QR Dating App</h2>
+            <h2 style="color: #333; margin-bottom: 20px;">Scan Me Maybe</h2>
             <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 20px;">${finalBody}</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
             <p style="font-size: 12px; color: #666; text-align: center; margin: 0;">
-              © QR Dating App ${new Date().getFullYear()}. All rights reserved.
+              © Scan Me Maybe ${new Date().getFullYear()}. All rights reserved.
             </p>
           </div>
         </div>`;

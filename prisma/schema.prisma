@@ -63,9 +63,12 @@ model Profile {
   id              Int           @id @default(autoincrement())
   userId          Int           @unique
   age             String?
+  birthMonth      Int?          // Birth month (1-12)
+  birthYear       Int?          // Birth year
   height          String?
   bodyType        String?
   area            String?
+  county          String?       // County field instead of country
   dealbreakers    String?
   bio             String?
   startDate       String?

@@ -212,6 +212,7 @@ import { PrismaService } from '../prisma.service';
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
+  private readonly BETA_TESTING_MODE = true; // 🚨 Set to false after beta testing
 
   constructor(private readonly prisma: PrismaService) {
     const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -221,6 +222,48 @@ export class PaymentService {
 
     // ✅ Use correct Stripe version initialization
     this.stripe = new Stripe(stripeKey, { apiVersion: '2025-09-30.clover' });
+  }
+
+  /**
+   * 🚨 BETA TESTING: Bypass payment and automatically mark user as paid
+   */
+  async bypassPaymentForBeta(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new BadRequestException('User not found');
+
+    if (user.paidSetupFee) {
+      return { 
+        success: true,
+        message: 'User already has payment completed',
+        bypass: true 
+      };
+    }
+
+    // Mark user as paid without any actual payment
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { paidSetupFee: true },
+    });
+
+    // Create a fake payment record for tracking
+    await this.prisma.payment.create({
+      data: {
+        userId: user.id,
+        amount: 0,
+        stripePaymentIntentId: `beta_bypass_${user.id}_${Date.now()}`,
+        type: 'ONE_TIME',
+        status: 'COMPLETED',
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Payment bypassed for beta testing - user marked as paid',
+      email: user.email,
+      amount: 0,
+      bypass: true,
+      betaTesting: true
+    };
   }
 
   /**
@@ -269,12 +312,18 @@ export class PaymentService {
 
   /**
    * Handles one-time setup payment
+   * 🚨 BETA TESTING: Automatically bypasses payment
    */
   async createOneTimePayment(
   email: string,
   amount: number,
   paymentMethodId: string,
 ) {
+  // 🚨 BETA TESTING MODE: Bypass all payments
+  if (this.BETA_TESTING_MODE) {
+    console.log('🚨 BETA MODE: Bypassing payment for', email);
+    return this.bypassPaymentForBeta(email);
+  }
   // ✅ Find user by email
   const user = await this.prisma.user.findUnique({ where: { email } });
   if (!user) throw new BadRequestException('User not found');
@@ -389,9 +438,56 @@ export class PaymentService {
 
   /**
    * Handles recurring subscription creation (Stripe)
+   * 🚨 BETA TESTING: Automatically bypasses payment
    */
   async createSubscription(dto: CreateSubscriptionDto): Promise<any> {
   const { email, paymentMethodId, priceId } = dto;
+
+  // 🚨 BETA TESTING MODE: Bypass all payments
+  if (this.BETA_TESTING_MODE) {
+    console.log('🚨 BETA MODE: Bypassing subscription for', email);
+    const bypassResult = await this.bypassPaymentForBeta(email);
+    
+    // Create fake subscription record for consistency
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user) {
+      await this.prisma.subscription.upsert({
+        where: { userId: user.id },
+        update: {
+          plan: 'MONTHLY',
+          status: 'ACTIVE',
+          amount: 0,
+          currency: 'USD',
+          stripeCustomerId: `beta_customer_${user.id}`,
+          stripeSubscriptionId: `beta_sub_${user.id}_${Date.now()}`,
+          startDate: new Date(),
+          endDate: null,
+        },
+        create: {
+          userId: user.id,
+          plan: 'MONTHLY',
+          status: 'ACTIVE',
+          amount: 0,
+          currency: 'USD',
+          stripeCustomerId: `beta_customer_${user.id}`,
+          stripeSubscriptionId: `beta_sub_${user.id}_${Date.now()}`,
+          startDate: new Date(),
+        },
+      });
+    }
+
+    return {
+      ...bypassResult,
+      subscriptionId: `beta_sub_${user?.id}_${Date.now()}`,
+      customerId: `beta_customer_${user?.id}`,
+      plan: 'MONTHLY',
+      status: 'ACTIVE',
+      amount: 0,
+      clientSecret: null,
+      stripeStatus: 'active',
+      betaTesting: true
+    };
+  }
 
   try {
     // ✅ 1. Find or create Stripe customer

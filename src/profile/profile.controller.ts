@@ -137,5 +137,90 @@ export class ProfileController {
   async submitForReview(@Body() submitDto: SubmitProfileDto) {
     // The service validates if the profile is complete (including min 3 images) before submitting.
     return this.profileService.submitForReviewByEmail(submitDto.email);
-  }
+  }
+
+  // -------------------------
+  // Image Management Endpoints  
+  // -------------------------
+  
+  // DELETE /profile/:email/image/:index (Delete specific image by index)
+  @Delete(':email/image/:index')
+  async deleteImageByIndex(
+    @Param('email') email: string,
+    @Param('index') index: string
+  ) {
+    try {
+      const user = await this.profileService.getUserByEmail(email);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      
+      const imageIndex = parseInt(index, 10);
+      if (isNaN(imageIndex)) {
+        throw new HttpException('Invalid image index', HttpStatus.BAD_REQUEST);
+      }
+
+      return await this.profileService.deletePhotoByIndex(user.id, imageIndex);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to delete image: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // DELETE /profile/:email/image (Delete specific image by URL)  
+  @Delete(':email/image')
+  async deleteImageByUrl(
+    @Param('email') email: string,
+    @Body() body: { imageUrl: string }
+  ) {
+    try {
+      const user = await this.profileService.getUserByEmail(email);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      return await this.profileService.deletePhoto(user.id, body.imageUrl);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to delete image: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // PUT /profile/:email/images/reorder (Reorder images)
+  @Put(':email/images/reorder')
+  async reorderImages(
+    @Param('email') email: string,
+    @Body() body: { imageOrder: string[] }
+  ) {
+    try {
+      const user = await this.profileService.getUserByEmail(email);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (!Array.isArray(body.imageOrder)) {
+        throw new HttpException('imageOrder must be an array', HttpStatus.BAD_REQUEST);
+      }
+
+      return await this.profileService.reorderImages(user.id, body.imageOrder);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to reorder images: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 }

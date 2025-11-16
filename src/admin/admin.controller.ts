@@ -17,6 +17,7 @@ import { AdminService } from './admin.service';
 import { UpdateAdminProfileDto, ChangeAdminPasswordDto } from './dto/admin-profile.dto';
 import { PaginationQueryDto } from './dto/profile-status.dto';
 import type { EmailButtonConfigDto } from './dto/email-button-config.dto';
+import type { EmailTemplateDto, EmailTestDto, EmailPreviewDto, DuplicateTemplateDto } from './dto/email-template.dto';
 import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('admin')
@@ -361,7 +362,7 @@ async getDashboard(
   }
 
   // ========================
-  // Customizable Email Template Management
+  // Enhanced Email Template Management
   // ========================
 
   @Post('templates/initialize')
@@ -379,14 +380,51 @@ async getDashboard(
     return this.adminService.getCustomizableTemplate(name);
   }
 
+  @Post('templates')
+  async createEmailTemplate(@Body() templateData: EmailTemplateDto) {
+    return this.adminService.createEmailTemplate(templateData);
+  }
+
   @Put('templates/:name')
   async updateCustomizableTemplate(
     @Param('name') name: string,
-    @Body('subject') subject: string,
-    @Body('body') body: string,
-    @Body('htmlTemplate') htmlTemplate?: string
+    @Body() templateData: EmailTemplateDto
   ) {
-    return this.adminService.updateCustomizableTemplate(name, subject, body, htmlTemplate);
+    return this.adminService.updateEmailTemplate(name, templateData);
+  }
+
+  @Delete('templates/:name')
+  async deleteEmailTemplate(@Param('name') name: string) {
+    return this.adminService.deleteEmailTemplate(name);
+  }
+
+  @Post('templates/:name/test')
+  async sendTestEmail(
+    @Param('name') name: string,
+    @Body() testData: EmailTestDto
+  ) {
+    return this.adminService.sendTestEmail(name, testData.email, testData.variables || {});
+  }
+
+  @Post('templates/:name/preview')
+  async previewEmailTemplate(
+    @Param('name') name: string,
+    @Body() previewData: EmailPreviewDto
+  ) {
+    return this.adminService.previewEmailTemplate(name, previewData.variables || {});
+  }
+
+  @Post('templates/duplicate')
+  async duplicateEmailTemplate(@Body() duplicateData: DuplicateTemplateDto) {
+    return this.adminService.duplicateEmailTemplate(
+      duplicateData.sourceTemplateName, 
+      duplicateData.newTemplateName
+    );
+  }
+
+  @Get('templates/variables')
+  async getEmailVariables() {
+    return this.adminService.getEmailVariables();
   }
 
   // ========================

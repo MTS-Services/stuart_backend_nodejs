@@ -1169,7 +1169,7 @@ export class EmailService {
         userEmail: userEmail,
         email: userEmail,
         dashboardUrl: `${baseUrl}/dashboard`,
-        editProfileUrl: `${baseUrl}/profile/edit`,
+        editProfileUrl: `${baseUrl}/profile/edit/${userEmail}`,
         paymentUrl: safeVars.paymentUrl || `${baseUrl}/checkout/${userEmail}`,
         loginUrl: `${baseUrl}/login`,
         checkoutUrl: `${baseUrl}/checkout/${userEmail}`,

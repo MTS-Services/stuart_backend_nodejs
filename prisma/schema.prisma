@@ -233,6 +233,10 @@ model EmailTemplate {
   subject      String // Admin can edit subject line
   body         String // Admin can edit plain text body content
   htmlTemplate String   @map("html_template") @db.Text // Admin can edit full HTML template with CSS styling
+  components   Json?    @db.JsonB // Store visual builder components
+  settings     Json?    @db.JsonB // Store template settings (fonts, colors, etc.)
+  variables    Json?    @db.JsonB // Store custom variables definition
+  preheader    String?  // Email preheader text
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

@@ -1707,7 +1707,7 @@ export class AdminService {
   }
 
   // ========================
-  // Customizable Email Template Management
+  // Enhanced Email Template Management
   // ========================
 
   async initializeCustomizableTemplates() {
@@ -1716,15 +1716,18 @@ export class AdminService {
 
   async getCustomizableTemplates() {
     try {
-      const templates = await this.prisma.$queryRaw`
-        SELECT * FROM email_templates ORDER BY name ASC
-      `;
+      const templates = await this.prisma.emailTemplate.findMany({
+        orderBy: {
+          name: 'asc'
+        }
+      });
       return {
         success: true,
-        templates,
-        count: (templates as any[]).length
+        data: templates,
+        count: templates.length
       };
     } catch (error) {
+      console.error('Error fetching email templates:', error);
       throw new HttpException(
         `Failed to fetch templates: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -1734,25 +1737,33 @@ export class AdminService {
 
   async getCustomizableTemplate(name: string) {
     try {
-      const template = await this.prisma.$queryRaw`
-        SELECT * FROM email_templates WHERE name = ${name}
-      `;
+      const template = await this.prisma.emailTemplate.findUnique({
+        where: { name }
+      });
       
-      if (!template || (template as any[]).length === 0) {
+      if (!template) {
         throw new HttpException(
           `Template '${name}' not found`,
           HttpStatus.NOT_FOUND
         );
       }
       
+      if (!template) {
+        throw new HttpException(
+          `Template '${name}' not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
       return {
         success: true,
-        template: (template as any[])[0]
+        data: template
       };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
+      console.error('Error fetching email template:', error);
       throw new HttpException(
         `Failed to fetch template: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -1760,38 +1771,159 @@ export class AdminService {
     }
   }
 
-  async updateCustomizableTemplate(name: string, subject: string, body: string, htmlTemplate?: string) {
+  async createEmailTemplate(templateData: any) {
     try {
-      if (htmlTemplate) {
-        await this.prisma.$queryRaw`
-          UPDATE email_templates 
-          SET subject = ${subject}, body = ${body}, html_template = ${htmlTemplate}, updated_at = NOW()
-          WHERE name = ${name}
-        `;
-      } else {
-        await this.prisma.$queryRaw`
-          UPDATE email_templates 
-          SET subject = ${subject}, body = ${body}, updated_at = NOW()
-          WHERE name = ${name}
-        `;
+      const { name, subject, body, html_template, components, settings, variables, preheader } = templateData;
+      
+      // Check if template already exists
+      const existingTemplate = await this.prisma.emailTemplate.findUnique({
+        where: { name }
+      });
+      
+      if (existingTemplate) {
+        throw new HttpException(
+          `Template '${name}' already exists`,
+          HttpStatus.CONFLICT
+        );
       }
 
-      // Check if any rows were updated
-      const template = await this.prisma.$queryRaw`
-        SELECT * FROM email_templates WHERE name = ${name}
-      `;
+      const newTemplate = await this.prisma.emailTemplate.create({
+        data: {
+          name,
+          subject,
+          body,
+          htmlTemplate: html_template,
+          components: components || {},
+          settings: settings || {},
+          variables: variables || {},
+          preheader: preheader || '',
+          isActive: true
+        }
+      });
 
-      if (!template || (template as any[]).length === 0) {
+      return {
+        success: true,
+        message: `Template '${name}' created successfully`,
+        data: newTemplate,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error('Error creating email template:', error);
+      throw new HttpException(
+        `Failed to create template: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async updateEmailTemplate(name: string, templateData: any) {
+    try {
+      const { subject, body, html_template, components, settings, variables, preheader } = templateData;
+      
+      // Check if template exists
+      const existingTemplate = await this.prisma.emailTemplate.findUnique({
+        where: { name }
+      });
+
+      if (!existingTemplate) {
         throw new HttpException(
           `Template '${name}' not found`,
           HttpStatus.NOT_FOUND
         );
       }
 
+      const updatedTemplate = await this.prisma.emailTemplate.update({
+        where: { name },
+        data: {
+          subject,
+          body,
+          htmlTemplate: html_template,
+          components: components || {},
+          settings: settings || {},
+          variables: variables || {},
+          preheader: preheader || existingTemplate.preheader
+        }
+      });
+
       return {
         success: true,
         message: `Template '${name}' updated successfully`,
-        template: (template as any[])[0],
+        data: updatedTemplate,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error('Error updating email template:', error);
+      throw new HttpException(
+        `Failed to update template: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async deleteEmailTemplate(name: string) {
+    try {
+      const template = await this.prisma.emailTemplate.findUnique({
+        where: { name }
+      });
+      
+      if (!template) {
+        throw new HttpException(
+          `Template '${name}' not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      await this.prisma.emailTemplate.delete({
+        where: { name }
+      });
+
+      return {
+        success: true,
+        message: `Template '${name}' deleted successfully`,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error('Error deleting email template:', error);
+      throw new HttpException(
+        `Failed to delete template: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async sendTestEmail(templateName: string, email: string, variables: any = {}) {
+    try {
+      const template = await this.emailService.getCustomizableTemplate(templateName);
+      if (!template) {
+        throw new HttpException(
+          `Template '${templateName}' not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      // Add test indicator variables
+      const testVariables = {
+        ...variables,
+        userName: variables.userName || 'Test User',
+        userEmail: email,
+        isTestEmail: true,
+        testMessage: '[TEST EMAIL] This is a test email sent from admin dashboard'
+      };
+
+      await this.emailService.sendCustomizableEmail(templateName, email, testVariables);
+
+      return {
+        success: true,
+        message: `Test email sent to ${email} using template '${templateName}'`,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
@@ -1799,7 +1931,154 @@ export class AdminService {
         throw error;
       }
       throw new HttpException(
-        `Failed to update template: ${error.message}`,
+        `Failed to send test email: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async previewEmailTemplate(templateName: string, variables: any = {}) {
+    try {
+      const template = await this.emailService.getCustomizableTemplate(templateName);
+      if (!template) {
+        throw new HttpException(
+          `Template '${templateName}' not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      // Generate preview with sample variables
+      const previewVariables = {
+        userName: 'John Doe',
+        userEmail: 'john.doe@example.com',
+        currentYear: new Date().getFullYear().toString(),
+        appName: 'QR Dating App',
+        ...variables
+      };
+
+      // Process template with variables (simplified version)
+      let processedHtml = template.html_template || template.htmlTemplate || '';
+      let processedSubject = template.subject;
+
+      // Replace variables in HTML and subject
+      Object.entries(previewVariables).forEach(([key, value]) => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        processedHtml = processedHtml.replace(regex, String(value));
+        processedSubject = processedSubject.replace(regex, String(value));
+      });
+
+      return {
+        success: true,
+        data: {
+          subject: processedSubject,
+          html: processedHtml,
+          variables: previewVariables
+        },
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to preview template: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async duplicateEmailTemplate(sourceTemplateName: string, newTemplateName: string) {
+    try {
+      const sourceTemplate = await this.prisma.emailTemplate.findUnique({
+        where: { name: sourceTemplateName }
+      });
+      
+      if (!sourceTemplate) {
+        throw new HttpException(
+          `Source template '${sourceTemplateName}' not found`,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      // Check if new template name already exists
+      const existingTemplate = await this.prisma.emailTemplate.findUnique({
+        where: { name: newTemplateName }
+      });
+
+      if (existingTemplate) {
+        throw new HttpException(
+          `Template '${newTemplateName}' already exists`,
+          HttpStatus.CONFLICT
+        );
+      }
+
+      // Create new template with copied data
+      const newTemplate = await this.prisma.emailTemplate.create({
+        data: {
+          name: newTemplateName,
+          subject: `Copy of ${sourceTemplate.subject}`,
+          body: sourceTemplate.body,
+          htmlTemplate: sourceTemplate.htmlTemplate,
+          components: sourceTemplate.components || {},
+          settings: sourceTemplate.settings || {},
+          variables: sourceTemplate.variables || {},
+          preheader: sourceTemplate.preheader,
+          isActive: true
+        }
+      });
+
+      return {
+        success: true,
+        message: `Template duplicated successfully as '${newTemplateName}'`,
+        data: newTemplate,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error('Error duplicating email template:', error);
+      throw new HttpException(
+        `Failed to duplicate template: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async getEmailVariables() {
+    try {
+      return {
+        success: true,
+        data: {
+          global: [
+            { key: 'userName', description: 'User\'s full name', example: 'John Doe' },
+            { key: 'userEmail', description: 'User\'s email address', example: 'john@example.com' },
+            { key: 'currentYear', description: 'Current year', example: '2025' },
+            { key: 'appName', description: 'Application name', example: 'QR Dating App' }
+          ],
+          authentication: [
+            { key: 'loginUrl', description: 'Login page URL', example: 'https://app.com/login' },
+            { key: 'dashboardUrl', description: 'Dashboard URL', example: 'https://app.com/dashboard' }
+          ],
+          profile: [
+            { key: 'editProfileUrl', description: 'Profile editing URL', example: 'https://app.com/profile/edit' },
+            { key: 'rejectionReason', description: 'Reason for profile rejection', example: 'Please update your photos' }
+          ],
+          payment: [
+            { key: 'paymentUrl', description: 'Payment/checkout URL', example: 'https://app.com/checkout' },
+            { key: 'checkoutUrl', description: 'Checkout page URL', example: 'https://app.com/checkout' }
+          ],
+          buttons: [
+            { key: 'paymentButtonText', description: 'Payment button text', example: '💳 Complete Payment →' },
+            { key: 'dashboardButtonText', description: 'Dashboard button text', example: '🎯 Go to Dashboard →' },
+            { key: 'editButtonText', description: 'Edit profile button text', example: '✏️ Edit Profile →' },
+            { key: 'loginButtonText', description: 'Login button text', example: '🔐 Login →' }
+          ]
+        }
+      };
+    } catch (error) {
+      throw new HttpException(
+        `Failed to get email variables: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -1875,7 +2154,14 @@ export class AdminService {
       }
 
       // Update the template in database
-      await this.updateCustomizableTemplate(templateName, template.subject, template.body, htmlTemplate);
+      await this.updateEmailTemplate(templateName, {
+        subject: template.subject,
+        body: template.body,
+        html_template: htmlTemplate,
+        components: [],
+        settings: {},
+        variables: []
+      });
 
       return {
         success: true,

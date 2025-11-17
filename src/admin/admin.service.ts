@@ -1960,6 +1960,22 @@ export class AdminService {
       let processedHtml = template.html_template || template.htmlTemplate || '';
       let processedSubject = template.subject;
 
+      // Decode HTML entities for curly braces BEFORE replacing variables
+      const preDecode = (html: string) => {
+        html = html
+          .replace(/&#123;/g, '{')
+          .replace(/&#125;/g, '}')
+          .replace(/&amp;#123;/g, '{')
+          .replace(/&amp;#125;/g, '}')
+          .replace(/%7B/gi, '{')
+          .replace(/%7D/gi, '}')
+          .replace(/%257B/gi, '{')
+          .replace(/%257D/gi, '}');
+        return html;
+      };
+      processedHtml = preDecode(processedHtml);
+      processedSubject = preDecode(processedSubject);
+
       // Replace variables in HTML and subject
       Object.entries(previewVariables).forEach(([key, value]) => {
         const regex = new RegExp(`{{${key}}}`, 'g');

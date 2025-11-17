@@ -1172,7 +1172,7 @@ export class EmailService {
         editProfileUrl: `${baseUrl}/profile/edit/${userEmail}`,
         paymentUrl: safeVars.paymentUrl || `${baseUrl}/checkout/${userEmail}`,
         loginUrl: `${baseUrl}/login`,
-        checkoutUrl: `${baseUrl}/checkout/${userEmail}`,
+        checkoutUrl: `${baseUrl}/checkout/setup-profile/${userEmail}`,
         paymentButtonText: customButtonConfig.paymentButtonText || '💳 Complete Payment & Setup →',
         dashboardButtonText: customButtonConfig.dashboardButtonText || '🎯 Generate QR Cards →',
         editButtonText: customButtonConfig.editButtonText || '✏️ Edit Profile →',
@@ -1198,11 +1198,17 @@ export class EmailService {
       };
 
       const preDecode = (html: string) => {
-        return html
-          .replace(/%7B%7B/gi, '{{')
-          .replace(/%257B%257B/gi, '{{')
-          .replace(/%7D%7D/gi, '}}')
-          .replace(/%257D%257D/gi, '}}');
+        // Decode HTML entities for curly braces
+        html = html
+          .replace(/&#123;/g, '{')
+          .replace(/&#125;/g, '}')
+          .replace(/&amp;#123;/g, '{')
+          .replace(/&amp;#125;/g, '}')
+          .replace(/%7B/gi, '{')
+          .replace(/%7D/gi, '}')
+          .replace(/%257B/gi, '{')
+          .replace(/%257D/gi, '}');
+        return html;
       };
       finalHtml = preDecode(finalHtml);
 

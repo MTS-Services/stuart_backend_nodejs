@@ -390,6 +390,7 @@ async getDashboard(
     @Param('name') name: string,
     @Body() templateData: EmailTemplateDto
   ) {
+    console.log('Updating template:', name, templateData);
     return this.adminService.updateEmailTemplate(name, templateData);
   }
 
@@ -403,6 +404,7 @@ async getDashboard(
     @Param('name') name: string,
     @Body() testData: EmailTestDto
   ) {
+    console.log('Sending test email with data:', testData.email);
     return this.adminService.sendTestEmail(name, testData.email, testData.variables || {});
   }
 

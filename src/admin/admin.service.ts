@@ -548,38 +548,145 @@ export class AdminService {
       
       await this.emailService.sendEmail(
         profile.user.email,
-        'Set Your Password - Account Approved!',
+        '🔐 Set Your Password - Registration Approved!',
         `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #667eea;">🎉 Welcome to Scan Me Maybe!</h2>
-            <p>Hi ${profile.user.name},</p>
-            <p>Great news! Your account has been approved by our admin team.</p>
-            <p><strong>Next Step:</strong> Set your password to access your dashboard and manage your QR cards.</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetLink}" 
-                 style="background-color: #667eea; color: white; padding: 15px 30px; 
-                        text-decoration: none; border-radius: 8px; display: inline-block;
-                        font-weight: bold; font-size: 16px;">
-                🔐 Set Your Password
-              </a>
-            </div>
-            <p>Or copy and paste this link in your browser:</p>
-            <p style="color: #666; word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px;">${resetLink}</p>
-            <p style="margin-top: 30px;">Once you set your password, you'll be able to:</p>
-            <ul style="line-height: 1.8;">
-              <li>Access your dashboard</li>
-              <li>View and manage your QR cards</li>
-              <li>Track scans and matches</li>
-              <li>Update your profile</li>
-            </ul>
-            <p style="color: #999; font-size: 12px; margin-top: 30px;">
-              If you didn't register for Scan Me Maybe, please ignore this email.
-            </p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="text-align: center; color: #666; font-size: 12px;">
-              © ${new Date().getFullYear()} Scan Me Maybe. All rights reserved.
-            </p>
-          </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Your Password</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4; padding: 20px 0;">
+    <tr>
+      <td align="center" style="padding: 0;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                🎉 Welcome to Scan Me Maybe!
+              </h1>
+              <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 14px; opacity: 0.95;">
+                Your registration has been approved
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <h2 style="margin: 0 0 15px 0; color: #333333; font-size: 20px; font-weight: 600;">
+                Hi ${profile.user.name}! 👋
+              </h2>
+              
+              <p style="margin: 0 0 20px 0; color: #555555; font-size: 16px; line-height: 1.6;">
+                Congratulations! Your account has been <strong>approved</strong> by our admin team.
+              </p>
+
+              <div style="background-color: #f8f9ff; border-left: 4px solid #667eea; padding: 20px; margin: 25px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #333333; font-size: 15px; font-weight: 600;">
+                  🔐 Next Step: Set Your Password
+                </p>
+                <p style="margin: 10px 0 0 0; color: #555555; font-size: 14px; line-height: 1.5;">
+                  Click the button below to create your password and access your dashboard.
+                </p>
+              </div>
+
+              <!-- CTA Button -->
+              <table role="presentation" style="width: 100%; margin: 30px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetLink}" 
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                              color: #ffffff; text-decoration: none; padding: 16px 40px; 
+                              border-radius: 8px; font-weight: 600; font-size: 16px;
+                              box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                              transition: all 0.3s ease;">
+                      🔐 Set Your Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Alternative Link -->
+              <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <p style="margin: 0 0 8px 0; color: #666666; font-size: 13px; font-weight: 500;">
+                  Or copy and paste this link:
+                </p>
+                <p style="margin: 0; color: #667eea; font-size: 12px; word-break: break-all; font-family: 'Courier New', monospace;">
+                  ${resetLink}
+                </p>
+              </div>
+
+              <!-- Features List -->
+              <div style="margin: 30px 0;">
+                <p style="margin: 0 0 15px 0; color: #333333; font-size: 15px; font-weight: 600;">
+                  ✨ What you can do after setting your password:
+                </p>
+                <table role="presentation" style="width: 100%;">
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #667eea; font-size: 16px; margin-right: 8px;">✓</span>
+                      <span style="color: #555555; font-size: 14px;">Access your personal dashboard</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #667eea; font-size: 16px; margin-right: 8px;">✓</span>
+                      <span style="color: #555555; font-size: 14px;">View and manage your QR cards</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #667eea; font-size: 16px; margin-right: 8px;">✓</span>
+                      <span style="color: #555555; font-size: 14px;">Track scans and view matches</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #667eea; font-size: 16px; margin-right: 8px;">✓</span>
+                      <span style="color: #555555; font-size: 14px;">Update your profile anytime</span>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 25px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #856404; font-size: 13px; line-height: 1.5;">
+                  <strong>🔒 Security Tip:</strong> Create a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.
+                </p>
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0 0 10px 0; color: #999999; font-size: 12px; line-height: 1.5;">
+                If you didn't register for Scan Me Maybe, please ignore this email.
+              </p>
+              <p style="margin: 0; color: #999999; font-size: 12px;">
+                This is an automated message, please do not reply.
+              </p>
+              <div style="margin: 20px 0; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                <p style="margin: 0; color: #666666; font-size: 12px; font-weight: 500;">
+                  © ${new Date().getFullYear()} Scan Me Maybe. All rights reserved.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
         `,
       );
       console.log(`✅ Password setup email sent to ${profile.user.email}`);

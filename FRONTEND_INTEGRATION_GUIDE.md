@@ -3,6 +3,7 @@
 ## 🔐 User Authentication System - Complete
 
 ### Overview
+
 The backend now supports complete user authentication with password reset functionality. Users can set passwords after admin approval and login to access protected features.
 
 ---
@@ -10,17 +11,22 @@ The backend now supports complete user authentication with password reset functi
 ## 📋 API Endpoints for Frontend
 
 ### 1. **User Registration** ✅
+
 ```
 POST /auth/register
 ```
+
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
   "name": "John Doe"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "message": "Registration submitted successfully. Admin will review and approve your application.",
@@ -36,17 +42,22 @@ POST /auth/register
 ---
 
 ### 2. **User Set Password** ✅ NEW!
+
 ```
 POST /auth/set-password
 ```
+
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
   "password": "SecurePassword123!"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -67,17 +78,22 @@ POST /auth/set-password
 ---
 
 ### 3. **User Login** ✅ NEW!
+
 ```
 POST /auth/user/login
 ```
+
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
   "password": "SecurePassword123!"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -99,6 +115,7 @@ POST /auth/user/login
 ```
 
 **Store Token:**
+
 ```javascript
 localStorage.setItem('user_token', response.data.access_token);
 ```
@@ -106,17 +123,22 @@ localStorage.setItem('user_token', response.data.access_token);
 ---
 
 ### 4. **Password Reset (Alternative)** ✅ NEW!
+
 ```
 POST /auth/reset-password/:email
 ```
+
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
   "newPassword": "NewSecurePassword123!"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -135,17 +157,22 @@ POST /auth/reset-password/:email
 ---
 
 ### 5. **Admin Login** ✅
+
 ```
 POST /auth/admin/login
 ```
+
 **Request:**
+
 ```json
 {
   "email": "admin@yourapp.com",
   "password": "admin123"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -163,9 +190,11 @@ POST /auth/admin/login
 ## 🎨 Frontend Pages Needed
 
 ### 1. **Password Setup Page** 📝 NEW!
+
 **Route:** `/auth/reset-password/:email`
 
 **Component Example:**
+
 ```jsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -180,7 +209,7 @@ function SetPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -193,15 +222,15 @@ function SetPasswordPage() {
       const response = await fetch('/auth/set-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
         // Redirect to login
-        navigate('/login', { 
-          state: { message: 'Password set successfully! Please login.' }
+        navigate('/login', {
+          state: { message: 'Password set successfully! Please login.' },
         });
       } else {
         setError(data.message || 'Failed to set password');
@@ -217,7 +246,7 @@ function SetPasswordPage() {
     <div className="set-password-page">
       <h1>Set Your Password</h1>
       <p>Email: {email}</p>
-      
+
       <form onSubmit={handleSubmit}>
         <input
           type="password"
@@ -226,7 +255,7 @@ function SetPasswordPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        
+
         <input
           type="password"
           placeholder="Confirm password"
@@ -234,9 +263,9 @@ function SetPasswordPage() {
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
         />
-        
+
         {error && <p className="error">{error}</p>}
-        
+
         <button type="submit" disabled={loading}>
           {loading ? 'Setting Password...' : 'Set Password'}
         </button>
@@ -249,9 +278,11 @@ function SetPasswordPage() {
 ---
 
 ### 2. **User Login Page** 📝 NEW!
+
 **Route:** `/login`
 
 **Component Example:**
+
 ```jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -272,7 +303,7 @@ function UserLoginPage() {
       const response = await fetch('/auth/user/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -281,7 +312,7 @@ function UserLoginPage() {
         // Store token
         localStorage.setItem('user_token', data.data.access_token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
-        
+
         // Redirect to dashboard
         navigate('/dashboard');
       } else {
@@ -297,7 +328,7 @@ function UserLoginPage() {
   return (
     <div className="login-page">
       <h1>Login</h1>
-      
+
       <form onSubmit={handleSubmit}>
         <input
           type="email"
@@ -306,7 +337,7 @@ function UserLoginPage() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        
+
         <input
           type="password"
           placeholder="Password"
@@ -314,9 +345,9 @@ function UserLoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        
+
         {error && <p className="error">{error}</p>}
-        
+
         <button type="submit" disabled={loading}>
           {loading ? 'Logging in...' : 'Login'}
         </button>
@@ -335,20 +366,23 @@ import { Navigate } from 'react-router-dom';
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('user_token');
-  
+
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return children;
 }
 
 // Usage in routes:
-<Route path="/dashboard" element={
-  <ProtectedRoute>
-    <Dashboard />
-  </ProtectedRoute>
-} />
+<Route
+  path="/dashboard"
+  element={
+    <ProtectedRoute>
+      <Dashboard />
+    </ProtectedRoute>
+  }
+/>;
 ```
 
 ---
@@ -363,12 +397,12 @@ export const api = {
   // Authenticated request helper
   async fetch(endpoint, options = {}) {
     const token = localStorage.getItem('user_token');
-    
+
     const config = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
     };
@@ -403,8 +437,7 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
 
-    getProfile: () =>
-      api.fetch('/profile/me'),
+    getProfile: () => api.fetch('/profile/me'),
 
     logout: () => {
       localStorage.removeItem('user_token');
@@ -453,11 +486,13 @@ export const api = {
 ## 🔐 Token Management
 
 ### Storing Token
+
 ```javascript
 localStorage.setItem('user_token', token);
 ```
 
 ### Using Token in Requests
+
 ```javascript
 headers: {
   'Authorization': `Bearer ${localStorage.getItem('user_token')}`
@@ -465,11 +500,13 @@ headers: {
 ```
 
 ### Checking if User is Logged In
+
 ```javascript
 const isLoggedIn = !!localStorage.getItem('user_token');
 ```
 
 ### Logout
+
 ```javascript
 function logout() {
   localStorage.removeItem('user_token');
@@ -498,11 +535,13 @@ function logout() {
 ## 📧 Email Link Format
 
 When admin approves user, they receive email with:
+
 ```
 https://scanmemaybe.com/auth/reset-password/user@example.com
 ```
 
 Frontend should:
+
 1. Extract email from URL params
 2. Show password input form
 3. Call `/auth/set-password` with email and password
@@ -515,6 +554,7 @@ Frontend should:
 ### Common Errors
 
 **User not found:**
+
 ```json
 {
   "message": "User with this email does not exist",
@@ -523,6 +563,7 @@ Frontend should:
 ```
 
 **Account not approved:**
+
 ```json
 {
   "message": "Your account must be approved before you can set a password. Please wait for admin approval.",
@@ -531,6 +572,7 @@ Frontend should:
 ```
 
 **Invalid credentials:**
+
 ```json
 {
   "message": "Invalid email or password",
@@ -539,6 +581,7 @@ Frontend should:
 ```
 
 **Password not set:**
+
 ```json
 {
   "message": "Please set your password first using the link sent to your email",
@@ -551,6 +594,7 @@ Frontend should:
 ## 🧪 Testing
 
 Use the updated Postman collection:
+
 - File: `QR_Card_Dating_App_API.postman_collection.json`
 - New endpoints added under "🔐 Authentication" folder:
   - User Set Password
@@ -562,6 +606,7 @@ Use the updated Postman collection:
 ## 📞 Support
 
 All endpoints are now live and tested. If you encounter any issues:
+
 1. Check browser console for errors
 2. Verify API URL is correct
 3. Check network tab for request/response

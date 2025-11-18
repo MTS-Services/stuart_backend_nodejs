@@ -937,6 +937,214 @@ export class EmailService {
 </html>`
       },
       {
+        name: 'password_reset',
+        subject: '🔐 Reset Your Password - Scan Me Maybe',
+        body: 'You requested to reset your password. Click the button below to set a new password for your account.',
+        htmlTemplate: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{subject}}</title>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #2c2c2c; 
+            color: #ffffff; 
+            line-height: 1.6; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #333333; 
+            border-radius: 12px; 
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            text-align: center; 
+            padding: 30px 20px; 
+            color: #ffffff; 
+        }
+        .header h1 { 
+            color: #ffffff; 
+            font-size: 28px; 
+            margin: 0; 
+            font-weight: bold; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .content { 
+            padding: 30px 20px; 
+            font-size: 16px; 
+            line-height: 1.8; 
+            color: #ffffff; 
+        }
+        .info-box { 
+            background: linear-gradient(135deg, #4facfe, #00f2fe); 
+            color: #000000; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin: 25px 0; 
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+        .info-box h2 { 
+            margin: 0 0 15px 0; 
+            font-size: 24px; 
+            font-weight: bold;
+            color: #000000;
+        }
+        .info-box p {
+            margin: 10px 0;
+            color: #000000;
+        }
+        .footer { 
+            background-color: #2c2c2c;
+            text-align: center; 
+            padding: 20px; 
+            font-size: 12px; 
+            color: #cccccc; 
+        }
+        .reset-button { 
+            display: inline-block; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            color: #ffffff !important; 
+            padding: 18px 35px; 
+            text-decoration: none; 
+            border-radius: 30px; 
+            font-weight: bold; 
+            font-size: 16px;
+            margin: 25px auto;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s ease;
+            text-align: center;
+            min-width: 200px;
+            display: block;
+            width: fit-content;
+        }
+        .reset-button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+        }
+        .security-box {
+            background-color: #404040;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .security-box h3 {
+            color: #ffc107;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .security-box ul {
+            color: #ffffff;
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .link-box {
+            background-color: #404040;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            word-break: break-all;
+        }
+        .link-box p {
+            margin: 5px 0;
+            font-size: 12px;
+            color: #cccccc;
+        }
+        .link-box a {
+            color: #667eea;
+            text-decoration: none;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                margin: 0;
+                border-radius: 8px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .header {
+                padding: 25px 15px;
+            }
+            .info-box {
+                padding: 20px 15px;
+                margin: 20px 0;
+            }
+            .reset-button {
+                padding: 16px 25px;
+                font-size: 14px;
+                width: calc(100% - 30px);
+                max-width: 100%;
+                margin: 25px auto;
+            }
+            .security-box, .link-box {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Scan Me Maybe</h1>
+        </div>
+        <div class="content">
+            <div class="info-box">
+                <h2>Password Reset Request</h2>
+                <p>Hi {{userName}},</p>
+                <p>We received a request to reset your password.</p>
+            </div>
+            
+            <p>{{body}}</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{resetPasswordUrl}}" class="reset-button">
+                    🔑 Set New Password
+                </a>
+            </div>
+            
+            <div class="link-box">
+                <p>Or copy and paste this link into your browser:</p>
+                <a href="{{resetPasswordUrl}}">{{resetPasswordUrl}}</a>
+            </div>
+            
+            <div class="security-box">
+                <h3>🛡️ Security Tips:</h3>
+                <ul>
+                    <li>This link will expire in 24 hours for your security</li>
+                    <li>If you didn't request this reset, please ignore this email</li>
+                    <li>Never share your password with anyone</li>
+                    <li>Use a strong, unique password for your account</li>
+                </ul>
+            </div>
+            
+            <p style="text-align: center; color: #cccccc; font-size: 14px; margin-top: 30px;">
+                Need help? Contact our support team at support@scanmemaybe.com
+            </p>
+        </div>
+        <div class="footer">
+            <p>© {{currentYear}} Scan Me Maybe. All rights reserved.</p>
+            <p style="margin-top: 10px;">This is an automated message, please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>`
+      },
+      {
         name: 'profile_rejected',
         subject: '📝 Profile Review - Updates Required',
         body: 'Your profile needs some updates before it can be approved. Please review the feedback below and resubmit your profile.',
@@ -1171,6 +1379,7 @@ export class EmailService {
         dashboardUrl: `${baseUrl}/dashboard`,
         editProfileUrl: `${baseUrl}/profile/edit/${userEmail}`,
         paymentUrl: safeVars.paymentUrl || `${baseUrl}/checkout/${userEmail}`,
+        resetPasswordUrl: safeVars.resetPasswordUrl || `${baseUrl}/auth/reset-password/${userEmail}`,
         loginUrl: `${baseUrl}/login`,
         checkoutUrl: `${baseUrl}/checkout/setup-profile/${userEmail}`,
         paymentButtonText: customButtonConfig.paymentButtonText || '💳 Complete Payment & Setup →',
@@ -1224,6 +1433,7 @@ export class EmailService {
       finalHtml = finalHtml.replace(/\{\{editButtonText\}\}/g, defaultVariables.editButtonText);
       finalHtml = finalHtml.replace(/\{\{loginButtonText\}\}/g, defaultVariables.loginButtonText);
       finalHtml = finalHtml.replace(/\{\{paymentUrl\}\}/g, defaultVariables.paymentUrl);
+      finalHtml = finalHtml.replace(/\{\{resetPasswordUrl\}\}/g, defaultVariables.resetPasswordUrl);
       finalHtml = finalHtml.replace(/\{\{dashboardUrl\}\}/g, defaultVariables.dashboardUrl);
       finalHtml = finalHtml.replace(/\{\{editProfileUrl\}\}/g, defaultVariables.editProfileUrl);
       finalHtml = finalHtml.replace(/\{\{loginUrl\}\}/g, defaultVariables.loginUrl);
@@ -1267,6 +1477,7 @@ export class EmailService {
         return url;
       };
       defaultVariables.paymentUrl = ensureSafeUrl(String(defaultVariables.paymentUrl), `${baseUrl}/checkout/${userEmail}`);
+      defaultVariables.resetPasswordUrl = ensureSafeUrl(String(defaultVariables.resetPasswordUrl), `${baseUrl}/auth/reset-password/${userEmail}`);
       defaultVariables.dashboardUrl = ensureSafeUrl(String(defaultVariables.dashboardUrl), `${baseUrl}/dashboard`);
       defaultVariables.editProfileUrl = ensureSafeUrl(String(defaultVariables.editProfileUrl), `${baseUrl}/profile/edit`);
       defaultVariables.loginUrl = ensureSafeUrl(String(defaultVariables.loginUrl), `${baseUrl}/login`);

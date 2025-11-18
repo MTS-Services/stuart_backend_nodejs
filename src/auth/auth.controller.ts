@@ -71,4 +71,56 @@ export class AuthController {
       );
     }
   }
+
+  // User password reset endpoints
+  @Post('reset-password/:email')
+  async userResetPasswordByEmail(@Body() body: { email: string; newPassword: string }) {
+    try {
+      const result = await this.authService.userResetPassword(body.email, body.newPassword);
+      return {
+        success: true,
+        message: 'Password has been set successfully. You can now login.',
+        data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to reset password',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('set-password')
+  async setPassword(@Body() body: { email: string; password: string }) {
+    try {
+      const result = await this.authService.userResetPassword(body.email, body.password);
+      return {
+        success: true,
+        message: 'Password has been set successfully',
+        data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to set password',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('user/login')
+  async userLogin(@Body() body: { email: string; password: string }) {
+    try {
+      const result = await this.authService.loginUser(body.email, body.password);
+      return {
+        success: true,
+        message: 'Login successful',
+        data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Login failed',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
 }

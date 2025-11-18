@@ -40,6 +40,7 @@ model User {
   email            String     @unique
   name             String
   phone            String?
+  password         String?
   status           UserStatus @default(WAITLIST)
   isApproved       Boolean    @default(false)
   approvedAt       DateTime?
@@ -63,12 +64,12 @@ model Profile {
   id              Int           @id @default(autoincrement())
   userId          Int           @unique
   age             String?
-  birthMonth      Int?          // Birth month (1-12)
-  birthYear       Int?          // Birth year
+  birthMonth      Int? // Birth month (1-12)
+  birthYear       Int? // Birth year
   height          String?
   bodyType        String?
   area            String?
-  county          String?       // County field instead of country
+  county          String? // County field instead of country
   dealbreakers    String?
   bio             String?
   startDate       String?
@@ -236,7 +237,7 @@ model EmailTemplate {
   components   Json?    @db.JsonB // Store visual builder components
   settings     Json?    @db.JsonB // Store template settings (fonts, colors, etc.)
   variables    Json?    @db.JsonB // Store custom variables definition
-  preheader    String?  // Email preheader text
+  preheader    String? // Email preheader text
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

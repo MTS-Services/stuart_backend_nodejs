@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "QR Card Dating App API - Simplified Flow",
-    "description": "🎯 **Simplified Admin-Approval Flow**: Users register with name/email → Admin gets notifications → Admin approves/rejects → Automatic email notifications sent.\n\n**Key Features:**\n✅ No password authentication required for users\n✅ Admin-controlled user approval system\n✅ Admin-only QR code generation (NEW!) \n✅ Automatic email notifications\n✅ Complete user journey testing\n✅ Enhanced error handling and validation\n\n**📋 Important Endpoints:**\n• User Registration: `POST /auth/register` (name + email only)\n• Admin Login: `POST /auth/admin/login` (Required for QR generation)\n• QR Generation: `POST /qr-cards/generate/by-email` (⚠️ ADMIN ONLY)\n• Pending Users: `GET /admin/users/pending` (⚠️ NOT /admin/profiles/pending)\n• Approve User: `POST /admin/users/{id}/approve`\n• Reject User: `POST /admin/users/{id}/reject`\n\n**🔐 Admin Authentication Required For:**\n• QR Code Generation (all endpoints)\n• Admin Dashboard & Management\n• User Approval/Rejection\n\n**🚀 Quick Start:** Run 'Complete User Journey' folder to test the full flow.\n\n**📅 Last Updated:** October 20, 2025\n**🔧 Version:** 2.2 - Admin-Only QR Generation",
+    "name": "QR Card Dating App API - Complete Flow",
+    "description": "🎯 **Complete User Flow**: Users register → Admin approves → User sets password → User logs in → Full access!\n\n**Key Features:**\n✅ User registration with email verification\n✅ Admin-controlled approval system\n✅ Password-based user authentication (NEW!)\n✅ JWT token-based access control (NEW!)\n✅ Admin-only QR code generation\n✅ Automatic email notifications\n✅ Complete user journey testing\n✅ Enhanced security and validation\n\n**📋 User Authentication Flow (NEW!):**\n1. User registers: `POST /auth/register`\n2. Admin approves: `POST /admin/users/{id}/approve`\n3. User receives password setup email\n4. User sets password: `POST /auth/set-password`\n5. User logs in: `POST /auth/user/login`\n6. User gets JWT token for protected endpoints\n\n**🔐 User Endpoints (NEW!):**\n• Set Password: `POST /auth/set-password`\n• Reset Password: `POST /auth/reset-password/:email`\n• User Login: `POST /auth/user/login`\n• Returns JWT access token\n\n**👨‍💼 Admin Endpoints:**\n• Admin Login: `POST /auth/admin/login`\n• Admin Forgot Password: `POST /auth/admin/forgot-password`\n• Admin Reset Password: `POST /auth/admin/reset-password`\n• QR Generation: `POST /qr-cards/generate/by-email` (⚠️ ADMIN ONLY)\n• Pending Users: `GET /admin/users/pending`\n• Approve User: `POST /admin/users/approve`\n• Reject User: `POST /admin/users/reject`\n\n**🔐 Authentication Required For:**\n• QR Code Generation (Admin token)\n• Admin Dashboard & Management (Admin token)\n• User-specific operations (User token - NEW!)\n\n**🚀 Quick Start:** Run 'Complete User Journey' folder to test the full flow.\n\n**📅 Last Updated:** November 18, 2025\n**🔧 Version:** 3.0 - User Authentication & Password Reset",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -63,6 +63,16 @@
       "key": "pending_user_count",
       "value": "0",
       "description": "Count of pending users from last check"
+    },
+    {
+      "key": "user_access_token",
+      "value": "",
+      "description": "JWT access token for authenticated user (after login)"
+    },
+    {
+      "key": "user_password",
+      "value": "SecurePassword123!",
+      "description": "Test password for user authentication"
     }
   ],
   "item": [
@@ -320,6 +330,148 @@
               "host": ["{{baseUrl}}"],
               "path": ["auth", "register"]
             }
+          }
+        },
+        {
+          "name": "🔐 User Set Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Password set successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Password Set Successfully!');",
+                  "    console.log('👤 User:', response.data.user.name);",
+                  "    console.log('📧 Email:', response.data.user.email);",
+                  "    console.log('📊 Status:', response.data.user.status);",
+                  "    console.log('');",
+                  "    console.log('🔐 You can now login with:');",
+                  "    console.log('   POST /auth/user/login');",
+                  "    console.log('   Body: { \"email\": \"' + response.data.user.email + '\", \"password\": \"your-password\" }');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/set-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "set-password"]
+            },
+            "description": "🔐 **Set User Password**\\n\\nAfter admin approves registration, users receive an email with a password setup link. This endpoint allows users to set their password.\\n\\n**📝 Requirements:**\\n• User must be VERIFIED or ACTIVE status\\n• Valid email address\\n• Password (no specific requirements currently)\\n\\n**✅ After Setting Password:**\\n• User status changes to ACTIVE\\n• User can login via POST /auth/user/login\\n• Password is securely hashed with bcrypt\\n\\n**📧 When Does User Get This Link?**\\nAutomatically sent when admin approves registration via:\\n• Admin dashboard approval\\n• POST /admin/users/approve\\n\\n**🔗 Frontend URL:**\\n`https://scanmemaybe.com/auth/reset-password/{email}`"
+          }
+        },
+        {
+          "name": "🔓 User Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data.access_token).to.exist;",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.globals.set('user_access_token', response.data.access_token);",
+                  "    console.log('✅ User Login Successful!');",
+                  "    console.log('👤 User:', response.data.user.name);",
+                  "    console.log('📧 Email:', response.data.user.email);",
+                  "    console.log('🆔 User ID:', response.data.user.id);",
+                  "    console.log('📊 Status:', response.data.user.status);",
+                  "    console.log('🔑 Access Token:', response.data.access_token.substring(0, 30) + '...');",
+                  "    ",
+                  "    if (response.data.user.profile) {",
+                  "        console.log('📝 Profile ID:', response.data.user.profile.id);",
+                  "        console.log('📋 Profile Status:', response.data.user.profile.status);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/user/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "user", "login"]
+            },
+            "description": "🔓 **User Login**\\n\\nAuthenticate user with email and password to receive JWT access token.\\n\\n**📝 Requirements:**\\n• User must have set password first\\n• Valid email and password combination\\n\\n**✅ Response Includes:**\\n• JWT access token (valid for 7 days)\\n• User details (id, email, name, status)\\n• Profile information (if exists)\\n\\n**🔐 Use Access Token For:**\\n• Accessing protected user endpoints\\n• Managing user's own data\\n• QR card management\\n\\n**💡 Token Usage:**\\nAdd to request headers:\\n`Authorization: Bearer {access_token}`"
+          }
+        },
+        {
+          "name": "🔑 User Reset Password by Email (URL)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Password reset successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('✅ Password Reset Successfully via URL parameter!');",
+                  "    console.log('🔐 User can now login with new password');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"newPassword\": \"NewSecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password/{{test_user_email}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password", "{{test_user_email}}"]
+            },
+            "description": "🔑 **Reset Password by Email (Alternative Endpoint)**\\n\\nThis endpoint accepts email as a URL parameter, useful for password reset links.\\n\\n**📧 Email Link Format:**\\n`https://scanmemaybe.com/auth/reset-password/{email}`\\n\\n**📝 How It Works:**\\n1. User clicks link from email\\n2. Frontend extracts email from URL\\n3. User enters new password\\n4. Frontend calls this endpoint\\n\\n**⚖️ Difference from /auth/set-password:**\\n• This uses email in URL path\\n• /auth/set-password uses email in body only\\n• Both do the same thing internally\\n• Use whichever fits your frontend architecture"
           }
         }
       ]

@@ -541,6 +541,52 @@ export class AdminService {
       console.error('Failed to send profile approved email:', error);
     }
 
+    // Send password setup email to the user
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'https://scanmemaybe.com';
+      const resetLink = `${frontendUrl}/auth/reset-password/${profile.user.email}`;
+      
+      await this.emailService.sendEmail(
+        profile.user.email,
+        'Set Your Password - Account Approved!',
+        `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #667eea;">🎉 Welcome to Scan Me Maybe!</h2>
+            <p>Hi ${profile.user.name},</p>
+            <p>Great news! Your account has been approved by our admin team.</p>
+            <p><strong>Next Step:</strong> Set your password to access your dashboard and manage your QR cards.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" 
+                 style="background-color: #667eea; color: white; padding: 15px 30px; 
+                        text-decoration: none; border-radius: 8px; display: inline-block;
+                        font-weight: bold; font-size: 16px;">
+                🔐 Set Your Password
+              </a>
+            </div>
+            <p>Or copy and paste this link in your browser:</p>
+            <p style="color: #666; word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px;">${resetLink}</p>
+            <p style="margin-top: 30px;">Once you set your password, you'll be able to:</p>
+            <ul style="line-height: 1.8;">
+              <li>Access your dashboard</li>
+              <li>View and manage your QR cards</li>
+              <li>Track scans and matches</li>
+              <li>Update your profile</li>
+            </ul>
+            <p style="color: #999; font-size: 12px; margin-top: 30px;">
+              If you didn't register for Scan Me Maybe, please ignore this email.
+            </p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="text-align: center; color: #666; font-size: 12px;">
+              © ${new Date().getFullYear()} Scan Me Maybe. All rights reserved.
+            </p>
+          </div>
+        `,
+      );
+      console.log(`✅ Password setup email sent to ${profile.user.email}`);
+    } catch (error) {
+      console.error('Failed to send password setup email:', error);
+    }
+
     // Create notification for user
     await this.prisma.notification.create({
       data: {

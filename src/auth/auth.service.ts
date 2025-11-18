@@ -118,11 +118,11 @@ export class AuthService {
     expires.setHours(expires.getHours() + 1); // 1 hour expiry
 
     // Store token
-    this.resetTokens.set(token, { adminId: admin.id, expires });
+    this.resetTokens.set(email, { adminId: admin.id, expires });
 
     // Get frontend URL from environment
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const resetLink = `${frontendUrl}/auth/reset-password/${token}`;
+    const resetLink = `${frontendUrl}/auth/reset-password/${email}`;
 
     // Send email
     await this.emailService.sendEmail(
@@ -177,5 +177,131 @@ export class AuthService {
     this.resetTokens.delete(token);
 
     return { message: 'Password updated successfully' };
+  }
+
+  // User password reset (direct by email - for approved users)
+  async userResetPassword(email: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new Error('User with this email does not exist');
+    }
+
+    // Check if user is verified/approved
+    if (user.status !== UserStatus.VERIFIED && user.status !== UserStatus.ACTIVE) {
+      throw new Error('Your account must be approved before you can set a password. Please wait for admin approval.');
+    }
+
+    // Hash new password
+    const hashedPassword = await this.hashPassword(newPassword);
+
+    // Update user password
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { 
+        password: hashedPassword,
+        status: UserStatus.ACTIVE, // Set to active once password is set
+      },
+    });
+
+    return { 
+      message: 'Password set successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        status: updatedUser.status,
+      },
+    };
+  }
+
+  // User login
+  async loginUser(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new Error('Invalid email or password');
+    }
+
+    if (!user.password) {
+      throw new Error('Please set your password first using the link sent to your email');
+    }
+
+    const isValidPassword = await this.validatePassword(password, user.password);
+    if (!isValidPassword) {
+      throw new Error('Invalid email or password');
+    }
+
+    // Generate JWT token
+    const payload: JwtPayload = { 
+      email: user.email, 
+      sub: user.id,
+      role: 'user',
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        status: user.status,
+        profile: user.profile ? {
+          id: user.profile.id,
+          status: user.profile.status,
+        } : null,
+      },
+    };
+  }
+
+  // Send password setup email to newly approved user
+  async sendPasswordSetupEmail(email: string, name: string) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/auth/reset-password/${email}`;
+
+    await this.emailService.sendEmail(
+      email,
+      'Set Your Password - Account Approved!',
+      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #667eea;">🎉 Welcome to Scan Me Maybe!</h2>
+          <p>Hi ${name},</p>
+          <p>Great news! Your account has been approved by our admin team.</p>
+          <p><strong>Next Step:</strong> Set your password to access your dashboard and manage your QR cards.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}" 
+               style="background-color: #667eea; color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 8px; display: inline-block;
+                      font-weight: bold; font-size: 16px;">
+              🔐 Set Your Password
+            </a>
+          </div>
+          <p>Or copy and paste this link in your browser:</p>
+          <p style="color: #666; word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px;">${resetLink}</p>
+          <p style="margin-top: 30px;">Once you set your password, you'll be able to:</p>
+          <ul style="line-height: 1.8;">
+            <li>Access your dashboard</li>
+            <li>View and manage your QR cards</li>
+            <li>Track scans and matches</li>
+            <li>Update your profile</li>
+          </ul>
+          <p style="color: #999; font-size: 12px; margin-top: 30px;">
+            If you didn't register for Scan Me Maybe, please ignore this email.
+          </p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="text-align: center; color: #666; font-size: 12px;">
+            © ${new Date().getFullYear()} Scan Me Maybe. All rights reserved.
+          </p>
+        </div>
+      `,
+    );
+
+    return { message: 'Password setup email sent successfully' };
   }
 }

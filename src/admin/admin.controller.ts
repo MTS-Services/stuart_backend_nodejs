@@ -142,7 +142,7 @@ async getDashboard(
     @Query('limit') limit?: string
   ) {
     // ✅ Validate and parse parameters safely
-    const validStatuses = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'DRAFT'];
+    const validStatuses = ['ALL', 'PENDING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'DRAFT'];
     const validStatus = validStatuses.includes(status || '') ? status : 'ALL';
     
     const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;

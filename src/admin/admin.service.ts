@@ -842,6 +842,8 @@ export class AdminService {
     if (status && status !== 'ALL') {
       // Map status to ProfileStatus enum
       const statusMap = {
+        'PENDING': ProfileStatus.PENDING_REVIEW,
+        'PENDING_REVIEW': ProfileStatus.PENDING_REVIEW,
         'APPROVED': ProfileStatus.APPROVED,
         'REJECTED': ProfileStatus.REJECTED,
         'DRAFT': ProfileStatus.DRAFT
@@ -904,6 +906,7 @@ export class AdminService {
 
     const stats = {
       total: totalCount,
+      pending: statusStats.find(s => s.status === ProfileStatus.PENDING_REVIEW)?._count.status || 0,
       approved: statusStats.find(s => s.status === ProfileStatus.APPROVED)?._count.status || 0,
       rejected: statusStats.find(s => s.status === ProfileStatus.REJECTED)?._count.status || 0,
       draft: statusStats.find(s => s.status === ProfileStatus.DRAFT)?._count.status || 0,
@@ -922,7 +925,7 @@ export class AdminService {
       stats,
       filters: {
         status: status || 'ALL',
-        availableStatuses: ['ALL', 'APPROVED', 'REJECTED', 'DRAFT']
+        availableStatuses: ['ALL', 'PENDING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'DRAFT']
       }
     };
   }

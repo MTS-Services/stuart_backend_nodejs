@@ -9,7 +9,7 @@ import { randomBytes } from 'crypto';
 export interface JwtPayload {
   sub: number;
   email: string;
-  role?: string;
+  role: string;
 }
 
 @Injectable()
@@ -242,7 +242,7 @@ export class AuthService {
     const payload: JwtPayload = { 
       email: user.email, 
       sub: user.id,
-      role: 'user',
+      role: user.role || 'user',
     };
 
     return {
@@ -252,6 +252,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         status: user.status,
+        role: user.role || 'user',
         profile: user.profile ? {
           id: user.profile.id,
           status: user.profile.status,

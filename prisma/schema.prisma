@@ -48,6 +48,7 @@ model User {
   stripeCustomerId String?    @unique
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+  role             String?   @default("user")
 
   // Relations
   profile      Profile?

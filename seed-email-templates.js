@@ -205,6 +205,65 @@ async function seedEmailTemplates() {
     </div>
 </body>
 </html>`
+    },
+    {
+      name: 'password_reset',
+      subject: '🔐 Password Reset Request - QR Dating App',
+      body: 'You requested to reset your password. Click the button below to reset it.',
+      htmlTemplate: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #f0f8ff; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .header { text-align: center; padding: 20px 0; border-bottom: 3px solid #F07400; margin-bottom: 30px; }
+        .header h1 { color: #000044; font-size: 28px; margin: 0; font-weight: bold; }
+        .content { font-size: 16px; line-height: 1.8; color: #333333; }
+        .highlight-box { background: linear-gradient(135deg, #F07400, #e06600); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center; }
+        .highlight-box h2 { margin: 0 0 10px 0; font-size: 22px; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+        .button { display: inline-block; background: #F07400; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #e06600; }
+        .link-text { color: #666; word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 15px 0; }
+        .warning { background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Password Reset</h1>
+        </div>
+        <div class="content">
+            <div class="highlight-box">
+                <h2>Hi {{userName}}!</h2>
+                <p>Password reset requested</p>
+            </div>
+            <p>{{body}}</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{resetPasswordUrl}}" class="button" style="background: linear-gradient(135deg, #F07400, #e06600); color: white; padding: 18px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 8px 25px rgba(240, 116, 0, 0.3); display: inline-block;">
+                    🔐 Reset Password
+                </a>
+            </div>
+            
+            <p>Or copy and paste this link in your browser:</p>
+            <div class="link-text">{{resetPasswordUrl}}</div>
+            
+            <div class="warning">
+                <strong>⏰ Important:</strong> This link will expire in 1 hour. If you didn't request this password reset, please ignore this email.
+            </div>
+            
+            <p>If you continue to have problems, please contact our support team.</p>
+        </div>
+        <div class="footer">
+            <p>© {{currentYear}} QR Dating App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`
     }
   ];
 

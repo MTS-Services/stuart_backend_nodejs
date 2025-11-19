@@ -124,30 +124,12 @@ export class AuthService {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const resetLink = `${frontendUrl}/auth/reset-password/${email}`;
 
-    // Send email
-    await this.emailService.sendEmail(
-      admin.email,
-      'Password Reset Request',
-      `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #000044;">Password Reset Request</h2>
-          <p>Hi ${admin.username},</p>
-          <p>You requested to reset your password. Click the button below to reset it:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetLink}" 
-               style="background-color: #F07400; color: white; padding: 12px 30px; 
-                      text-decoration: none; border-radius: 5px; display: inline-block;">
-              Reset Password
-            </a>
-          </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="color: #666; word-break: break-all;">${resetLink}</p>
-          <p style="color: #999; font-size: 12px; margin-top: 30px;">
-            This link will expire in 1 hour. If you didn't request this, please ignore this email.
-          </p>
-        </div>
-      `,
-    );
+    // Send customizable email using template
+    await this.emailService.sendCustomizableEmail('password_reset', admin.email, {
+      userName: admin.username,
+      resetPasswordUrl: resetLink,
+      currentYear: new Date().getFullYear().toString(),
+    });
 
     return { message: 'Password reset email sent successfully' };
   }

@@ -605,7 +605,7 @@ export class AdminService {
     });
 
     // Generate edit link for the user
-    const editLink = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/checkout/setup-profile/edit/${profile.user.email}`;
+    const editLink = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/auth/login`;
 
     // Send profile rejected email with feedback and edit link
     try {
@@ -904,7 +904,7 @@ export class AdminService {
         userName: user.name,
         dashboardUrl: process.env.FRONTEND_URL || 'https://scanmemaybe.com',
         // 🚨 BETA TESTING: Direct to profile setup instead of payment
-        paymentUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/checkout/setup-profile/${user.email}`,
+        paymentUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/auth/login`,
         paymentButtonText: 'Complete Profile', // Override button text
         currentYear: new Date().getFullYear().toString(),
       });
@@ -958,7 +958,7 @@ export class AdminService {
         userName: user.name,
         rejectionReason: reason,
         currentYear: new Date().getFullYear().toString(),
-        editProfileUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile/edit`,
+        editProfileUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login`,
       });
     } catch (error) {
       console.error('Failed to send registration rejected email:', error.message);

@@ -122,7 +122,7 @@ export class AuthService {
 
     // Get frontend URL from environment
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const resetLink = `${frontendUrl}/auth/reset-password/${email}`;
+    const resetLink = `${frontendUrl}/auth/reset/${email}`;
 
     // Send customizable email using template
     await this.emailService.sendCustomizableEmail('password_reset', admin.email, {

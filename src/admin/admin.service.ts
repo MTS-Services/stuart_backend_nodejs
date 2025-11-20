@@ -534,7 +534,7 @@ export class AdminService {
     try {
       await this.emailService.sendCustomizableEmail('profile_approved', profile.user.email, {
         userName: profile.user.name || 'User',
-        dashboardUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/dashboard`,
+        dashboardUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/auth/login`,
         currentYear: new Date().getFullYear().toString(),
       });
     } catch (error) {

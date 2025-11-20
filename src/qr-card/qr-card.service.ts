@@ -178,37 +178,37 @@ export class QRCardService {
     const profileOwnerName = card.profile.user.name;
     const scannerEmail = viewerInfo.scannerEmail;
     
-    try {
-      // // Send notification to profile owner about the scan
-      // await this.emailService.sendQRCodeScanned(
-      //   profileOwnerEmail,
-      //   profileOwnerName,
-      //   {
-      //     scanDate: new Date().toISOString(),
-      //     scanLocation: viewerInfo.ipAddress || 'Unknown',
-      //     scansRemaining: card.maxScans - (card.scanCount + 1),
-      //     scannerEmail: scannerEmail || 'Anonymous'
-      //   }
-      // );
+    // try {
+    //   // // Send notification to profile owner about the scan
+    //   // await this.emailService.sendQRCodeScanned(
+    //   //   profileOwnerEmail,
+    //   //   profileOwnerName,
+    //   //   {
+    //   //     scanDate: new Date().toISOString(),
+    //   //     scanLocation: viewerInfo.ipAddress || 'Unknown',
+    //   //     scansRemaining: card.maxScans - (card.scanCount + 1),
+    //   //     scannerEmail: scannerEmail || 'Anonymous'
+    //   //   }
+    //   // );
 
-      // If scanner provided email, send them the profile information
-      if (scannerEmail) {
-        await this.emailService.sendProfileInfo(
-          scannerEmail,
-          profileOwnerName,
-          {
-            name: card.profile.user.name,
-            age: Number(card.profile.age || 0),
-            bio: card.profile.bio || 'No bio available',
-            location: card.profile.location || 'Location not specified',
-            contactEmail: profileOwnerEmail
-          }
-        );
-      }
-    } catch (emailError) {
-      console.error('Failed to send email notifications:', emailError);
-      // Continue with the response even if email fails
-    }
+    //   // If scanner provided email, send them the profile information
+    //   if (scannerEmail) {
+    //     await this.emailService.sendProfileInfo(
+    //       scannerEmail,
+    //       profileOwnerName,
+    //       {
+    //         name: card.profile.user.name,
+    //         age: Number(card.profile.age || 0),
+    //         bio: card.profile.bio || 'No bio available',
+    //         location: card.profile.location || 'Location not specified',
+    //         contactEmail: profileOwnerEmail
+    //       }
+    //     );
+    //   }
+    // } catch (emailError) {
+    //   console.error('Failed to send email notifications:', emailError);
+    //   // Continue with the response even if email fails
+    // }
 
     // Return profile information (without sensitive data)
     const response = {

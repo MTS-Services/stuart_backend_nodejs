@@ -10,6 +10,7 @@ import { PaymentModule } from './payment/payment.module';
 import { ContactModule } from './contact/contact.module';
 import { ImageUploadModule } from './image-upload/image-upload.module';
 import { TestModule } from './test/test.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TestModule } from './test/test.module';
     ContactModule,
     ImageUploadModule,
     TestModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -179,17 +179,17 @@ export class QRCardService {
     const scannerEmail = viewerInfo.scannerEmail;
     
     try {
-      // Send notification to profile owner about the scan
-      await this.emailService.sendQRCodeScanned(
-        profileOwnerEmail,
-        profileOwnerName,
-        {
-          scanDate: new Date().toISOString(),
-          scanLocation: viewerInfo.ipAddress || 'Unknown',
-          scansRemaining: card.maxScans - (card.scanCount + 1),
-          scannerEmail: scannerEmail || 'Anonymous'
-        }
-      );
+      // // Send notification to profile owner about the scan
+      // await this.emailService.sendQRCodeScanned(
+      //   profileOwnerEmail,
+      //   profileOwnerName,
+      //   {
+      //     scanDate: new Date().toISOString(),
+      //     scanLocation: viewerInfo.ipAddress || 'Unknown',
+      //     scansRemaining: card.maxScans - (card.scanCount + 1),
+      //     scannerEmail: scannerEmail || 'Anonymous'
+      //   }
+      // );
 
       // If scanner provided email, send them the profile information
       if (scannerEmail) {

@@ -1379,7 +1379,7 @@ export class EmailService {
         dashboardUrl: `${baseUrl}/dashboard`,
         editProfileUrl: `${baseUrl}/profile/edit/${userEmail}`,
         paymentUrl: safeVars.paymentUrl || `${baseUrl}/checkout/${userEmail}`,
-        resetPasswordUrl: safeVars.resetPasswordUrl || `${baseUrl}/auth/reset-password/${userEmail}`,
+        resetPasswordUrl: safeVars.resetPasswordUrl || `${baseUrl}/auth/reset/${userEmail}`,
         loginUrl: `${baseUrl}/login`,
         checkoutUrl: `${baseUrl}/checkout/setup-profile/${userEmail}`,
         paymentButtonText: customButtonConfig.paymentButtonText || '💳 Complete Payment & Setup →',

@@ -298,12 +298,13 @@ async getDashboard(
   @Get('users/all')
   async getAllUsers(
     @Query('status') status?: string,
+    @Query('username') username?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
     const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
     const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
-    return this.adminService.getAllUsers(status, pageNum, limitNum);
+    return this.adminService.getAllUsers(status, username, pageNum, limitNum);
   }
 
   @Get('users/:userId')

@@ -1334,11 +1334,18 @@ export class AdminService {
     };
   }
 
-  async getAllUsers(status?: string, page: number = 1, limit: number = 10) {
+  async getAllUsers(status?: string, username?: string, page: number = 1, limit: number = 10) {
     const whereClause: any = {};
     
     if (status && status !== 'ALL') {
       whereClause.status = status;
+    }
+
+    if (username) {
+      whereClause.name = {
+        contains: username,
+        mode: 'insensitive'
+      };
     }
 
     const users = await this.prisma.user.findMany({

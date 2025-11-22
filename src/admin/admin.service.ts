@@ -308,6 +308,7 @@ export class AdminService {
       rejectedProfiles,
       activeCards,
       activeSubscriptions,
+      darfUsers,
     ] = await Promise.all([
       this.prisma.user.count({ where: { ...createdAtFilter, role: { not: 'admin' } } }),
 
@@ -318,6 +319,7 @@ export class AdminService {
         where: { status: 'completed', ...(createdAtFilter as any) },
         _sum: { amount: true },
       }),
+      this.prisma.user.count({ where: { status: UserStatus.PAID_SETUP, ...createdAtFilter, role: { not: 'admin' } } }),
       this.prisma.user.count({ where: { status: UserStatus.WAITLIST, ...createdAtFilter, role: { not: 'admin' } } }),
       this.prisma.user.count({ where: { status: UserStatus.ACTIVE, ...createdAtFilter, role: { not: 'admin' } } }),
       this.prisma.user.count({ where: { status: UserStatus.VERIFIED, ...createdAtFilter, role: { not: 'admin' } } }),
@@ -348,6 +350,7 @@ export class AdminService {
         pending: pendingProfiles,
         approved: approvedProfiles,
         rejected: rejectedProfiles,
+        darfUsers: darfUsers,
         total: totalProfiles,
       },
       cardStatus: {

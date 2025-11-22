@@ -104,12 +104,12 @@ export class AuthService {
   private resetTokens = new Map<string, { adminId: number; expires: Date }>();
 
   async sendPasswordResetEmail(email: string) {
-    const admin = await this.prisma.admin.findUnique({
+    const admin = await this.prisma.user.findUnique({
       where: { email },
     });
 
     if (!admin) {
-      throw new Error('Admin with this email does not exist');
+      throw new Error('email does not exist');
     }
 
     // Generate reset token
@@ -126,7 +126,7 @@ export class AuthService {
 
     // Send customizable email using template
     await this.emailService.sendCustomizableEmail('password_reset', admin.email, {
-      userName: admin.username,
+      userName: admin.name,
       resetPasswordUrl: resetLink,
       currentYear: new Date().getFullYear().toString(),
     });

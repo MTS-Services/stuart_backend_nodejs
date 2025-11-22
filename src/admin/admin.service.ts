@@ -309,23 +309,25 @@ export class AdminService {
       activeCards,
       activeSubscriptions,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { ...createdAtFilter } }),
-      this.prisma.profile.count({ where: { ...createdAtFilter } }),
+      this.prisma.user.count({ where: { ...createdAtFilter, role: { not: 'admin' } } }),
+
+      this.prisma.profile.count({ where: { ...createdAtFilter, user: { role: { not: 'admin' } } } }),
       this.prisma.scan.count({ where: { ...createdAtFilter } }),
-      this.prisma.qRCard.count({ where: { ...createdAtFilter } }),
+      this.prisma.qRCard.count({ where: { ...createdAtFilter, user: { role: { not: 'admin' } } } }),
       this.prisma.payment.aggregate({
         where: { status: 'completed', ...(createdAtFilter as any) },
         _sum: { amount: true },
       }),
-      this.prisma.user.count({ where: { status: UserStatus.WAITLIST, ...createdAtFilter } }),
-      this.prisma.user.count({ where: { status: UserStatus.ACTIVE, ...createdAtFilter } }),
-      this.prisma.user.count({ where: { status: UserStatus.VERIFIED, ...createdAtFilter } }),
-      this.prisma.profile.count({ where: { status: ProfileStatus.PENDING_REVIEW, ...createdAtFilter } }),
-      this.prisma.profile.count({ where: { status: ProfileStatus.APPROVED, ...createdAtFilter } }),
-      this.prisma.profile.count({ where: { status: ProfileStatus.REJECTED, ...createdAtFilter } }),
+      this.prisma.user.count({ where: { status: UserStatus.WAITLIST, ...createdAtFilter, role: { not: 'admin' } } }),
+      this.prisma.user.count({ where: { status: UserStatus.ACTIVE, ...createdAtFilter, role: { not: 'admin' } } }),
+      this.prisma.user.count({ where: { status: UserStatus.VERIFIED, ...createdAtFilter, role: { not: 'admin' } } }),
+      this.prisma.profile.count({ where: { status: ProfileStatus.PENDING_REVIEW, ...createdAtFilter, user: { role: { not: 'admin' } } } }),
+      this.prisma.profile.count({ where: { status: ProfileStatus.APPROVED, ...createdAtFilter, user: { role: { not: 'admin' } } } }),
+      this.prisma.profile.count({ where: { status: ProfileStatus.REJECTED, ...createdAtFilter, user: { role: { not: 'admin' } } } }),
       this.prisma.qRCard.count({ where: { isActive: true, ...createdAtFilter } }),
       this.prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE, ...createdAtFilter } }),
     ]);
+
 
     return {
       overview: {
@@ -684,10 +686,13 @@ export class AdminService {
 
   async getAllProfiles(status?: string, page: number = 1, limit: number = 10) {
     // Build where clause based on status filter
-    const whereClause: any = {};
+    let whereClause: any = {};
     
-    if (status && status !== 'ALL') {
-      // Map status to ProfileStatus enum
+    // If status is 'ALL' or not provided, show all profiles (no filter)
+    if (!status || status === 'ALL') {
+      whereClause = {}; // Empty where clause = SELECT * FROM profile
+    } else {
+      // Apply specific status filter
       const statusMap = {
         'PENDING': ProfileStatus.PENDING_REVIEW,
         'PENDING_REVIEW': ProfileStatus.PENDING_REVIEW,
@@ -696,8 +701,12 @@ export class AdminService {
         'DRAFT': ProfileStatus.DRAFT
       };
       
-      if (statusMap[status.toUpperCase()]) {
-        whereClause.status = statusMap[status.toUpperCase()];
+      const mappedStatus = statusMap[status.toUpperCase()];
+      if (mappedStatus) {
+        whereClause.status = mappedStatus;
+      } else {
+        // Invalid status provided, default to showing all
+        whereClause = {};
       }
     }
 

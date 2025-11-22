@@ -51,7 +51,6 @@ async getDashboard(
     waitlist: stats.userStatus.waitlist,
     active: stats.userStatus.active,
     verifiedProfiles: stats.profileStatus.approved,
-    darfUsers: stats.profileStatus.darfUsers,
   };
 
   return {

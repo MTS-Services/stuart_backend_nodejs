@@ -61,6 +61,12 @@ export class AuthService {
       },
     });
 
+    await this.emailService.sendCustomizableEmail('new_user_signup', email, {
+      userName: name,
+      userEmail: email,
+      currentYear: new Date().getFullYear().toString(),
+    });
+
     return user;
   }
 

@@ -263,7 +263,7 @@ async getDashboard(
     return this.adminService.createTestRevenue();
   }
 
-                                                                                                                                                                                                                                        @Get('users/approved')
+  @Get('users/approved')
   async getApprovedUsers(
     @Query('page') page?: string,
     @Query('limit') limit?: string

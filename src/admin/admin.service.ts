@@ -685,7 +685,7 @@ export class AdminService {
     };
   }
 
-  async getAllProfiles(status?: string, page: number = 1, limit: number = 10) {
+  async getAllProfiles(status?: string, page: number = 1, limit: number = 10,username?: string) {
     // Build where clause based on status filter
     let whereClause: any = {};
     
@@ -711,8 +711,17 @@ export class AdminService {
       }
     }
 
+    if (username) {
+      whereClause.user = {
+        name: {
+          contains: username,
+          mode: 'insensitive',
+        },
+      };
+    }
+console.log('Where Clause:', whereClause);
     const profiles = await this.prisma.profile.findMany({
-      where: whereClause,
+      where: { ...whereClause, user: { role : { not: 'admin' } } },
       include: {
         user: {
           select: {
@@ -1204,7 +1213,7 @@ export class AdminService {
         mode: 'insensitive'
       };
     }
-
+console.log('Where Clause:', whereClause);
     const users = await this.prisma.user.findMany({
       where: whereClause,
       select: {

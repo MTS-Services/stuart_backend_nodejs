@@ -139,6 +139,7 @@ async getDashboard(
   async getAllProfiles(
     @Query('status') status?: string,
     @Query('page') page?: string,
+    @Query('username') username?: string,
     @Query('limit') limit?: string
   ) {
     // ✅ Validate and parse parameters safely
@@ -148,7 +149,7 @@ async getDashboard(
     const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
     const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10) || 10)) : 10;
     
-    return this.adminService.getAllProfiles(validStatus, pageNum, limitNum);
+    return this.adminService.getAllProfiles(validStatus, pageNum, limitNum,username);
   }
 
   // ⚠️ IMPORTANT: Parameterized routes MUST be placed AFTER all specific routes

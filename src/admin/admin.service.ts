@@ -11,6 +11,24 @@ export class AdminService {
     private emailService: EmailService,
   ) {}
 
+  // Helper method to add structured images field to profile
+  private addStructuredImages(profile: any) {
+    if (!profile) return profile;
+    
+    const allImages = profile.image || [];
+    const structuredImages = {
+      face: allImages.length > 0 ? allImages[0] : null,
+      fullbody: allImages.length > 1 ? allImages[1] : null,
+      toothyGrin: allImages.length > 2 ? allImages[2] : null,
+      extras: allImages.length > 3 ? allImages.slice(3) : []
+    };
+    
+    return {
+      ...profile,
+      images: structuredImages
+    };
+  }
+
   async getProfilesByStatus(status: ProfileStatus, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
     
@@ -36,8 +54,11 @@ export class AdminService {
       })
     ]);
 
+    // Add structured images to each profile
+    const profilesWithImages = profiles.map(profile => this.addStructuredImages(profile));
+
     return {
-      profiles,
+      profiles: profilesWithImages,
       pagination: {
         total,
         page,
@@ -86,7 +107,7 @@ export class AdminService {
       );
     }
 
-    return updatedProfile;
+    return this.addStructuredImages(updatedProfile);
   }
 
 // async getDashboardStats({
@@ -415,7 +436,7 @@ export class AdminService {
       throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
     }
 
-    return profile;
+    return this.addStructuredImages(profile);
   }
 
   // 🔧 DEBUG METHOD - Force submit profile for review
@@ -471,12 +492,13 @@ export class AdminService {
         email: user.email,
         name: user.name,
       },
-      profile: {
+      profile: this.addStructuredImages({
         id: user.profile.id,
         status: user.profile.status,
+        image: user.profile.image,
         createdAt: user.profile.createdAt,
         updatedAt: user.profile.updatedAt,
-      }
+      })
     };
   }
 
@@ -565,7 +587,7 @@ export class AdminService {
       success: true,
       message: 'Profile approved successfully!',
       data: {
-        ...updatedProfile,
+        ...this.addStructuredImages(updatedProfile),
         qrCardsGenerated: qrCards.length,
         trackingNumber,
         user: profile.user,
@@ -638,7 +660,7 @@ export class AdminService {
       success: true,
       message: 'Profile rejected successfully!',
       data: {
-        ...updatedProfile,
+        ...this.addStructuredImages(updatedProfile),
         editLink,
         user: profile.user,
       },
@@ -674,8 +696,11 @@ export class AdminService {
       where: { status: ProfileStatus.APPROVED },
     });
 
+    // Add structured images to each profile
+    const profilesWithImages = profiles.map(profile => this.addStructuredImages(profile));
+
     return {
-      profiles,
+      profiles: profilesWithImages,
       pagination: {
         page,
         limit,
@@ -711,17 +736,21 @@ export class AdminService {
       }
     }
 
+    // Build user filter with proper combination of username and admin exclusion
+    const userFilter: any = { role: { not: 'admin' } };
+    
     if (username) {
-      whereClause.user = {
-        name: {
-          contains: username,
-          mode: 'insensitive',
-        },
+      userFilter.name = {
+        contains: username,
+        mode: 'insensitive',
       };
     }
+    
+    whereClause.user = userFilter;
+    
 console.log('Where Clause:', whereClause);
     const profiles = await this.prisma.profile.findMany({
-      where: { ...whereClause, user: { role : { not: 'admin' } } },
+      where: whereClause,
       include: {
         user: {
           select: {
@@ -768,6 +797,9 @@ console.log('Where Clause:', whereClause);
     const statusStats = await this.prisma.profile.groupBy({
       by: ['status'],
       _count: { status: true },
+      where: {
+        user: { role: { not: 'admin' } }
+      },
     });
 
     const stats = {
@@ -778,8 +810,11 @@ console.log('Where Clause:', whereClause);
       draft: statusStats.find(s => s.status === ProfileStatus.DRAFT)?._count.status || 0,
     };
 
+    // Add structured images to each profile
+    const profilesWithImages = profiles.map(profile => this.addStructuredImages(profile));
+
     return {
-      profiles,
+      profiles: profilesWithImages,
       pagination: {
         currentPage: page,
         limit,
@@ -825,7 +860,7 @@ console.log('Where Clause:', whereClause);
       data: { isActive: false },
     });
 
-    return updatedProfile;
+    return this.addStructuredImages(updatedProfile);
   }
 
   async getNotifications(adminId: number, page: number = 1, limit: number = 20) {
@@ -1201,7 +1236,7 @@ console.log('Where Clause:', whereClause);
   }
 
   async getAllUsers(status?: string, username?: string, page: number = 1, limit: number = 10) {
-    const whereClause: any = {};
+    const whereClause: any = { NOT: { role: 'admin' } };
     
     if (status && status !== 'ALL') {
       whereClause.status = status;
@@ -1299,7 +1334,7 @@ console.log('Where Clause:', whereClause);
     page: number = 1,
     limit: number = 10
   ) {
-    const whereClause: any = {};
+    const whereClause: any = { NOT: { role: 'admin' } };
 
     if (filters.email) {
       whereClause.email = {

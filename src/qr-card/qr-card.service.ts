@@ -211,6 +211,15 @@ export class QRCardService {
     // }
 
     // Return profile information (without sensitive data)
+    // Create structured images
+    const allImages = card.profile.image || [];
+    const structuredImages = {
+      face: allImages.length > 0 ? allImages[0] : null,
+      fullbody: allImages.length > 1 ? allImages[1] : null,
+      toothyGrin: allImages.length > 2 ? allImages[2] : null,
+      extras: allImages.length > 3 ? allImages.slice(3) : []
+    };
+
     const response = {
       success: true,
       profile: {
@@ -219,7 +228,8 @@ export class QRCardService {
         age: card.profile.age,
         bio: card.profile.bio,
         location: card.profile.location,
-        images: card.profile.image || [], 
+        images: structuredImages,
+        imageUrls: card.profile.image || [], // Keep original array for backward compatibility
         contactEmail: profileOwnerEmail,
       },
       scanId: scan.id,

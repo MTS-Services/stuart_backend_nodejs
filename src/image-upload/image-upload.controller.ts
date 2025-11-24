@@ -12,17 +12,23 @@ export class ImageUploadController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadSingle(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('No file uploaded. Please select an image file to upload.');
     }
 
     // Check if file has either buffer or path
     if (!file.buffer && !file.path) {
-      throw new BadRequestException('One or more files were uploaded but missing temporary path. Upload may have failed.');
+      throw new BadRequestException('File upload failed. The uploaded file is corrupted or incomplete. Please try again.');
     }
 
     // Validate file type
     if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('Only image files are allowed');
+      throw new BadRequestException(`Invalid file type: ${file.mimetype}. Only image files (JPEG, PNG, GIF, WebP, HEIF, HEIC) are allowed.`);
+    }
+
+    // Validate file size (optional - add max size check)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new BadRequestException(`File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum allowed size is 10MB.`);
     }
 
     return this.imageUploadService.uploadImage(file);

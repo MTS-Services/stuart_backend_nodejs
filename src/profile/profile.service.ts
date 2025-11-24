@@ -58,8 +58,77 @@ export class ProfileService {
   }
 
   // -------------------------------------------------------------------
-  // Image Upload Logic
+  // Structured Image Upload Logic
   // -------------------------------------------------------------------
+  public async uploadStructuredImages(files: {
+    image?: Express.Multer.File[];
+    face?: Express.Multer.File[];
+    fullbody?: Express.Multer.File[];
+    toothyGrin?: Express.Multer.File[];
+    extras?: Express.Multer.File[];
+  }): Promise<{
+    imageUrls: string[];
+    imagesJson: {
+      face?: string;
+      fullbody?: string;
+      toothyGrin?: string;
+      extras?: { [key: string]: string };
+    }
+  }> {
+    const result = {
+      imageUrls: [] as string[],
+      imagesJson: {} as any
+    };
+
+    // Upload consolidated images (if any)
+    if (files.image && files.image.length > 0) {
+      const imageUrls = await this.uploadImages(files.image);
+      result.imageUrls = imageUrls.map(img => img.url);
+    }
+
+    // Upload face image
+    if (files.face && files.face.length > 0) {
+      const faceUrls = await this.uploadImages(files.face);
+      result.imagesJson.face = faceUrls[0]?.url;
+      if (!result.imageUrls.includes(faceUrls[0]?.url)) {
+        result.imageUrls.push(faceUrls[0]?.url);
+      }
+    }
+
+    // Upload fullbody image
+    if (files.fullbody && files.fullbody.length > 0) {
+      const fullbodyUrls = await this.uploadImages(files.fullbody);
+      result.imagesJson.fullbody = fullbodyUrls[0]?.url;
+      if (!result.imageUrls.includes(fullbodyUrls[0]?.url)) {
+        result.imageUrls.push(fullbodyUrls[0]?.url);
+      }
+    }
+
+    // Upload toothy grin image
+    if (files.toothyGrin && files.toothyGrin.length > 0) {
+      const toothyGrinUrls = await this.uploadImages(files.toothyGrin);
+      result.imagesJson.toothyGrin = toothyGrinUrls[0]?.url;
+      if (!result.imageUrls.includes(toothyGrinUrls[0]?.url)) {
+        result.imageUrls.push(toothyGrinUrls[0]?.url);
+      }
+    }
+
+    // Upload extras images
+    if (files.extras && files.extras.length > 0) {
+      const extrasUrls = await this.uploadImages(files.extras);
+      result.imagesJson.extras = {};
+      
+      extrasUrls.forEach((urlObj, index) => {
+        const key = (index + 1).toString(); // "1", "2", "3", etc.
+        result.imagesJson.extras[key] = urlObj.url;
+        if (!result.imageUrls.includes(urlObj.url)) {
+          result.imageUrls.push(urlObj.url);
+        }
+      });
+    }
+
+    return result;
+  }
   public async uploadImages(files: Express.Multer.File[]): Promise<ImageReference[]> {
     if (!files || files.length === 0) { return []; }
     
@@ -71,7 +140,39 @@ export class ProfileService {
   }
 
   // -------------------------------------------------------------------
-  // Profile Creation
+  // Profile Creation with Structured Files
+  // -------------------------------------------------------------------
+  async createProfileWithStructuredFiles(
+    createProfileDto: CreateProfileDto, 
+    files: {
+      image?: Express.Multer.File[];
+      face?: Express.Multer.File[];
+      fullbody?: Express.Multer.File[];
+      toothyGrin?: Express.Multer.File[];
+      extras?: Express.Multer.File[];
+    }
+  ) {
+    try {
+      // Upload all structured files and get URLs + JSON structure
+      const uploadResult = await this.uploadStructuredImages(files);
+
+      const fullCreateProfileDto = {
+        ...createProfileDto,
+        image: uploadResult.imageUrls.map(url => ({ url })), // Convert to ImageReference format
+        images: uploadResult.imagesJson as any, // JSON structure
+      };
+
+      return await this.createProfileByEmail(fullCreateProfileDto.email, fullCreateProfileDto);
+    } catch (error) {
+      throw new HttpException(
+        `Failed to create profile with structured files: ${error.message}`,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Profile Creation (Legacy)
   // -------------------------------------------------------------------
   async createProfileWithFiles(
     createProfileDto: CreateProfileDto, 
@@ -148,6 +249,7 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       endDate: createProfileDto.endDate,
       dealbreakers: createProfileDto.dealbreakers,
       image: createProfileDto.image.map((img) => img.url),
+      images: createProfileDto.images as any || undefined, // New JSON field
       status: ProfileStatus.DRAFT,
       bodyType: createProfileDto.bodyType,
       area: null, // Set to null since we're only using county now
@@ -176,7 +278,94 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
 
 
   // -------------------------------------------------------------------
-  // Profile Update
+  // Profile Update with Structured Files
+  // -------------------------------------------------------------------
+  async updateProfileWithStructuredFiles(
+    updateProfileDto: UpdateProfileDto, 
+    files: {
+      image?: Express.Multer.File[];
+      face?: Express.Multer.File[];
+      fullbody?: Express.Multer.File[];
+      toothyGrin?: Express.Multer.File[];
+      extras?: Express.Multer.File[];
+    }
+  ) {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { email: updateProfileDto.email } });
+      if (!user) { throw new HttpException('User not found', HttpStatus.NOT_FOUND); }
+
+      // Get existing profile to preserve existing images
+      const existingProfile = await this.prisma.profile.findUnique({ where: { userId: user.id } });
+      if (!existingProfile) {
+        throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
+      }
+
+      const updateData = { ...updateProfileDto };
+
+      // Check if any structured files are uploaded
+      const hasStructuredFiles = (files.face && files.face.length > 0) ||
+                                (files.fullbody && files.fullbody.length > 0) ||
+                                (files.toothyGrin && files.toothyGrin.length > 0) ||
+                                (files.extras && files.extras.length > 0) ||
+                                (files.image && files.image.length > 0);
+
+      if (hasStructuredFiles) {
+        // Upload all structured files and get URLs + JSON structure
+        const uploadResult = await this.uploadStructuredImages(files);
+        
+        // Check update mode (default is 'merge')
+        const updateMode = updateData.imageUpdateMode || 'merge';
+        
+        if (updateMode === 'replace') {
+          // Replace mode: use only new images
+          updateData.image = uploadResult.imageUrls.map(url => ({ url }));
+          updateData.images = uploadResult.imagesJson as any;
+          console.log(`🔄 Structured image replace: Using ${uploadResult.imageUrls.length} new images`);
+        } else {
+          // Merge mode: add new images to existing ones
+          const existingImages = existingProfile.image || [];
+          const existingImagesJson = existingProfile.images as any || {};
+          
+          // Check total image limit
+          const totalImages = existingImages.length + uploadResult.imageUrls.length;
+          if (totalImages > 13) {
+            throw new HttpException(
+              `Total image limit exceeded. You have ${existingImages.length} existing images and are trying to add ${uploadResult.imageUrls.length} more. Maximum allowed is 13 images.`,
+              HttpStatus.BAD_REQUEST
+            );
+          }
+
+          // Merge images
+          const allImageUrls = [...existingImages, ...uploadResult.imageUrls];
+          updateData.image = allImageUrls.map(url => ({ url }));
+          
+          // Merge JSON structure
+          const mergedImagesJson = {
+            ...existingImagesJson,
+            ...uploadResult.imagesJson,
+            extras: {
+              ...existingImagesJson.extras,
+              ...uploadResult.imagesJson.extras
+            }
+          };
+          updateData.images = mergedImagesJson;
+          
+          console.log(`➕ Structured image merge: ${existingImages.length} existing + ${uploadResult.imageUrls.length} new = ${allImageUrls.length} total`);
+        }
+      }
+      
+      return await this.updateProfile(user.id, updateData);
+
+    } catch (error) {
+      throw new HttpException(
+        `Failed to update profile with structured files: ${error.message}`,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Profile Update (Legacy)
   // -------------------------------------------------------------------
   async updateProfileWithFiles(
     updateProfileDto: UpdateProfileDto, 
@@ -194,30 +383,39 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
 
       const updateData = { ...updateProfileDto };
 
-      // Handle images: merge existing images with new uploads
+      // Handle images: merge existing images with new uploads or replace them
       if (files.image && files.image.length > 0) {
         const uploadedImageReferences = await this.uploadImages(files.image);
         
-        // Get existing images
-        const existingImages = existingProfile.image || [];
+        // Check update mode (default is 'merge')
+        const updateMode = updateData.imageUpdateMode || 'merge';
         
-        // Check total image limit (3 required + up to 10 optional = 13 max)
-        const totalImages = existingImages.length + uploadedImageReferences.length;
-        if (totalImages > 13) {
-          throw new HttpException(
-            `Total image limit exceeded. You have ${existingImages.length} existing images and are trying to add ${uploadedImageReferences.length} more. Maximum allowed is 13 images.`,
-            HttpStatus.BAD_REQUEST
-          );
-        }
+        if (updateMode === 'replace') {
+          // Replace mode: use only new images
+          updateData.image = uploadedImageReferences;
+          console.log(`🔄 Image replace: Using ${uploadedImageReferences.length} new images (replacing all existing)`);
+        } else {
+          // Merge mode: add new images to existing ones
+          const existingImages = existingProfile.image || [];
+          
+          // Check total image limit (3 required + up to 10 optional = 13 max)
+          const totalImages = existingImages.length + uploadedImageReferences.length;
+          if (totalImages > 13) {
+            throw new HttpException(
+              `Total image limit exceeded. You have ${existingImages.length} existing images and are trying to add ${uploadedImageReferences.length} more. Maximum allowed is 13 images.`,
+              HttpStatus.BAD_REQUEST
+            );
+          }
 
-        // Merge existing images with new uploads
-        const allImages = [
-          ...existingImages.map(url => ({ url })),
-          ...uploadedImageReferences
-        ];
-        
-        updateData.image = allImages;
-        console.log(`🖼️ Image update: ${existingImages.length} existing + ${uploadedImageReferences.length} new = ${allImages.length} total`);
+          // Merge existing images with new uploads
+          const allImages = [
+            ...existingImages.map(url => ({ url })),
+            ...uploadedImageReferences
+          ];
+          
+          updateData.image = allImages;
+          console.log(`➕ Image merge: ${existingImages.length} existing + ${uploadedImageReferences.length} new = ${allImages.length} total`);
+        }
       }
       // If no new images uploaded, preserve existing images by not updating the image field
       
@@ -260,6 +458,11 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     
     if (updateProfileDto.image !== undefined) {
         updateData.image = updateProfileDto.image.map(img => img.url);
+    }
+    
+    // Handle new images JSON field
+    if (updateProfileDto.images !== undefined) {
+        updateData.images = updateProfileDto.images as any;
     }
 
     // When user updates their profile after rejection, set status back to DRAFT for admin review
@@ -318,11 +521,33 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
         throw new HttpException('Cannot delete photo: minimum of 3 images required to maintain profile completeness.', HttpStatus.BAD_REQUEST);
     }
 
+    // Also clean up the images JSON field if the deleted photo is referenced there
+    let updatedImagesJson = profile.images as any;
+    if (updatedImagesJson) {
+      if (updatedImagesJson.face === photoUrl) {
+        updatedImagesJson.face = null;
+      }
+      if (updatedImagesJson.fullbody === photoUrl) {
+        updatedImagesJson.fullbody = null;
+      }
+      if (updatedImagesJson.toothyGrin === photoUrl) {
+        updatedImagesJson.toothyGrin = null;
+      }
+      if (updatedImagesJson.extras) {
+        Object.keys(updatedImagesJson.extras).forEach(key => {
+          if (updatedImagesJson.extras[key] === photoUrl) {
+            delete updatedImagesJson.extras[key];
+          }
+        });
+      }
+    }
+
     return this.prisma.profile.update({
       where: { userId },
       data: {
         // 🔥 FIXES TS2561 (Property 'image' does not exist): Now works after `prisma generate`
         image: updatedImages,
+        images: updatedImagesJson,
       },
     });
   }
@@ -341,11 +566,36 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     //     throw new HttpException('Cannot delete photo: minimum of 3 images required.', HttpStatus.BAD_REQUEST);
     // }
 
+    const photoToDelete = currentImages[imageIndex];
     const updatedImages = currentImages.filter((_, index) => index !== imageIndex);
+
+    // Also clean up the images JSON field if the deleted photo is referenced there
+    let updatedImagesJson = profile.images as any;
+    if (updatedImagesJson && photoToDelete) {
+      if (updatedImagesJson.face === photoToDelete) {
+        updatedImagesJson.face = null;
+      }
+      if (updatedImagesJson.fullbody === photoToDelete) {
+        updatedImagesJson.fullbody = null;
+      }
+      if (updatedImagesJson.toothyGrin === photoToDelete) {
+        updatedImagesJson.toothyGrin = null;
+      }
+      if (updatedImagesJson.extras) {
+        Object.keys(updatedImagesJson.extras).forEach(key => {
+          if (updatedImagesJson.extras[key] === photoToDelete) {
+            delete updatedImagesJson.extras[key];
+          }
+        });
+      }
+    }
 
     return this.prisma.profile.update({
       where: { userId },
-      data: { image: updatedImages },
+      data: { 
+        image: updatedImages,
+        images: updatedImagesJson,
+      },
     });
   }
 
@@ -369,6 +619,85 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     return this.prisma.profile.update({
       where: { userId },
       data: { image: newImageOrder },
+    });
+  }
+
+  // Replace all images with new URL array
+  async replaceAllImages(userId: number, imageUrls: string[]) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
+
+    // Validate minimum images requirement
+    if (imageUrls.length < 3) {
+      throw new HttpException('Minimum 3 images required', HttpStatus.BAD_REQUEST);
+    }
+
+    // Validate maximum images limit
+    if (imageUrls.length > 13) {
+      throw new HttpException('Maximum 13 images allowed', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.prisma.profile.update({
+      where: { userId },
+      data: { image: imageUrls },
+    });
+  }
+  async updateImagesJson(userId: number, imagesData: {
+    face?: string;
+    fullbody?: string;
+    toothyGrin?: string;
+    extras?: { [key: string]: string };
+  }) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
+
+    return this.prisma.profile.update({
+      where: { userId },
+      data: { images: imagesData as any },
+    });
+  }
+
+  // Delete specific image type from JSON structure
+  async deleteImageFromJson(userId: number, imageType: 'face' | 'fullbody' | 'toothyGrin') {
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
+
+    let updatedImagesJson = profile.images as any || {
+      face: null,
+      fullbody: null,
+      toothyGrin: null,
+      extras: {}
+    };
+
+    updatedImagesJson[imageType] = null;
+
+    return this.prisma.profile.update({
+      where: { userId },
+      data: { images: updatedImagesJson },
+    });
+  }
+
+  // Delete specific extra image from JSON structure
+  async deleteExtraImageFromJson(userId: number, extraKey: string) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
+
+    let updatedImagesJson = profile.images as any || {
+      face: null,
+      fullbody: null,
+      toothyGrin: null,
+      extras: {}
+    };
+
+    if (updatedImagesJson.extras && updatedImagesJson.extras[extraKey]) {
+      delete updatedImagesJson.extras[extraKey];
+    } else {
+      throw new HttpException('Extra image key not found', HttpStatus.NOT_FOUND);
+    }
+
+    return this.prisma.profile.update({
+      where: { userId },
+      data: { images: updatedImagesJson },
     });
   }
   
@@ -471,6 +800,22 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     const photoCount = allImages.length;
     
     const isComplete = photoCount >= 3; 
+    
+    // Handle images JSON field - return empty object structure if null/empty
+    const imagesJson = profile.images || {
+      face: null,
+      fullbody: null,
+      toothyGrin: null,
+      extras: {}
+    };
+
+    // Create new structured images field based on existing image array
+    const structuredImages = {
+      face: allImages.length > 0 ? allImages[0] : null,
+      fullbody: allImages.length > 1 ? allImages[1] : null,
+      toothyGrin: allImages.length > 2 ? allImages[2] : null,
+      extras: allImages.length > 3 ? allImages.slice(3) : []
+    };
 
     return {
       id: profile.id,
@@ -490,7 +835,9 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       dealbreakers: profile.dealbreakers,
       startDate: profile.startDate,
       endDate: profile.endDate,
-      images: allImages.map((url: string) => ({ url })), 
+      images: structuredImages, // New structured images field
+      imageUrls: allImages, // Raw array of image URLs (for backward compatibility)
+      imagesJson: imagesJson, // Legacy structured images field (if exists)
       status: profile.status,
       photoCount,
       isComplete,

@@ -79,6 +79,20 @@ export class UserService {
 
       // Remove password from response for security
       const { password, ...userWithoutPassword } = user;
+      
+      // Add structured images to profile if it exists
+      if (userWithoutPassword.profile) {
+        const allImages = userWithoutPassword.profile.image || [];
+        const structuredImages = {
+          face: allImages.length > 0 ? allImages[0] : null,
+          fullbody: allImages.length > 1 ? allImages[1] : null,
+          toothyGrin: allImages.length > 2 ? allImages[2] : null,
+          extras: allImages.length > 3 ? allImages.slice(3) : []
+        };
+        
+        // Add images field to profile (TypeScript workaround)
+        (userWithoutPassword.profile as any).images = structuredImages;
+      }
 
       return {
         success: true,

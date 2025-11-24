@@ -1,0 +1,881 @@
+{
+  "info": {
+    "name": "Structured Image Upload API",
+    "description": "Profile management with structured image file uploads (face, fullbody, toothyGrin, extras)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "structured-image-api-v3",
+    "version": {
+      "major": 3,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "test_email",
+      "value": "test@example.com",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Structured Image Uploads",
+      "item": [
+        {
+          "name": "Create Profile - Structured Files",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "test@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "25",
+                  "type": "text"
+                },
+                {
+                  "key": "height",
+                  "value": "5'10\"",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "This is a test bio with structured image uploads.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "New York, NY",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Athletic",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Manhattan",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Test User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "Upload face image file"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "Upload fullbody image file"
+                },
+                {
+                  "key": "toothyGrin",
+                  "value": "",
+                  "type": "file",
+                  "description": "Upload toothy grin/smile image file"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Upload extra image 1"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Upload extra image 2"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Upload extra image 3"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Create profile with structured file uploads. Backend will upload files and store URLs in JSON structure:\n\n```json\n{\n  \"images\": [\n    {\"url\": \"uploaded_face_url\"},\n    {\"url\": \"uploaded_fullbody_url\"},\n    {\"url\": \"uploaded_smile_url\"},\n    {\"url\": \"uploaded_extra1_url\"},\n    {\"url\": \"uploaded_extra2_url\"},\n    {\"url\": \"uploaded_extra3_url\"}\n  ],\n  \"imagesJson\": {\n    \"face\": \"uploaded_face_url\",\n    \"fullbody\": \"uploaded_fullbody_url\", \n    \"toothyGrin\": \"uploaded_smile_url\",\n    \"extras\": {\n      \"1\": \"uploaded_extra1_url\",\n      \"2\": \"uploaded_extra2_url\",\n      \"3\": \"uploaded_extra3_url\"\n    }\n  }\n}\n```"
+          }
+        },
+        {
+          "name": "Create Profile - Mixed Upload (Structured + Regular)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "mixed@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "mixed@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "28",
+                  "type": "text"
+                },
+                {
+                  "key": "height",
+                  "value": "5'8\"",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Testing mixed upload approach.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Los Angeles, CA",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Average",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Los Angeles",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Mixed User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567891",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "Structured: Face image"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "Structured: Fullbody image"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Regular: Additional image 1"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Regular: Additional image 2"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Structured: Extra image"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Mix structured uploads (face, fullbody, extras) with regular image uploads"
+          }
+        },
+        {
+          "name": "Update Profile - Merge Structured Files",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Updated bio with new structured images.",
+                  "type": "text"
+                },
+                {
+                  "key": "imageUpdateMode",
+                  "value": "merge",
+                  "type": "text",
+                  "description": "Merge new images with existing ones"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "New face image (will update face field in JSON)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Additional extra image 1"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Additional extra image 2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Update profile in merge mode. New face image will replace existing face, new extras will be added to existing extras with keys 4, 5, etc."
+          }
+        },
+        {
+          "name": "Update Profile - Replace with Structured Files",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "imageUpdateMode",
+                  "value": "replace",
+                  "type": "text",
+                  "description": "Replace all existing images"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "New face image"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "New fullbody image"
+                },
+                {
+                  "key": "toothyGrin",
+                  "value": "",
+                  "type": "file",
+                  "description": "New smile image"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "New extra image"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Replace all existing images with new structured uploads"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Minimum/Maximum Tests",
+      "item": [
+        {
+          "name": "Test - Minimum Images (3 structured)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "min@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "min@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "22",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Slim",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Test County",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Min User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567892",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Minimum test with structured uploads",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "Face image (1/3)"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "Fullbody image (2/3)"
+                },
+                {
+                  "key": "toothyGrin",
+                  "value": "",
+                  "type": "file",
+                  "description": "Smile image (3/3)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Test minimum requirement with exactly 3 structured images"
+          }
+        },
+        {
+          "name": "Test - Error: Only 2 Images",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "error@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "error@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "4",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Athletic",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Error County",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Error User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567893",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Error test - insufficient images",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "Face image (1/2 - should fail)"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "Fullbody image (2/2 - should fail)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Should fail with error: 'Minimum required profile photos not met. You must upload at least 3 images total.'"
+          }
+        },
+        {
+          "name": "Test - Maximum Images (13 total)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "max@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "max@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Muscular",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Max County",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Max User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567894",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Maximum images test with structured uploads",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "Face image (1/13)"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "Fullbody image (2/13)"
+                },
+                {
+                  "key": "toothyGrin",
+                  "value": "",
+                  "type": "file",
+                  "description": "Smile image (3/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 1 (4/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 2 (5/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 3 (6/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 4 (7/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 5 (8/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 6 (9/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 7 (10/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 8 (11/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 9 (12/13)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 10 (13/13)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Test maximum allowed images (13 total) using structured uploads"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Response Verification",
+      "item": [
+        {
+          "name": "Get Profile - Verify Structured Response",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/{{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "{{test_email}}"]
+            },
+            "description": "Get profile and verify the response includes both:\n\n1. `images` array with all uploaded image URLs\n2. `imagesJson` object with structured format:\n\n```json\n{\n  \"images\": [\n    {\"url\": \"face_image_url\"},\n    {\"url\": \"fullbody_image_url\"},\n    {\"url\": \"smile_image_url\"},\n    {\"url\": \"extra1_image_url\"},\n    {\"url\": \"extra2_image_url\"}\n  ],\n  \"imagesJson\": {\n    \"face\": \"face_image_url\",\n    \"fullbody\": \"fullbody_image_url\",\n    \"toothyGrin\": \"smile_image_url\",\n    \"extras\": {\n      \"1\": \"extra1_image_url\",\n      \"2\": \"extra2_image_url\"\n    }\n  }\n}\n```"
+          }
+        },
+        {
+          "name": "Get Profile - Mixed Upload Response",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/mixed@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "mixed@example.com"]
+            },
+            "description": "Verify mixed upload response includes both structured and regular image uploads"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Edge Cases",
+      "item": [
+        {
+          "name": "Update - Add Only Extras",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "imageUpdateMode",
+                  "value": "merge",
+                  "type": "text"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Additional extra image 1"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Additional extra image 2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Add only extra images without touching face, fullbody, or toothyGrin"
+          }
+        },
+        {
+          "name": "Update - Replace Only Face",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "imageUpdateMode",
+                  "value": "merge",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "New face image (replaces existing face)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Update only the face image, keeping all other images unchanged"
+          }
+        },
+        {
+          "name": "Create - Only Face and Extras",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "partial@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "partial@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "6",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Average",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Partial County",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Partial User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567895",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Partial structured upload test",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "Face image"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 1"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image 2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Create profile with only face and extras (no fullbody or toothyGrin). Should create JSON structure with null values for missing fields."
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set base_url if not configured",
+          "if (!pm.environment.get('base_url') && !pm.globals.get('base_url')) {",
+          "    pm.globals.set('base_url', 'http://localhost:3000');",
+          "}",
+          "",
+          "// Auto-set test email if not configured", 
+          "if (!pm.environment.get('test_email') && !pm.globals.get('test_email')) {",
+          "    pm.globals.set('test_email', 'test@example.com');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Response validation",
+          "pm.test('Status code is successful', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+          "});",
+          "",
+          "// Validate structured image response for GET requests",
+          "if (pm.request.method === 'GET' && pm.response.code === 200) {",
+          "    const response = pm.response.json();",
+          "    ",
+          "    pm.test('Response has images array', function () {",
+          "        pm.expect(response).to.have.property('images');",
+          "        pm.expect(response.images).to.be.an('array');",
+          "    });",
+          "    ",
+          "    pm.test('Response has imagesJson object', function () {",
+          "        pm.expect(response).to.have.property('imagesJson');",
+          "        pm.expect(response.imagesJson).to.be.an('object');",
+          "    });",
+          "    ",
+          "    // Log the structured response for verification",
+          "    console.log('Structured Images Response:');",
+          "    console.log('Images Array:', response.images);",
+          "    console.log('Images JSON:', response.imagesJson);",
+          "}",
+          "",
+          "// Log response for debugging",
+          "console.log('Response:', pm.response.json());"
+        ]
+      }
+    }
+  ]
+}

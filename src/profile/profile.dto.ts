@@ -116,6 +116,18 @@ export class CreateProfileDto {
     @Type(() => ImageReferenceDto)
     image: ImageReferenceDto[]; 
     // -------------------------------------------------------------------
+    
+    // -------------------------------------------------------------------
+    // 🔥 NEW IMAGES JSON FIELD 🔥
+    // Optional JSON field for structured image data
+    // -------------------------------------------------------------------
+    @IsOptional()
+    images?: {
+        face?: string;
+        fullbody?: string;
+        toothyGrin?: string;
+        extras?: { [key: string]: string };
+    };
 }
 
 // Update profile DTO - all fields optional except email
@@ -134,6 +146,25 @@ export class UpdateProfileDto extends PartialType(CreateProfileDto) {
     @ValidateNested({ each: true })
     @Type(() => ImageReferenceDto)
     image?: ImageReferenceDto[];
+    
+    // -------------------------------------------------------------------
+    // 🔥 NEW IMAGES JSON FIELD (Optional for updates) 🔥
+    // -------------------------------------------------------------------
+    @IsOptional()
+    images?: {
+        face?: string;
+        fullbody?: string;
+        toothyGrin?: string;
+        extras?: { [key: string]: string };
+    };
+    
+    // -------------------------------------------------------------------
+    // 🔥 IMAGE UPDATE MODE 🔥
+    // Controls how images are updated: 'merge' (default) or 'replace'
+    // -------------------------------------------------------------------
+    @IsOptional()
+    @IsString()
+    imageUpdateMode?: 'merge' | 'replace';
 }
 
 // Photo management DTOs are simplified/removed as they are no longer needed
@@ -149,11 +180,17 @@ export class SubmitProfileDto {
 export class ProfileResponseDto {
     id: number;
     userId: number;
-    age?: number;
+    age?: string;
     height?: string;
     bio?: string;
     location?: string;
-    images: ImageReferenceDto[]; 
+    imageUrls?: string[]; // Changed from 'images' to avoid conflict
+    imagesJson?: { // Changed to be more descriptive
+        face?: string;
+        fullbody?: string;
+        toothyGrin?: string;
+        extras?: { [key: string]: string };
+    };
     status: string;
     photoCount: number;
     isComplete: boolean;

@@ -1,0 +1,888 @@
+{
+  "info": {
+    "name": "Profile Image Management API",
+    "description": "Enhanced profile management with image upload, JSON structure, and comprehensive CRUD operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "enhanced-profile-api-v2",
+    "version": {
+      "major": 2,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "test_email",
+      "value": "test@example.com",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Profile Creation & Updates",
+      "item": [
+        {
+          "name": "Create Profile with Structured Files",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "test@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "25",
+                  "type": "text"
+                },
+                {
+                  "key": "height",
+                  "value": "5'10\"",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "This is a test bio that is longer than 10 characters for validation.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "New York, NY",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Athletic",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Manhattan",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Test User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "Face image file (optional)"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "Full body image file (optional)"
+                },
+                {
+                  "key": "toothyGrin",
+                  "value": "",
+                  "type": "file",
+                  "description": "Toothy grin image file (optional)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image file 1 (optional)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image file 2 (optional)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Extra image file 3 (optional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/create-with-structured-files",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "create-with-structured-files"]
+            },
+            "description": "Create a new profile with structured file uploads (face, fullbody, toothyGrin, extras)"
+          }
+        },
+        {
+          "name": "Update Profile with Structured Files - Merge Mode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Updated bio with new information about the user.",
+                  "type": "text"
+                },
+                {
+                  "key": "imageUpdateMode",
+                  "value": "merge",
+                  "type": "text",
+                  "description": "Merge new images with existing ones"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "New face image (optional)"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Additional extra image 1"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "Additional extra image 2"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/update-with-structured-files",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "update-with-structured-files"]
+            },
+            "description": "Update profile in merge mode - new structured images are added to existing ones"
+          }
+        },
+        {
+          "name": "Update Profile with Structured Files - Replace Mode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "imageUpdateMode",
+                  "value": "replace",
+                  "type": "text",
+                  "description": "Replace all existing images with new ones"
+                },
+                {
+                  "key": "face",
+                  "value": "",
+                  "type": "file",
+                  "description": "New face image"
+                },
+                {
+                  "key": "fullbody",
+                  "value": "",
+                  "type": "file",
+                  "description": "New fullbody image"
+                },
+                {
+                  "key": "toothyGrin",
+                  "value": "",
+                  "type": "file",
+                  "description": "New toothy grin image"
+                },
+                {
+                  "key": "extras",
+                  "value": "",
+                  "type": "file",
+                  "description": "New extra image 1"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/update-with-structured-files",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "update-with-structured-files"]
+            },
+            "description": "Update profile in replace mode - all existing structured images are replaced with new ones"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Profile Retrieval & Management",
+      "item": [
+        {
+          "name": "Get Profile by Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/{{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "{{test_email}}"]
+            },
+            "description": "Retrieve profile information including images array and imagesJson structure"
+          }
+        },
+        {
+          "name": "Submit Profile for Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/submit",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "submit"]
+            },
+            "description": "Submit profile for admin review"
+          }
+        },
+        {
+          "name": "Delete Profile",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/{{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "{{test_email}}"]
+            },
+            "description": "Delete entire profile by email"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Regular Profile Operations",
+      "item": [
+        {
+          "name": "Create Profile (Regular)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "regular@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "regular@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "28",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Regular profile creation test",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Test Location",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Average",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Test County",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Regular User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Image 1"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Image 2"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Image 3"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Create profile using regular endpoint"
+          }
+        },
+        {
+          "name": "Update Profile (Regular)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "regular@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Updated regular profile",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "New image"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Update profile using regular endpoint"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Images JSON Structure Management",
+      "item": [
+        {
+          "name": "Update Complete Images JSON",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"face\": \"https://example.com/updated_face.jpg\",\n  \"fullbody\": \"https://example.com/updated_fullbody.jpg\",\n  \"toothyGrin\": \"https://example.com/updated_smile.jpg\",\n  \"extras\": {\n    \"1\": \"https://example.com/updated_extra1.jpg\",\n    \"2\": \"https://example.com/updated_extra2.jpg\",\n    \"casual\": \"https://example.com/updated_casual.jpg\",\n    \"formal\": \"https://example.com/updated_formal.jpg\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/update-image-json/1",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "update-image-json", "1"]
+            },
+            "description": "Update the complete images JSON structure (userId=1)"
+          }
+        },
+        {
+          "name": "Update Partial Images JSON",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"face\": \"https://example.com/new_face_only.jpg\",\n  \"extras\": {\n    \"party\": \"https://example.com/party.jpg\",\n    \"vacation\": \"https://example.com/vacation.jpg\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/update-image-json/1",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "update-image-json", "1"]
+            },
+            "description": "Update only specific parts of the images JSON structure (userId=1)"
+          }
+        },
+        {
+          "name": "Delete Face Image from JSON",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/delete-image-json/1/face",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "delete-image-json", "1", "face"]
+            },
+            "description": "Remove the face image from JSON structure (userId=1)"
+          }
+        },
+        {
+          "name": "Delete Fullbody Image from JSON",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/delete-image-json/1/fullbody",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "delete-image-json", "1", "fullbody"]
+            },
+            "description": "Remove the fullbody image from JSON structure (userId=1)"
+          }
+        },
+        {
+          "name": "Delete Toothy Grin Image from JSON",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/delete-image-json/1/toothyGrin",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "delete-image-json", "1", "toothyGrin"]
+            },
+            "description": "Remove the toothy grin image from JSON structure (userId=1)"
+          }
+        },
+        {
+          "name": "Delete Extras Key '1'",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/delete-extra-image-json/1/1",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "delete-extra-image-json", "1", "1"]
+            },
+            "description": "Remove extras['1'] from JSON structure (userId=1)"
+          }
+        },
+        {
+          "name": "Delete Extras Key 'workout'",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/delete-extra-image-json/1/workout",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "delete-extra-image-json", "1", "workout"]
+            },
+            "description": "Remove extras['workout'] from JSON structure (userId=1)"
+          }
+        },
+        {
+          "name": "Delete Extras Key 'casual'",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/delete-extra-image-json/1/casual",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "delete-extra-image-json", "1", "casual"]
+            },
+            "description": "Remove extras['casual'] from JSON structure (userId=1)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Test Scenarios",
+      "item": [
+        {
+          "name": "Test - Create Profile with Minimum Images",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "min@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "min@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "age",
+                  "value": "22",
+                  "type": "text"
+                },
+                {
+                  "key": "height",
+                  "value": "5'8\"",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Minimum test bio",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Test City",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Average",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Test County",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Min User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567891",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Minimum image 1"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Minimum image 2"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Minimum image 3"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Test creating profile with exactly 3 images (minimum requirement)"
+          }
+        },
+        {
+          "name": "Test - Error: Insufficient Images",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "error@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "gmail",
+                  "value": "error@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "userId",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "bodyType",
+                  "value": "Athletic",
+                  "type": "text"
+                },
+                {
+                  "key": "county",
+                  "value": "Error County",
+                  "type": "text"
+                },
+                {
+                  "key": "displayName",
+                  "value": "Error User",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567892",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "value": "",
+                  "type": "file",
+                  "description": "Only 1 image (should fail)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Test error case - should fail with insufficient images message"
+          }
+        },
+        {
+          "name": "Test - Get Profile with Empty Images JSON",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/min@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "min@example.com"]
+            },
+            "description": "Test retrieving profile that has no images JSON - should return default structure"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Edge Cases & Validation",
+      "item": [
+        {
+          "name": "Test - Maximum Images (13)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageUrls\": [\n    \"https://example.com/img1.jpg\",\n    \"https://example.com/img2.jpg\",\n    \"https://example.com/img3.jpg\",\n    \"https://example.com/img4.jpg\",\n    \"https://example.com/img5.jpg\",\n    \"https://example.com/img6.jpg\",\n    \"https://example.com/img7.jpg\",\n    \"https://example.com/img8.jpg\",\n    \"https://example.com/img9.jpg\",\n    \"https://example.com/img10.jpg\",\n    \"https://example.com/img11.jpg\",\n    \"https://example.com/img12.jpg\",\n    \"https://example.com/img13.jpg\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/{{test_email}}/images/replace",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "{{test_email}}", "images", "replace"]
+            },
+            "description": "Test maximum allowed images (13)"
+          }
+        },
+        {
+          "name": "Test - Error: Too Many Images (14)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageUrls\": [\n    \"https://example.com/img1.jpg\",\n    \"https://example.com/img2.jpg\",\n    \"https://example.com/img3.jpg\",\n    \"https://example.com/img4.jpg\",\n    \"https://example.com/img5.jpg\",\n    \"https://example.com/img6.jpg\",\n    \"https://example.com/img7.jpg\",\n    \"https://example.com/img8.jpg\",\n    \"https://example.com/img9.jpg\",\n    \"https://example.com/img10.jpg\",\n    \"https://example.com/img11.jpg\",\n    \"https://example.com/img12.jpg\",\n    \"https://example.com/img13.jpg\",\n    \"https://example.com/img14.jpg\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/{{test_email}}/images/replace",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "{{test_email}}", "images", "replace"]
+            },
+            "description": "Test error case - should fail with too many images message"
+          }
+        },
+        {
+          "name": "Test - Complex JSON Structure",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"face\": \"https://example.com/professional_face.jpg\",\n  \"fullbody\": \"https://example.com/professional_fullbody.jpg\",\n  \"toothyGrin\": \"https://example.com/big_smile.jpg\",\n  \"extras\": {\n    \"1\": \"https://example.com/photo1.jpg\",\n    \"2\": \"https://example.com/photo2.jpg\",\n    \"3\": \"https://example.com/photo3.jpg\",\n    \"4\": \"https://example.com/photo4.jpg\",\n    \"5\": \"https://example.com/photo5.jpg\",\n    \"casual\": \"https://example.com/casual_wear.jpg\",\n    \"formal\": \"https://example.com/formal_wear.jpg\",\n    \"workout\": \"https://example.com/gym_photo.jpg\",\n    \"travel\": \"https://example.com/vacation_photo.jpg\",\n    \"hobby\": \"https://example.com/hobby_photo.jpg\",\n    \"pet\": \"https://example.com/with_pet.jpg\",\n    \"friends\": \"https://example.com/with_friends.jpg\",\n    \"adventure\": \"https://example.com/adventure_photo.jpg\",\n    \"nature\": \"https://example.com/nature_photo.jpg\",\n    \"city\": \"https://example.com/city_photo.jpg\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/{{test_email}}/images/json",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "{{test_email}}", "images", "json"]
+            },
+            "description": "Test complex JSON structure with many extras keys"
+          }
+        },
+        {
+          "name": "Test - Clear All JSON Fields",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"face\": null,\n  \"fullbody\": null,\n  \"toothyGrin\": null,\n  \"extras\": {}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/{{test_email}}/images/json",
+              "host": ["{{base_url}}"],
+              "path": ["profile", "{{test_email}}", "images", "json"]
+            },
+            "description": "Test clearing all JSON image fields"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set base_url if not configured",
+          "if (!pm.environment.get('base_url') && !pm.globals.get('base_url')) {",
+          "    pm.globals.set('base_url', 'http://localhost:3000');",
+          "}",
+          "",
+          "// Auto-set test email if not configured",
+          "if (!pm.environment.get('test_email') && !pm.globals.get('test_email')) {",
+          "    pm.globals.set('test_email', 'test@example.com');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Common response validation",
+          "pm.test('Status code is successful', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+          "});",
+          "",
+          "// Log response for debugging",
+          "console.log('Response:', pm.response.json());"
+        ]
+      }
+    }
+  ]
+}

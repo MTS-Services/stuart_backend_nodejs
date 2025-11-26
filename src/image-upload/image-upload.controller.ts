@@ -26,9 +26,9 @@ export class ImageUploadController {
     }
 
     // Validate file size (optional - add max size check)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
-      throw new BadRequestException(`File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum allowed size is 10MB.`);
+      throw new BadRequestException(`File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum allowed size is 100MB.`);
     }
 
     return this.imageUploadService.uploadImage(file);

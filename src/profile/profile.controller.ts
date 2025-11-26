@@ -110,11 +110,56 @@ export class ProfileController {
     }
   ) {
     try {
+      // 🔍 BACKEND LOG: Before processing profile creation
+      console.log('============================================');
+      console.log('📥 BACKEND: Received Profile Creation Request');
+      console.log('============================================');
+      console.log('Profile Data:', {
+        email: createProfileDto.email,
+        displayName: createProfileDto.displayName,
+        birthMonth: createProfileDto.birthMonth,
+        birthYear: createProfileDto.birthYear,
+        age: createProfileDto.age,
+        height: createProfileDto.height,
+        bodyType: createProfileDto.bodyType,
+        county: createProfileDto.county,
+        location: createProfileDto.location,
+        bioLength: createProfileDto.bio?.length || 0,
+        dealbreakersLength: createProfileDto.dealbreakers?.length || 0
+      });
+      console.log('Uploaded Files:', {
+        face: files.face?.length || 0,
+        fullbody: files.fullbody?.length || 0,
+        toothyGrin: files.toothyGrin?.length || 0,
+        extras: files.extras?.length || 0,
+        image: files.image?.length || 0,
+        totalFiles: (files.face?.length || 0) + (files.fullbody?.length || 0) + (files.toothyGrin?.length || 0) + (files.extras?.length || 0) + (files.image?.length || 0)
+      });
+      console.log('File Details:', [
+        ...(files.face || []).map(f => ({ type: 'face', name: f.originalname, size: `${(f.size / 1024 / 1024).toFixed(2)}MB` })),
+        ...(files.fullbody || []).map(f => ({ type: 'fullbody', name: f.originalname, size: `${(f.size / 1024 / 1024).toFixed(2)}MB` })),
+        ...(files.toothyGrin || []).map(f => ({ type: 'toothyGrin', name: f.originalname, size: `${(f.size / 1024 / 1024).toFixed(2)}MB` })),
+        ...(files.extras || []).map(f => ({ type: 'extra', name: f.originalname, size: `${(f.size / 1024 / 1024).toFixed(2)}MB` })),
+        ...(files.image || []).map(f => ({ type: 'image', name: f.originalname, size: `${(f.size / 1024 / 1024).toFixed(2)}MB` }))
+      ]);
+      console.log('============================================');
+
       // 1. CRITICAL: Validate file presence (min 3 total)
       this.validateRequiredFiles(files);
 
       // 2. Call the service with structured files
-      return await this.profileService.createProfileWithStructuredFiles(createProfileDto, files);
+      const result = await this.profileService.createProfileWithStructuredFiles(createProfileDto, files);
+
+      // 🔍 BACKEND LOG: After successful profile creation
+      console.log('============================================');
+      console.log('✅ BACKEND: Profile Created Successfully');
+      console.log('============================================');
+      console.log('Created Profile ID:', result?.profile?.id);
+      console.log('User Email:', result?.profile?.email);
+      console.log('Total Images Uploaded:', result?.profile?.image?.length || 0);
+      console.log('============================================');
+
+      return result;
     } catch (error) {
       // Handle errors as before
       if (error instanceof HttpException) {

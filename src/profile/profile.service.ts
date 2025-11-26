@@ -153,8 +153,15 @@ export class ProfileService {
     }
   ) {
     try {
+      // 🔍 SERVICE LOG: Before uploading images
+      console.log('📤 SERVICE: Starting image upload process...');
+      
       // Upload all structured files and get URLs + JSON structure
       const uploadResult = await this.uploadStructuredImages(files);
+
+      console.log('✅ SERVICE: Images uploaded successfully');
+      console.log('Image URLs:', uploadResult.imageUrls);
+      console.log('Images JSON:', uploadResult.imagesJson);
 
       const fullCreateProfileDto = {
         ...createProfileDto,
@@ -162,7 +169,11 @@ export class ProfileService {
         images: uploadResult.imagesJson as any, // JSON structure
       };
 
-      return await this.createProfileByEmail(fullCreateProfileDto.email, fullCreateProfileDto);
+      console.log('💾 SERVICE: Saving profile to database...');
+      const result = await this.createProfileByEmail(fullCreateProfileDto.email, fullCreateProfileDto);
+      console.log('✅ SERVICE: Profile saved to database with ID:', result?.profile?.id);
+
+      return result;
     } catch (error) {
       throw new HttpException(
         `Failed to create profile with structured files: ${error.message}`,
@@ -475,6 +486,8 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
         data: { status: UserStatus.PROFILE_PENDING },
       });
     }
+
+    console
 
     return this.prisma.profile.update({
       where: { userId },

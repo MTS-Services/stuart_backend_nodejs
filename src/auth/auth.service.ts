@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma.service';
 import { User, UserStatus } from '@prisma/client';
 import { EmailService } from '../email/email.service';
 import { randomBytes } from 'crypto';
+import { rejects } from 'assert';
 
 export interface JwtPayload {
   sub: number;
@@ -244,6 +245,7 @@ export class AuthService {
         profile: user.profile ? {
           id: user.profile.id,
           status: user.profile.status,
+          rejectionReason: user.profile.rejectionReason
         } : null,
       },
     };

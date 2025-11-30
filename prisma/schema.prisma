@@ -78,6 +78,7 @@ model Profile {
   location        String?
   images          Json?        
   image           String[]      @default([])
+  username     String?
   displayName     String?
   email           String?
   gmail           String?

@@ -117,6 +117,7 @@ export class ProfileController {
       console.log('Profile Data:', {
         email: createProfileDto.email,
         displayName: createProfileDto.displayName,
+        username: createProfileDto.username,
         birthMonth: createProfileDto.birthMonth,
         birthYear: createProfileDto.birthYear,
         age: createProfileDto.age,

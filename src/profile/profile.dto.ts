@@ -101,6 +101,11 @@ export class CreateProfileDto {
     @MaxLength(50)
     displayName: string; // REQUIRED FIELD
 
+    @IsOptional()
+    @IsString()
+    @MaxLength(50)
+    username?: string; // USERNAME FIELD
+
     @IsString()
     @MaxLength(20)
     phone: string; // REQUIRED FIELD
@@ -184,6 +189,7 @@ export class ProfileResponseDto {
     height?: string;
     bio?: string;
     location?: string;
+    username?: string; // USERNAME FIELD
     imageUrls?: string[]; // Changed from 'images' to avoid conflict
     imagesJson?: { // Changed to be more descriptive
         face?: string;

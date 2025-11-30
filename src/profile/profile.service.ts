@@ -266,6 +266,7 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       area: null, // Set to null since we're only using county now
       county: createProfileDto.county,
       displayName: createProfileDto.displayName,
+      username: createProfileDto.username, // USERNAME FIELD
       email: createProfileDto.email, // saved in DB
       gmail: createProfileDto.gmail, // saved in DB
       phone: createProfileDto.phone,
@@ -457,12 +458,16 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     if (updateProfileDto.height !== undefined) { updateData.height = updateProfileDto.height; }
     if (updateProfileDto.bio !== undefined) { updateData.bio = updateProfileDto.bio; }
     if (updateProfileDto.location !== undefined) { updateData.location = updateProfileDto.location; }
+    if (updateProfileDto.startDate !== undefined) { updateData.startDate = updateProfileDto.startDate; }
+    if (updateProfileDto.endDate !== undefined) { updateData.endDate = updateProfileDto.endDate; }
+    if (updateProfileDto.dealbreakers !== undefined) { updateData.dealbreakers = updateProfileDto.dealbreakers; }
     if (updateProfileDto.bodyType !== undefined) { updateData.bodyType = updateProfileDto.bodyType; }
     if (updateProfileDto.county !== undefined) { 
       updateData.county = updateProfileDto.county; 
       updateData.area = null; // Set area to null when county is provided
     }
     if (updateProfileDto.displayName !== undefined) { updateData.displayName = updateProfileDto.displayName; }
+    if (updateProfileDto.username !== undefined) { updateData.username = updateProfileDto.username; }
     if (updateProfileDto.email !== undefined) { updateData.email = updateProfileDto.email; }
     if (updateProfileDto.gmail !== undefined) { updateData.gmail = updateProfileDto.gmail; }
     if (updateProfileDto.phone !== undefined) { updateData.phone = updateProfileDto.phone; }
@@ -843,6 +848,7 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       bodyType: profile.bodyType,
       county: profile.county,
       displayName: profile.displayName,
+      username: profile.username,
       phone: profile.phone,
       gmail: profile.gmail,
       dealbreakers: profile.dealbreakers,

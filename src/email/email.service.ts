@@ -1501,7 +1501,7 @@ export class EmailService {
         to,
         subject: finalSubject,
         text: finalBody, // Plain text fallback
-        html: finalHtml, // Full customizable HTML template
+        html: this.resolveImageUrls(finalHtml, baseUrl), // Full customizable HTML template with absolute image URLs
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -1510,6 +1510,17 @@ export class EmailService {
       console.error('❌ Failed to send customizable email:', error.message);
       throw new Error(`Failed to send email: ${error.message}`);
     }
+  }
+
+  // Convert relative image/asset URLs to absolute URLs so email clients can load them
+  private resolveImageUrls(html: string, baseUrl: string): string {
+    // Fix src="/..." to src="https://domain/..."
+    html = html.replace(/src="\/([^"]+)"/g, `src="${baseUrl}/$1"`);
+    // Fix src='/...' (single quotes)
+    html = html.replace(/src='\/([^']+)'/g, `src='${baseUrl}/$1'`);
+    // Fix url(/...) in inline styles (for background-image)
+    html = html.replace(/url\(\/([^)]+)\)/g, `url(${baseUrl}/$1)`);
+    return html;
   }
 
   // Helper method to extract button config from template HTML comments

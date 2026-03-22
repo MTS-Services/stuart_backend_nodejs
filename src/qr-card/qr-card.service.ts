@@ -101,6 +101,11 @@ export class QRCardService {
       throw new HttpException('This QR card is no longer active', HttpStatus.BAD_REQUEST);
     }
 
+    // Check if the profile is active (not deactivated by admin)
+    if (!card.profile.isActive) {
+      throw new HttpException('This profile is currently deactivated', HttpStatus.FORBIDDEN);
+    }
+
     console.log(`[QR Scan Start] Card: ${qrCode}, Current Total Scans: ${card.scanCount}/${card.maxScans}, IP: ${viewerInfo.ipAddress}`);
 
     // Check if card has reached maximum total scans (250)

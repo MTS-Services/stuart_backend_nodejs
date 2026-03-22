@@ -245,6 +245,7 @@ export class AuthService {
         profile: user.profile ? {
           id: user.profile.id,
           status: user.profile.status,
+          isActive: user.profile.isActive,
           rejectionReason: user.profile.rejectionReason
         } : null,
       },

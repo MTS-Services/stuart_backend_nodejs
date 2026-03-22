@@ -174,6 +174,14 @@ async getDashboard(
     return this.adminService.rejectProfile(req.user.id, profileIdNum, reason);
   }
 
+  @Put('profiles/:profileId/toggle-active')
+  async toggleProfileActive(
+    @Param('profileId', ParseIntPipe) profileId: number,
+    @Body('isActive') isActive: boolean
+  ) {
+    return this.adminService.toggleProfileActive(profileId, isActive);
+  }
+
   @Post('profiles/unverify')
   async unverifyProfile(
     @Request() req,

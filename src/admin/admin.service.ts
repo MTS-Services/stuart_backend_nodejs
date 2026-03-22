@@ -831,6 +831,44 @@ console.log('Where Clause:', whereClause);
     };
   }
 
+  async toggleProfileActive(profileId: number, isActive: boolean) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      include: { user: true },
+    });
+
+    if (!profile) {
+      throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Update profile isActive status
+    const updatedProfile = await this.prisma.profile.update({
+      where: { id: profileId },
+      data: { isActive },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Also deactivate/activate all QR cards for this profile
+    await this.prisma.qRCard.updateMany({
+      where: { profileId },
+      data: { isActive },
+    });
+
+    return {
+      success: true,
+      message: isActive ? 'Profile activated successfully' : 'Profile deactivated successfully',
+      data: this.addStructuredImages(updatedProfile),
+    };
+  }
+
   async unverifyProfile(adminId: number, profileId: number, reason: string) {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },

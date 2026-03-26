@@ -87,6 +87,7 @@ model Profile {
   reviewedAt      DateTime?
   reviewedBy      Int?
   rejectionReason String?
+  changedFields   Json?         // Track which fields the user edited (for admin review)
   isActive        Boolean       @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

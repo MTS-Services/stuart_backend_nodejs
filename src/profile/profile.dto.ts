@@ -170,6 +170,10 @@ export class UpdateProfileDto extends PartialType(CreateProfileDto) {
     @IsOptional()
     @IsString()
     imageUpdateMode?: 'merge' | 'replace';
+
+    @IsOptional()
+    @IsString()
+    adminEdit?: string; // 'true' when admin is editing (comes as string from FormData)
 }
 
 // Photo management DTOs are simplified/removed as they are no longer needed

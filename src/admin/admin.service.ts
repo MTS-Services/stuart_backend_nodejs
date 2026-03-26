@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { ProfileStatus, UserStatus, SubscriptionStatus, SubscriptionPlan } from '@prisma/client';
+import { Prisma, ProfileStatus, UserStatus, SubscriptionStatus, SubscriptionPlan } from '@prisma/client';
 import { EmailService } from '../email/email.service';
 import { randomUUID } from 'crypto';
 
@@ -14,7 +14,14 @@ export class AdminService {
   // Helper method to add structured images field to profile
   private addStructuredImages(profile: any) {
     if (!profile) return profile;
-    
+
+    // Use the stored images JSON (set during upload) if it has the proper structure.
+    // Falling back to index-based reconstruction only when the stored field is absent.
+    const stored = profile.images as any;
+    if (stored && typeof stored === 'object' && ('face' in stored || 'fullbody' in stored || 'toothyGrin' in stored)) {
+      return profile; // already has correct structured data
+    }
+
     const allImages = profile.image || [];
     const structuredImages = {
       face: allImages.length > 0 ? allImages[0] : null,
@@ -526,6 +533,7 @@ export class AdminService {
         reviewedAt: new Date(),
         reviewedBy: adminId,
         isActive: true,
+        changedFields: Prisma.DbNull, // Clear changed fields tracking on approval
       },
     });
 
@@ -535,21 +543,27 @@ export class AdminService {
       data: { status: UserStatus.VERIFIED },
     });
 
-    // Generate 50 QR cards for the approved profile
+    // Only generate QR card if the user doesn't already have one
+    const existingCard = await this.prisma.qRCard.findFirst({
+      where: { profileId: profileId },
+    });
+
     const qrCards: any[] = [];
-    for (let i = 0; i < 1; i++) {
-      const uniqueId = randomUUID();
-      const card = await this.prisma.qRCard.create({
-        data: {
-          profileId: profileId,
-          userId: profile.userId,
-          qrCode: uniqueId,
-          scanCount: 0,
-          maxScans: 250, // ✅ Fixed: Each card allows 250 total scans from 50+ IPs (5 scans per IP)
-          isActive: true,
-        },
-      });
-      qrCards.push(card);
+    if (!existingCard) {
+      for (let i = 0; i < 1; i++) {
+        const uniqueId = randomUUID();
+        const card = await this.prisma.qRCard.create({
+          data: {
+            profileId: profileId,
+            userId: profile.userId,
+            qrCode: uniqueId,
+            scanCount: 0,
+            maxScans: 250, // ✅ Fixed: Each card allows 250 total scans from 50+ IPs (5 scans per IP)
+            isActive: true,
+          },
+        });
+        qrCards.push(card);
+      }
     }
 
     // Generate tracking number for shipping

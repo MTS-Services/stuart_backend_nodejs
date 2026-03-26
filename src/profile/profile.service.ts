@@ -2,7 +2,7 @@
 
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { ProfileStatus, UserStatus } from '@prisma/client';
+import { Prisma, ProfileStatus, UserStatus } from '@prisma/client';
 import { CreateProfileDto, UpdateProfileDto } from './profile.dto'; 
 import { ImageUploadService } from '../image-upload/image-upload.service';
 
@@ -492,7 +492,42 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       });
     }
 
-    console
+    // When an APPROVED profile is edited with substantive changes, revert to DRAFT for re-review
+    // Travel-mode-only edits (startDate, endDate, location) do NOT trigger re-pending
+    // Admin edits skip re-pending entirely
+    const isAdminEdit = updateProfileDto.adminEdit === 'true';
+    
+    if (profile.status === ProfileStatus.APPROVED && !isAdminEdit) {
+      const travelOnlyFields = new Set(['startDate', 'endDate', 'location']);
+      const substantiveKeys = Object.keys(updateData).filter(key => !travelOnlyFields.has(key));
+      
+      if (substantiveKeys.length > 0) {
+        // Track which fields the user changed for admin review
+        updateData.changedFields = substantiveKeys;
+        updateData.status = ProfileStatus.DRAFT;
+        
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { status: UserStatus.PROFILE_PENDING },
+        });
+
+        // Notify admin that a verified user edited their profile
+        await this.prisma.notification.create({
+          data: {
+            adminId: 1,
+            type: 'profile_edited',
+            title: 'Verified Profile Edited',
+            message: `Verified user ${userId} has edited their profile and requires re-review`,
+            data: { userId, profileId: profile.id, changedFields: substantiveKeys },
+          },
+        });
+      }
+    }
+
+    // Clear changedFields when admin approves or admin edits
+    if (isAdminEdit) {
+      updateData.changedFields = Prisma.DbNull;
+    }
 
     return this.prisma.profile.update({
       where: { userId },

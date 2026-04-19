@@ -8,6 +8,7 @@ export class AdminGuard extends AuthGuard('jwt') implements CanActivate {
     const result = await super.canActivate(context);
     if (!result) {
       return false;
+      
     }
 
     // Then check if the user is an admin (403 if authenticated but wrong role)

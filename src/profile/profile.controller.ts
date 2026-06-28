@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
-import { CreateProfileDto, UpdateProfileDto, SubmitProfileDto } from './profile.dto';
+import { CreateProfileDto, UpdateProfileDto, SubmitProfileDto, ReorderImagesDto } from './profile.dto';
 
 // --- File Field Configuration (UPDATED) ---
 // Support for both consolidated images and structured image uploads
@@ -440,12 +440,7 @@ export class ProfileController {
   @Put(':email/images/reorder')
   async reorderImages(
     @Param('email') email: string,
-    @Body() body: { imageOrder?: string[]; images?: {
-      face?: string;
-      fullbody?: string;
-      toothyGrin?: string;
-      extras?: { [key: string]: string };
-    } }
+    @Body() body: ReorderImagesDto,
   ) {
     try {
       const decodedEmail = decodeURIComponent(email);
@@ -454,7 +449,10 @@ export class ProfileController {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      if (!Array.isArray(body.imageOrder) && !body.images) {
+      const hasImageOrder = Array.isArray(body.imageOrder) && body.imageOrder.length > 0;
+      const hasImagesJson = Boolean(body.images);
+
+      if (!hasImageOrder && !hasImagesJson) {
         throw new HttpException('imageOrder or images must be provided', HttpStatus.BAD_REQUEST);
       }
 

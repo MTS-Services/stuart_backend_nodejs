@@ -199,6 +199,31 @@ export class SubmitProfileDto {
     email: string;
 }
 
+export class ReorderImagesDto {
+    @IsOptional()
+    @IsArray({ message: 'imageOrder must be an array' })
+    @IsString({ each: true })
+    imageOrder?: string[];
+
+    @IsOptional()
+    @Transform(({ value }) => {
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    })
+    images?: {
+        face?: string;
+        fullbody?: string;
+        toothyGrin?: string;
+        extras?: { [key: string]: string };
+    };
+}
+
 // Response DTOs
 export class ProfileResponseDto {
     id: number;

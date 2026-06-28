@@ -15,24 +15,63 @@ export class AdminService {
   private addStructuredImages(profile: any) {
     if (!profile) return profile;
 
-    // Use the stored images JSON (set during upload) if it has the proper structure.
-    // Falling back to index-based reconstruction only when the stored field is absent.
+    const allImages = profile.image || [];
     const stored = profile.images as any;
-    if (stored && typeof stored === 'object' && ('face' in stored || 'fullbody' in stored || 'toothyGrin' in stored)) {
-      return profile; // already has correct structured data
+
+    const countStructuredUrls = (json: any): number => {
+      if (!json) return 0;
+      let count = 0;
+      if (json.face) count++;
+      if (json.fullbody) count++;
+      if (json.toothyGrin) count++;
+      if (json.extras) {
+        if (Array.isArray(json.extras)) {
+          count += json.extras.filter(Boolean).length;
+        } else {
+          count += Object.values(json.extras).filter(Boolean).length;
+        }
+      }
+      return count;
+    };
+
+    const buildFromArray = (urls: string[]) => {
+      const extras: { [key: string]: string } = {};
+      urls.slice(3).forEach((url, index) => {
+        extras[(index + 1).toString()] = url;
+      });
+      return {
+        face: urls[0] || null,
+        fullbody: urls[1] || null,
+        toothyGrin: urls[2] || null,
+        extras,
+      };
+    };
+
+    let structuredImages;
+    const storedCount = countStructuredUrls(stored);
+
+    if (storedCount > 0 && storedCount >= allImages.length) {
+      structuredImages = {
+        face: stored?.face || null,
+        fullbody: stored?.fullbody || null,
+        toothyGrin: stored?.toothyGrin || null,
+        extras: stored?.extras || {},
+      };
+    } else if (allImages.length > 0) {
+      structuredImages = buildFromArray(allImages);
+    } else {
+      structuredImages = {
+        face: null,
+        fullbody: null,
+        toothyGrin: null,
+        extras: {},
+      };
     }
 
-    const allImages = profile.image || [];
-    const structuredImages = {
-      face: allImages.length > 0 ? allImages[0] : null,
-      fullbody: allImages.length > 1 ? allImages[1] : null,
-      toothyGrin: allImages.length > 2 ? allImages[2] : null,
-      extras: allImages.length > 3 ? allImages.slice(3) : []
-    };
-    
     return {
       ...profile,
-      images: structuredImages
+      images: structuredImages,
+      imageUrls: allImages,
     };
   }
 

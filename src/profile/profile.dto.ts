@@ -31,8 +31,10 @@ export class CreateProfileDto {
     email: string; // Required for email-based access
 
         @IsString()
+    @IsOptional()
+    @Transform(({ value }) => (value === '' ? undefined : value))
     @IsEmail()
-    gmail: string;
+    gmail?: string;
 
     @IsNumber()
     @Type(() => Number) // Ensure conversion from form-data string
@@ -106,9 +108,11 @@ export class CreateProfileDto {
     @MaxLength(50)
     username?: string; // USERNAME FIELD
 
+    @IsOptional()
     @IsString()
+    @Transform(({ value }) => (value === '' ? undefined : value))
     @MaxLength(20)
-    phone: string; // REQUIRED FIELD
+    phone?: string;
 
     // -------------------------------------------------------------------
     // 🔥 CONSOLIDATED IMAGE FIELD 🔥
@@ -156,6 +160,16 @@ export class UpdateProfileDto extends PartialType(CreateProfileDto) {
     // 🔥 NEW IMAGES JSON FIELD (Optional for updates) 🔥
     // -------------------------------------------------------------------
     @IsOptional()
+    @Transform(({ value }) => {
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    })
     images?: {
         face?: string;
         fullbody?: string;

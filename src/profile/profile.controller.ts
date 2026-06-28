@@ -36,6 +36,51 @@ export class ProfileController {
     // REMOVED: ImageUploadService is only needed in the ProfileService.
   ) {}
 
+  /** Normalize multipart form fields before service update (avoids DTO validation 400s). */
+  private normalizeMultipartUpdateBody(
+    body: Record<string, unknown>,
+  ): UpdateProfileDto {
+    const dto: Record<string, unknown> = { ...body };
+
+    if (typeof dto.images === 'string') {
+      try {
+        dto.images = JSON.parse(dto.images);
+      } catch {
+        delete dto.images;
+      }
+    }
+
+    for (const field of ['age', 'birthMonth', 'birthYear']) {
+      const raw = dto[field];
+      if (raw === '' || raw === undefined || raw === null) {
+        delete dto[field];
+        continue;
+      }
+      const num = Number(raw);
+      if (!Number.isNaN(num)) {
+        dto[field] = num;
+      } else {
+        delete dto[field];
+      }
+    }
+
+    for (const field of [
+      'gmail',
+      'phone',
+      'location',
+      'startDate',
+      'endDate',
+      'dealbreakers',
+      'username',
+    ]) {
+      if (dto[field] === '') {
+        dto[field] = null;
+      }
+    }
+
+    return dto as UpdateProfileDto;
+  }
+
   /**
    * Helper function to check for the presence of required files (min 3, max 13).
    * Now supports both consolidated 'image' field and structured uploads.
@@ -187,7 +232,7 @@ export class ProfileController {
   // UPDATED: Use the new FILE_FIELDS array with structured uploads
   @UseInterceptors(FileFieldsInterceptor(FILE_FIELDS)) 
   async updateProfile(
-    @Body() updateProfileDto: UpdateProfileDto,
+    @Body() body: Record<string, unknown>,
     @UploadedFiles() files: { 
       image?: Express.Multer.File[];
       face?: Express.Multer.File[];
@@ -197,6 +242,7 @@ export class ProfileController {
     } 
   ) {
     try {
+      const updateProfileDto = this.normalizeMultipartUpdateBody(body);
       return await this.profileService.updateProfileWithStructuredFiles(updateProfileDto, files);
     } catch (error) {
       if (error instanceof HttpException) {
@@ -362,11 +408,11 @@ export class ProfileController {
     }
   }
 
-  // PUT /profile/:email/images/replace (Replace all images with URL array)\n  @Put(':email/images/replace')\n  async replaceAllImages(\n    @Param('email') email: string,\n    @Body() body: { imageUrls: string[] }\n  ) {\n    try {\n      const user = await this.profileService.getUserByEmail(email);\n      if (!user) {\n        throw new HttpException('User not found', HttpStatus.NOT_FOUND);\n      }\n\n      if (!Array.isArray(body.imageUrls)) {\n        throw new HttpException('imageUrls must be an array', HttpStatus.BAD_REQUEST);\n      }\n\n      return await this.profileService.replaceAllImages(user.id, body.imageUrls);\n    } catch (error) {\n      if (error instanceof HttpException) {\n        throw error;\n      }\n      throw new HttpException(\n        `Failed to replace images: ${error.message}`,\n        HttpStatus.INTERNAL_SERVER_ERROR\n      );\n    }\n  }\n\n  // PUT /profile/:email/images/reorder (Reorder images)
-  @Put(':email/images/reorder')
-  async reorderImages(
+  // PUT /profile/:email/images/replace (Replace all images with URL array)
+  @Put(':email/images/replace')
+  async replaceAllImages(
     @Param('email') email: string,
-    @Body() body: { imageOrder: string[] }
+    @Body() body: { imageUrls: string[] }
   ) {
     try {
       const user = await this.profileService.getUserByEmail(email);
@@ -374,11 +420,47 @@ export class ProfileController {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      if (!Array.isArray(body.imageOrder)) {
-        throw new HttpException('imageOrder must be an array', HttpStatus.BAD_REQUEST);
+      if (!Array.isArray(body.imageUrls)) {
+        throw new HttpException('imageUrls must be an array', HttpStatus.BAD_REQUEST);
       }
 
-      return await this.profileService.reorderImages(user.id, body.imageOrder);
+      return await this.profileService.replaceAllImages(user.id, body.imageUrls);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to replace images: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // PUT /profile/:email/images/reorder (Reorder images)
+  @Put(':email/images/reorder')
+  async reorderImages(
+    @Param('email') email: string,
+    @Body() body: { imageOrder?: string[]; images?: {
+      face?: string;
+      fullbody?: string;
+      toothyGrin?: string;
+      extras?: { [key: string]: string };
+    } }
+  ) {
+    try {
+      const user = await this.profileService.getUserByEmail(email);
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (!Array.isArray(body.imageOrder) && !body.images) {
+        throw new HttpException('imageOrder or images must be provided', HttpStatus.BAD_REQUEST);
+      }
+
+      return await this.profileService.reorderImages(user.id, {
+        imageOrder: body.imageOrder,
+        images: body.images,
+      });
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

@@ -11,6 +11,15 @@ export class QRCardService {
     private emailService: EmailService
   ) {}
 
+  /** Public URL encoded in QR codes — must match frontend route `welcome-scan/:id`. */
+  private buildScanUrl(qrCode: string): string {
+    const base = (process.env.FRONTEND_URL || 'https://scanmemaybe.com').replace(
+      /\/$/,
+      '',
+    );
+    return `${base}/welcome-scan/${qrCode}`;
+  }
+
   async generateQRCards(userId: number, count: number = 1) {
     // Check if user has approved profile
     const user = await this.prisma.user.findUnique({
@@ -30,7 +39,7 @@ export class QRCardService {
     
     for (let i = 0; i < count; i++) {
       const uniqueId = randomUUID();
-      const qrData = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/scan/${uniqueId}`;
+      const qrData = this.buildScanUrl(uniqueId);
       
       // Generate QR code as data URL
       const qrCodeDataUrl = await QRCode.toDataURL(qrData);
@@ -276,7 +285,7 @@ export class QRCardService {
 
     return cards.map(card => ({
       ...card,
-      scanUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/scan/${card.qrCode}`,
+      scanUrl: this.buildScanUrl(card.qrCode),
     }));
   }
 
@@ -344,7 +353,7 @@ export class QRCardService {
     
     for (let i = 0; i < count; i++) {
       const uniqueId = randomUUID();
-      const qrData = `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/scan/${uniqueId}`;
+      const qrData = this.buildScanUrl(uniqueId);
       
       // Generate QR code as data URL
       const qrCodeDataUrl = await QRCode.toDataURL(qrData);
@@ -436,7 +445,7 @@ export class QRCardService {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/scan/${card.qrCode}`,
+        scanUrl: this.buildScanUrl(card.qrCode),
       })),
       user: {
         email: user.email,
@@ -472,7 +481,7 @@ export class QRCardService {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/scan/${card.qrCode}`,
+        scanUrl: this.buildScanUrl(card.qrCode),
         owner: {
           name: card.profile?.user?.name || 'Unknown',
           email: card.profile?.user?.email || 'Unknown',
@@ -522,7 +531,7 @@ export class QRCardService {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/scan/${card.qrCode}`,
+        scanUrl: this.buildScanUrl(card.qrCode),
         owner: {
           name: card.profile?.user?.name || 'Unknown',
           email: card.profile?.user?.email || 'Unknown',
@@ -564,7 +573,7 @@ export class QRCardService {
       cards: cards.map(card => ({
         ...card,
         scansRemaining: card.maxScans - card.scanCount,
-        scanUrl: `${process.env.FRONTEND_URL || 'https://scanmemaybe.com'}/scan/${card.qrCode}`,
+        scanUrl: this.buildScanUrl(card.qrCode),
         owner: {
           name: card.profile?.user?.name || 'Unknown',
           email: card.profile?.user?.email || 'Unknown',

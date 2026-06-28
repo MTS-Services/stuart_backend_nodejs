@@ -12,66 +12,86 @@ export class AdminService {
   ) {}
 
   // Helper method to add structured images field to profile
+  private buildImageArrayFromJson(imagesJson: any): string[] {
+    if (!imagesJson) return [];
+
+    const urls: string[] = [];
+    if (imagesJson.face) urls.push(imagesJson.face);
+    if (imagesJson.fullbody) urls.push(imagesJson.fullbody);
+    if (imagesJson.toothyGrin) urls.push(imagesJson.toothyGrin);
+
+    if (imagesJson.extras) {
+      if (Array.isArray(imagesJson.extras)) {
+        imagesJson.extras.forEach((url: string) => {
+          if (url) urls.push(url);
+        });
+      } else {
+        Object.entries(imagesJson.extras)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .forEach(([, url]) => {
+            if (url) urls.push(url as string);
+          });
+      }
+    }
+
+    return urls;
+  }
+
+  private resolveStructuredImages(stored: any, allImages: string[]) {
+    const hasStructured =
+      stored &&
+      (stored.face ||
+        stored.fullbody ||
+        stored.toothyGrin ||
+        (stored.extras &&
+          (Array.isArray(stored.extras)
+            ? stored.extras.length > 0
+            : Object.keys(stored.extras).length > 0)));
+
+    if (hasStructured) {
+      return {
+        face: stored.face || null,
+        fullbody: stored.fullbody || null,
+        toothyGrin: stored.toothyGrin || null,
+        extras: stored.extras || {},
+      };
+    }
+
+    if (allImages.length > 0) {
+      const extras: { [key: string]: string } = {};
+      allImages.slice(3).forEach((url, index) => {
+        extras[String(index + 1)] = url;
+      });
+      return {
+        face: allImages[0] || null,
+        fullbody: allImages[1] || null,
+        toothyGrin: allImages[2] || null,
+        extras,
+      };
+    }
+
+    return {
+      face: null,
+      fullbody: null,
+      toothyGrin: null,
+      extras: {},
+    };
+  }
+
   private addStructuredImages(profile: any) {
     if (!profile) return profile;
 
     const allImages = profile.image || [];
     const stored = profile.images as any;
-
-    const countStructuredUrls = (json: any): number => {
-      if (!json) return 0;
-      let count = 0;
-      if (json.face) count++;
-      if (json.fullbody) count++;
-      if (json.toothyGrin) count++;
-      if (json.extras) {
-        if (Array.isArray(json.extras)) {
-          count += json.extras.filter(Boolean).length;
-        } else {
-          count += Object.values(json.extras).filter(Boolean).length;
-        }
-      }
-      return count;
-    };
-
-    const buildFromArray = (urls: string[]) => {
-      const extras: { [key: string]: string } = {};
-      urls.slice(3).forEach((url, index) => {
-        extras[(index + 1).toString()] = url;
-      });
-      return {
-        face: urls[0] || null,
-        fullbody: urls[1] || null,
-        toothyGrin: urls[2] || null,
-        extras,
-      };
-    };
-
-    let structuredImages;
-    const storedCount = countStructuredUrls(stored);
-
-    if (storedCount > 0 && storedCount >= allImages.length) {
-      structuredImages = {
-        face: stored?.face || null,
-        fullbody: stored?.fullbody || null,
-        toothyGrin: stored?.toothyGrin || null,
-        extras: stored?.extras || {},
-      };
-    } else if (allImages.length > 0) {
-      structuredImages = buildFromArray(allImages);
-    } else {
-      structuredImages = {
-        face: null,
-        fullbody: null,
-        toothyGrin: null,
-        extras: {},
-      };
-    }
+    const structuredImages = this.resolveStructuredImages(stored, allImages);
+    // images JSON is canonical — derive flat array order from it when present
+    const orderedUrls = this.buildImageArrayFromJson(structuredImages);
 
     return {
       ...profile,
       images: structuredImages,
-      imageUrls: allImages,
+      image: orderedUrls.length > 0 ? orderedUrls : allImages,
+      imageUrls: orderedUrls.length > 0 ? orderedUrls : allImages,
     };
   }
 
@@ -2224,7 +2244,7 @@ console.log('Where Clause:', whereClause);
           global: [
             { key: 'userName', description: 'User\'s full name', example: 'John Doe' },
             { key: 'userEmail', description: 'User\'s email address', example: 'john@example.com' },
-            { key: 'currentYear', description: 'Current year', example: '2025' },
+            { key: 'currentYear', description: 'Current year', example: '2026' },
             { key: 'appName', description: 'Application name', example: 'QR Dating App' }
           ],
           authentication: [

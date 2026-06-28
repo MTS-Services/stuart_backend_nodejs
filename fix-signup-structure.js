@@ -13,7 +13,7 @@ async function fixNewSignupTemplateStructure() {
             "key": "currentYear",
             "label": "Current Year",
             "description": "Current year (auto-generated)",
-            "defaultValue": "2025"
+            "defaultValue": "2026"
           },
           {
             "key": "appName",

@@ -123,7 +123,7 @@ The password setup email has been completely redesigned to match modern email st
 │                                         │
 ├─────────────────────────────────────────┤
 │   If you didn't register, ignore this  │  ← Gray footer
-│   © 2025 Scan Me Maybe                 │
+│   © 2026 Scan Me Maybe                 │
 └─────────────────────────────────────────┘
 ```
 

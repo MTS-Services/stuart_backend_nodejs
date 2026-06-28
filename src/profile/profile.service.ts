@@ -533,10 +533,10 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
           );
         }
       } else if (updateData.images && typeof updateData.images === 'object') {
-        const imageUrls = this.buildImageArrayFromJson(
-          updateData.images as ImagesJson,
-        );
+        const imagesJson = updateData.images as ImagesJson;
+        const imageUrls = this.buildImageArrayFromJson(imagesJson);
         if (imageUrls.length > 0) {
+          updateData.images = imagesJson as any;
           updateData.image = imageUrls.map((url) => ({ url }));
         } else {
           delete updateData.images;

@@ -45,7 +45,7 @@ async function testEmailRendering() {
       userName: 'John Doe',
       userEmail: 'john@example.com',
       appName: 'Scan Me Maybe',
-      currentYear: '2025',
+      currentYear: '2026',
       body: 'Welcome to our platform!'
     };
     

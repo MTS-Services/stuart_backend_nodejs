@@ -221,9 +221,9 @@ export class ProfileController {
   // GET /profile/:email (Get Profile)
   // -------------------------
   @Get(':email')
-  async getProfile(@Param('email') email: string) {
-    return this.profileService.getProfileByEmail(email);
-  }
+  async getProfile(@Param('email') email: string) {
+    return this.profileService.getProfileByEmail(decodeURIComponent(email));
+  }
 
   // -------------------------
   // PUT /profile (Update Profile)
@@ -448,7 +448,8 @@ export class ProfileController {
     } }
   ) {
     try {
-      const user = await this.profileService.getUserByEmail(email);
+      const decodedEmail = decodeURIComponent(email);
+      const user = await this.profileService.getUserByEmail(decodedEmail);
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }

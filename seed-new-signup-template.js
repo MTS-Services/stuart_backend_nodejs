@@ -157,7 +157,7 @@ async function seedNewSignupTemplate() {
               "key": "currentYear",
               "label": "Current Year",
               "description": "Current year (auto-generated)",
-              "defaultValue": "2025"
+              "defaultValue": "2026"
             },
             {
               "key": "appName",
@@ -393,7 +393,7 @@ async function seedNewSignupTemplate() {
               "key": "currentYear",
               "label": "Current Year",
               "description": "Current year (auto-generated)",
-              "defaultValue": "2025"
+              "defaultValue": "2026"
             },
             {
               "key": "appName",

@@ -95,6 +95,37 @@ export class AdminService {
     };
   }
 
+  private buildRejectionHistory(
+    profile: {
+      rejectionHistory?: unknown;
+      rejectionReason?: string | null;
+      reviewedAt?: Date | null;
+      reviewedBy?: number | null;
+    },
+    reason: string,
+    adminId: number,
+  ) {
+    type RejectionEntry = { reason: string; reviewedAt: string; reviewedBy?: number };
+    let history: RejectionEntry[] = Array.isArray(profile.rejectionHistory)
+      ? (profile.rejectionHistory as RejectionEntry[])
+      : [];
+
+    if (history.length === 0 && profile.rejectionReason) {
+      history = [
+        {
+          reason: profile.rejectionReason,
+          reviewedAt: profile.reviewedAt?.toISOString() ?? new Date().toISOString(),
+          reviewedBy: profile.reviewedBy ?? undefined,
+        },
+      ];
+    }
+
+    return [
+      ...history,
+      { reason, reviewedAt: new Date().toISOString(), reviewedBy: adminId },
+    ];
+  }
+
   async getProfilesByStatus(status: ProfileStatus, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
     
@@ -685,6 +716,7 @@ export class AdminService {
     }
 
     // Update profile status
+    const rejectionHistory = this.buildRejectionHistory(profile, reason, adminId);
     const updatedProfile = await this.prisma.profile.update({
       where: { id: profileId },
       data: {
@@ -692,6 +724,7 @@ export class AdminService {
         reviewedAt: new Date(),
         reviewedBy: adminId,
         rejectionReason: reason,
+        rejectionHistory,
         isActive: false,
       },
     });
@@ -956,12 +989,16 @@ console.log('Where Clause:', whereClause);
     }
 
     // Update profile status
+    const rejectionHistory = this.buildRejectionHistory(profile, reason, adminId);
     const updatedProfile = await this.prisma.profile.update({
       where: { id: profileId },
       data: {
         status: ProfileStatus.REJECTED,
+        reviewedAt: new Date(),
+        reviewedBy: adminId,
         isActive: false,
         rejectionReason: reason,
+        rejectionHistory,
       },
     });
 

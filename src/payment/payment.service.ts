@@ -221,7 +221,7 @@ export class PaymentService {
     }
 
     // ✅ Use correct Stripe version initialization
-    this.stripe = new Stripe(stripeKey, { apiVersion: '2025-09-30.clover' });
+    this.stripe = new Stripe(stripeKey, { apiVersion: '2025-10-29.clover' });
   }
 
   /**

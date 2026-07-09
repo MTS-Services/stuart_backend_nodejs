@@ -103,23 +103,7 @@ export class ProfileController {
       );
     }
 
-    // 2. For structured uploads, check if required image types are present
-    if (face.length > 0 || fullbody.length > 0 || toothyGrin.length > 0 || extras.length > 0) {
-      // Using structured upload - validate required types
-      const missing: string[] = [];
-      if (face.length === 0) missing.push('Face');
-      if (fullbody.length === 0) missing.push('Full Body');
-      if (toothyGrin.length === 0) missing.push('Toothy Grin');
-      
-      if (missing.length > 0) {
-        throw new HttpException(
-          `Required image types missing: ${missing.join(', ')}. Please upload Face, Full Body, and Toothy Grin images.`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-
-    // 3. Check Maximum Count (max 13 total)
+    // 2. Check Maximum Count (max 13 total)
     if (totalFiles > 13) {
       throw new HttpException(
         `Maximum image limit exceeded. You uploaded ${totalFiles} images, but maximum allowed is 13.`,

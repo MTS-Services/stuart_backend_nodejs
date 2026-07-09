@@ -38,6 +38,7 @@ export class UserService {
               status: true,
               reviewedAt: true,
               rejectionReason: true,
+              rejectionHistory: true,
               isActive: true,
               createdAt: true,
               updatedAt: true,

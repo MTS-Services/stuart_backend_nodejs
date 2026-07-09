@@ -405,6 +405,13 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     throw new HttpException('Profile already exists', HttpStatus.BAD_REQUEST);
   }
 
+  if (user.status === UserStatus.PROFILE_PENDING) {
+    throw new HttpException(
+      'Cannot create profile while pending approval',
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
   // ✅ Create the profile record
   const profile = await this.prisma.profile.create({
     data: {
@@ -622,11 +629,23 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
 
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) { throw new HttpException('User not found', HttpStatus.NOT_FOUND); }
+
     const parsedImages = this.parseImagesField(updateProfileDto.images);
     if (parsedImages) {
       updateProfileDto.images = parsedImages as any;
     } else if (updateProfileDto.images !== undefined) {
       updateProfileDto.images = undefined;
+    }
+
+    const isAdminEdit = updateProfileDto.adminEdit === 'true';
+
+    if (!isAdminEdit && user.status === UserStatus.PROFILE_PENDING) {
+      throw new HttpException(
+        'Cannot edit profile while pending approval',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     
     // Prevent updates only when profile is under review, not when it's draft
@@ -689,35 +708,30 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       });
     }
 
-    // When an APPROVED profile is edited with substantive changes, revert to DRAFT for re-review
-    // Travel-mode-only edits (startDate, endDate, location) do NOT trigger re-pending
-    // Admin edits skip re-pending entirely
-    const isAdminEdit = updateProfileDto.adminEdit === 'true';
-    
-    if (profile.status === ProfileStatus.APPROVED && !isAdminEdit) {
-      const travelOnlyFields = new Set(['startDate', 'endDate', 'location']);
-      const substantiveKeys = Object.keys(updateData).filter(key => !travelOnlyFields.has(key));
-      
-      if (substantiveKeys.length > 0) {
-        // Track which fields the user changed for admin review
-        updateData.changedFields = substantiveKeys;
-        updateData.status = ProfileStatus.DRAFT;
-        
-        await this.prisma.user.update({
-          where: { id: userId },
-          data: { status: UserStatus.PROFILE_PENDING },
-        });
+    // Track which fields the user actually changed (for admin review).
+    // Runs on every non-admin edit, including DRAFT re-submits after a prior edit.
+    if (!isAdminEdit) {
+      const substantiveKeys = this.applyTrackedChangedFields(
+        profile as Record<string, unknown>,
+        updateData,
+      );
 
-        // Notify admin that a verified user edited their profile
-        await this.prisma.notification.create({
-          data: {
-            adminId: 1,
-            type: 'profile_edited',
-            title: 'Verified Profile Edited',
-            message: `Verified user ${userId} has edited their profile and requires re-review`,
-            data: { userId, profileId: profile.id, changedFields: substantiveKeys },
-          },
-        });
+      updateData.changedFields =
+        substantiveKeys.length > 0 ? substantiveKeys : Prisma.DbNull;
+
+      // A previously-approved user (profile APPROVED, or profile already reverted
+      // to DRAFT while the user is still VERIFIED) must go back to pending review.
+      const wasApproved =
+        profile.status === ProfileStatus.APPROVED ||
+        user.status === UserStatus.VERIFIED;
+
+      if (substantiveKeys.length > 0 && wasApproved) {
+        await this.applyApprovedProfileEditReview(
+          userId,
+          profile,
+          substantiveKeys,
+          updateData,
+        );
       }
     }
 
@@ -855,6 +869,180 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     });
   }
 
+  private getCurrentImageUrls(profile: { image?: string[]; images?: unknown }): string[] {
+    const fromJson = this.buildImageArrayFromJson(profile.images as ImagesJson);
+    if (fromJson.length > 0) return fromJson;
+    return profile.image || [];
+  }
+
+  private normalizeHeight(value: unknown): string | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const raw = String(value).trim().replace(/\s+/g, '');
+    const match = raw.match(/^(\d+)['′](\d+)[""″]?$/);
+    if (match) {
+      return `${match[1]}'${match[2]}"`;
+    }
+
+    return raw;
+  }
+
+  private getPrimaryLocation(record: Record<string, unknown>): string | null {
+    return this.normalizeProfileValue(
+      'county',
+      record.county ?? record.area,
+    ) as string | null;
+  }
+
+  private extractImageUrlList(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) =>
+        typeof item === 'string' ? item : (item as { url?: string })?.url,
+      )
+      .filter((url): url is string => Boolean(url));
+  }
+
+  private normalizeProfileValue(field: string, value: unknown): string | number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    if (field === 'age') {
+      return String(value);
+    }
+    if (field === 'birthMonth' || field === 'birthYear') {
+      const num = Number(value);
+      return Number.isNaN(num) ? null : num;
+    }
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    return value as string | number;
+  }
+
+  private profileValuesEqual(field: string, oldVal: unknown, newVal: unknown): boolean {
+    if (field === 'height') {
+      return this.normalizeHeight(oldVal) === this.normalizeHeight(newVal);
+    }
+
+    return this.normalizeProfileValue(field, oldVal) === this.normalizeProfileValue(field, newVal);
+  }
+
+  private imageUrlArraysEqual(a: string[], b: string[]): boolean {
+    if (a.length !== b.length) return false;
+    return a.every((url, index) => url === b[index]);
+  }
+
+  /** Compare incoming update payload to stored profile; return only fields that actually changed. */
+  private getChangedProfileFields(
+    profile: Record<string, unknown>,
+    updateData: Record<string, unknown>,
+  ): string[] {
+    const changed: string[] = [];
+
+    const scalarFields = [
+      'height',
+      'bio',
+      'location',
+      'startDate',
+      'endDate',
+      'dealbreakers',
+      'bodyType',
+      'displayName',
+      'username',
+      'email',
+      'gmail',
+      'phone',
+    ] as const;
+
+    for (const field of scalarFields) {
+      if (!(field in updateData)) continue;
+      if (!this.profileValuesEqual(field, profile[field], updateData[field])) {
+        changed.push(field);
+      }
+    }
+
+    if ('county' in updateData) {
+      const oldLocation = this.getPrimaryLocation(profile);
+      const newLocation = this.normalizeProfileValue('county', updateData.county);
+      if (oldLocation !== newLocation) {
+        changed.push('county');
+      }
+    }
+
+    const birthMonthChanged =
+      'birthMonth' in updateData &&
+      !this.profileValuesEqual('birthMonth', profile.birthMonth, updateData.birthMonth);
+    const birthYearChanged =
+      'birthYear' in updateData &&
+      !this.profileValuesEqual('birthYear', profile.birthYear, updateData.birthYear);
+    const ageChanged =
+      'age' in updateData &&
+      !this.profileValuesEqual('age', profile.age, updateData.age);
+
+    // Age is derived from birth fields in the edit form — avoid false positives when only age string is stale.
+    if (birthMonthChanged || birthYearChanged || (ageChanged && !('birthMonth' in updateData) && !('birthYear' in updateData))) {
+      changed.push('age');
+    }
+
+    if ('image' in updateData || 'images' in updateData) {
+      const currentUrls = this.getCurrentImageUrls(profile as { image?: string[]; images?: unknown });
+      const nextUrls =
+        updateData.image != null
+          ? this.extractImageUrlList(updateData.image)
+          : this.buildImageArrayFromJson(updateData.images as ImagesJson);
+
+      if (nextUrls.length > 0 && !this.imageUrlArraysEqual(currentUrls, nextUrls)) {
+        changed.push('image');
+      }
+    }
+
+    return changed;
+  }
+
+  private async applyApprovedProfileEditReview(
+    userId: number,
+    profile: { id: number; status: ProfileStatus },
+    changedFields: string[],
+    updateData: Record<string, unknown>,
+  ): Promise<void> {
+    if (changedFields.length === 0) {
+      return;
+    }
+
+    updateData.changedFields = changedFields;
+    updateData.status = ProfileStatus.DRAFT;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { status: UserStatus.PROFILE_PENDING },
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        adminId: 1,
+        type: 'profile_edited',
+        title: 'Verified Profile Edited',
+        message: `Verified user ${userId} has edited their profile and requires re-review`,
+        data: { userId, profileId: profile.id, changedFields },
+      },
+    });
+  }
+
+  private applyTrackedChangedFields(
+    profile: Record<string, unknown>,
+    updateData: Record<string, unknown>,
+  ): string[] {
+    const travelOnlyFields = new Set(['startDate', 'endDate', 'location']);
+    const changedFields = this.getChangedProfileFields(profile, updateData);
+    return changedFields.filter((key) => !travelOnlyFields.has(key));
+  }
+
   async reorderImages(
     userId: number,
     payload: { imageOrder?: string[]; images?: ImagesJson },
@@ -862,14 +1050,29 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
 
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) { throw new HttpException('User not found', HttpStatus.NOT_FOUND); }
+
+    if (profile.status === ProfileStatus.PENDING_REVIEW) {
+      throw new HttpException(
+        'Cannot edit profile while pending approval',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     let imagesJson: ImagesJson;
     let imageArray: string[];
 
-    if (payload.images) {
-      imagesJson = payload.images;
-      imageArray = this.buildImageArrayFromJson(imagesJson);
+    const imagesFromPayload = payload.images
+      ? this.buildImageArrayFromJson(payload.images)
+      : [];
+
+    if (imagesFromPayload.length > 0) {
+      imagesJson = payload.images!;
+      imageArray = imagesFromPayload;
     } else if (payload.imageOrder) {
-      const currentImages = profile.image || [];
+      const currentImages = this.getCurrentImageUrls(profile);
+      const currentSet = new Set(currentImages);
 
       if (payload.imageOrder.length !== currentImages.length) {
         throw new HttpException(
@@ -878,12 +1081,18 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
         );
       }
 
-      const missingUrls = payload.imageOrder.filter(
-        (url) => !currentImages.includes(url),
-      );
+      const missingUrls = payload.imageOrder.filter((url) => !currentSet.has(url));
       if (missingUrls.length > 0) {
         throw new HttpException(
           'New image order contains URLs not found in current images.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const extraUrls = currentImages.filter((url) => !payload.imageOrder!.includes(url));
+      if (extraUrls.length > 0) {
+        throw new HttpException(
+          'New image order must include all current images.',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -897,12 +1106,34 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
       );
     }
 
+    const currentUrls = this.getCurrentImageUrls(profile);
+    const imagesChanged = !this.imageUrlArraysEqual(currentUrls, imageArray);
+
+    const updatePayload: Record<string, unknown> = {
+      image: imageArray,
+      images: imagesJson as any,
+    };
+
+    if (imagesChanged) {
+      const wasApproved =
+        profile.status === ProfileStatus.APPROVED ||
+        user.status === UserStatus.VERIFIED;
+
+      if (wasApproved) {
+        await this.applyApprovedProfileEditReview(
+          userId,
+          profile,
+          ['image'],
+          updatePayload,
+        );
+      } else {
+        updatePayload.changedFields = ['image'];
+      }
+    }
+
     return this.prisma.profile.update({
       where: { userId },
-      data: {
-        image: imageArray,
-        images: imagesJson as any,
-      },
+      data: updatePayload,
     });
   }
 
@@ -1085,6 +1316,13 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
 
     await this.prisma.profile.delete({ where: { userId: user.id } });
+
+    // Reset user so they can run the full profile setup workflow again
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { status: UserStatus.PAID_SETUP },
+    });
+
     return { message: 'Profile deleted successfully' };
   }
 

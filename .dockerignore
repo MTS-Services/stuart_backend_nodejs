@@ -85,6 +85,7 @@ docs/
 # Testing
 test/
 coverage/
+test-*.js
 
 # Prisma
 prisma/migrations/

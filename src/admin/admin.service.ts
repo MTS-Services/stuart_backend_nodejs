@@ -1479,6 +1479,7 @@ console.log('Where Clause:', whereClause);
 
     return {
       ...safeUser,
+      profile: user.profile ? this.addStructuredImages(user.profile) : null,
       payments: userPayments
     };
   }

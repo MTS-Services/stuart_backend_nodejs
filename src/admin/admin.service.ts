@@ -1411,8 +1411,12 @@ console.log('Where Clause:', whereClause);
         paidSetupFee: true,
         profile: {
           select: {
+            id: true,
             status: true,
+            displayName: true,
             createdAt: true,
+            rejectionReason: true,
+            isActive: true,
           }
         }
       },
@@ -1471,8 +1475,10 @@ console.log('Where Clause:', whereClause);
       orderBy: { createdAt: 'desc' }
     });
 
+    const { password: _password, ...safeUser } = user;
+
     return {
-      ...user,
+      ...safeUser,
       payments: userPayments
     };
   }

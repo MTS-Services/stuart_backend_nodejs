@@ -20,9 +20,17 @@ export class ImageUploadController {
       throw new BadRequestException('File upload failed. The uploaded file is corrupted or incomplete. Please try again.');
     }
 
-    // Validate file type
-    if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException(`Invalid file type: ${file.mimetype}. Only image files (JPEG, PNG, GIF, WebP, HEIF, HEIC) are allowed.`);
+    // Validate file type (Windows often sends empty/octet-stream for HEIC)
+    const mime = (file.mimetype || '').toLowerCase();
+    const name = (file.originalname || '').toLowerCase();
+    const isImageMime = mime.startsWith('image/');
+    const isHeicByExt = name.endsWith('.heic') || name.endsWith('.heif');
+    const isOctetStreamHeic =
+      (mime === 'application/octet-stream' || !mime) && isHeicByExt;
+    if (!isImageMime && !isOctetStreamHeic) {
+      throw new BadRequestException(
+        `Invalid file type: ${file.mimetype || 'unknown'}. Only image files (JPEG, PNG, GIF, WebP, HEIF, HEIC) are allowed.`,
+      );
     }
 
     // Validate file size (optional - add max size check)
@@ -45,8 +53,16 @@ export class ImageUploadController {
       throw new BadRequestException('One or more files were uploaded but missing temporary path. Upload may have failed.');
     }
 
-    // Validate all files are images
-    const nonImageFiles = files.filter(file => !file.mimetype.startsWith('image/'));
+    // Validate all files are images (allow HEIC with empty/octet-stream mime)
+    const nonImageFiles = files.filter((file) => {
+      const mime = (file.mimetype || '').toLowerCase();
+      const name = (file.originalname || '').toLowerCase();
+      const isHeicByExt = name.endsWith('.heic') || name.endsWith('.heif');
+      return !(
+        mime.startsWith('image/') ||
+        ((mime === 'application/octet-stream' || !mime) && isHeicByExt)
+      );
+    });
     if (nonImageFiles.length > 0) {
       throw new BadRequestException('Only image files are allowed');
     }

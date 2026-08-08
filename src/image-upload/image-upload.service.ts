@@ -7,6 +7,9 @@ import {
 import { promises as fs } from 'fs';
 import { extname } from 'path';
 import { randomUUID } from 'crypto';
+// heic-convert is CommonJS
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const convert = require('heic-convert');
 
 @Injectable()
 export class ImageUploadService {
@@ -68,17 +71,64 @@ export class ImageUploadService {
     throw new Error('File object is missing both buffer and path.');
   }
 
-  private buildObjectKey(originalName: string): string {
-    const extension = extname(originalName || '').toLowerCase() || '.bin';
-    const safeBase = (originalName || 'file')
-      .replace(extname(originalName || ''), '')
-      .replace(/[^a-zA-Z0-9_-]/g, '')
-      .slice(0, 40) || 'file';
+  private isHeicFile(file: Express.Multer.File): boolean {
+    const mime = (file.mimetype || '').toLowerCase();
+    const name = (file.originalname || '').toLowerCase();
+    return (
+      mime === 'image/heic' ||
+      mime === 'image/heif' ||
+      mime.includes('heic') ||
+      mime.includes('heif') ||
+      name.endsWith('.heic') ||
+      name.endsWith('.heif')
+    );
+  }
+
+  private buildObjectKey(originalName: string, forceExt?: string): string {
+    const extension =
+      forceExt || extname(originalName || '').toLowerCase() || '.bin';
+    const safeBase =
+      (originalName || 'file')
+        .replace(extname(originalName || ''), '')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 40) || 'file';
     return `uploads/${Date.now()}-${randomUUID().slice(0, 8)}-${safeBase}${extension}`;
   }
 
   private getPublicObjectUrl(key: string): string {
     return `${this.publicUrl}/${key}`;
+  }
+
+  private async prepareUploadBuffer(
+    file: Express.Multer.File,
+  ): Promise<{ body: Buffer; contentType: string; key: string }> {
+    let body = await this.getFileBuffer(file);
+    let contentType = file.mimetype || 'application/octet-stream';
+    let key = this.buildObjectKey(file.originalname);
+
+    if (this.isHeicFile(file)) {
+      try {
+        console.log(`[R2] Converting HEIC/HEIF to JPEG: ${file.originalname}`);
+        const jpegBuffer = await convert({
+          buffer: body,
+          format: 'JPEG',
+          quality: 0.9,
+        });
+        body = Buffer.from(jpegBuffer);
+        contentType = 'image/jpeg';
+        key = this.buildObjectKey(file.originalname, '.jpg');
+      } catch (error) {
+        console.error(
+          `[R2] HEIC conversion failed for ${file.originalname}:`,
+          error.message,
+        );
+        throw new Error(
+          `Failed to convert HEIC/HEIF image "${file.originalname}". Please export as JPG/PNG and try again.`,
+        );
+      }
+    }
+
+    return { body, contentType, key };
   }
 
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {
@@ -100,15 +150,14 @@ export class ImageUploadService {
     }
 
     try {
-      const body = await this.getFileBuffer(file);
-      const key = this.buildObjectKey(file.originalname);
+      const { body, contentType, key } = await this.prepareUploadBuffer(file);
 
       await this.s3.send(
         new PutObjectCommand({
           Bucket: this.bucket,
           Key: key,
           Body: body,
-          ContentType: file.mimetype || 'application/octet-stream',
+          ContentType: contentType,
         }),
       );
 
@@ -118,6 +167,8 @@ export class ImageUploadService {
         message: error.message,
         name: error.name,
         bucket: this.bucket,
+        file: file.originalname,
+        mimetype: file.mimetype,
       });
       throw new HttpException(
         `Image upload failed: ${error.message}`,

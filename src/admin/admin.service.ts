@@ -1430,7 +1430,8 @@ console.log('Where Clause:', whereClause);
     });
 
     // Stats are optional — don't fail the whole users list if dashboard stats error
-    let stats = null;
+    let stats: Awaited<ReturnType<AdminService['getDashboardStats']>> | null =
+      null;
     try {
       stats = await this.getDashboardStats();
     } catch (error) {

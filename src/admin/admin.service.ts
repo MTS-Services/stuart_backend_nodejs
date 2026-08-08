@@ -1429,8 +1429,13 @@ console.log('Where Clause:', whereClause);
       where: whereClause,
     });
 
-    // Get summary stats
-    const stats = await this.getDashboardStats();
+    // Stats are optional — don't fail the whole users list if dashboard stats error
+    let stats = null;
+    try {
+      stats = await this.getDashboardStats();
+    } catch (error) {
+      console.error('getAllUsers: failed to load dashboard stats', error.message);
+    }
 
     return {
       users,

@@ -29,7 +29,6 @@ async function bootstrap() {
     ? [
         process.env.FRONTEND_URL,
         `https://admin.${process.env.FRONTEND_URL?.replace('https://', '')}`,
-        process.env.IMAGE_UPLOAD_SERVICE_URL, // Allow image upload service
       ].filter((url): url is string => Boolean(url))
     : true; // Allow all origins in development
 

@@ -1,159 +1,186 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import axios from 'axios';
-import FormData from 'form-data';
-import { createReadStream, promises as fs } from 'fs';
-import { join } from 'path';
-import { Readable } from 'stream';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
+import { promises as fs } from 'fs';
+import { extname } from 'path';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class ImageUploadService {
-  private readonly uploadServiceUrl: string;
+  private readonly s3: S3Client;
+  private readonly bucket: string;
+  private readonly publicUrl: string;
 
   constructor() {
-    const serviceUrl = process.env.IMAGE_UPLOAD_SERVICE_URL;
-    if (!serviceUrl) {
-      console.warn('⚠️ IMAGE_UPLOAD_SERVICE_URL not configured in .env');
+    const accountId = process.env.R2_ACCOUNT_ID;
+    const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+    const endpoint =
+      process.env.R2_ENDPOINT ||
+      (accountId
+        ? `https://${accountId}.r2.cloudflarestorage.com`
+        : undefined);
+
+    this.bucket = process.env.R2_BUCKET || 'scanmemaybe';
+    this.publicUrl = (
+      process.env.R2_PUBLIC_URL ||
+      'https://pub-fb4b624d2ae84e94ae04587cbe0dfc94.r2.dev'
+    ).replace(/\/$/, '');
+
+    if (!accessKeyId || !secretAccessKey || !endpoint) {
+      console.warn(
+        '⚠️ R2 credentials not fully configured. Set R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_ENDPOINT (or R2_ACCOUNT_ID).',
+      );
     }
-    this.uploadServiceUrl = serviceUrl || 'https://img.mtscorporate.com';
+
+    this.s3 = new S3Client({
+      region: 'auto',
+      endpoint,
+      credentials: {
+        accessKeyId: accessKeyId || '',
+        secretAccessKey: secretAccessKey || '',
+      },
+    });
   }
 
-  // Helper function to delete the temporary file
   private async cleanupTempFile(filePath: string) {
-    if (filePath) {
-      try {
-        await fs.unlink(filePath);
-      } catch (e) {
-        console.error(`Failed to delete temporary file at ${filePath}:`, e.message);
-        // Do not throw, cleanup is secondary to the main request logic
-      }
+    if (!filePath) return;
+    try {
+      await fs.unlink(filePath);
+    } catch (e) {
+      console.error(
+        `Failed to delete temporary file at ${filePath}:`,
+        e.message,
+      );
     }
   }
 
-  // Helper function to ensure URL is HTTP (not HTTPS) to avoid SSL certificate issues
-  private ensureHttpUrl(url: string): string {
-    if (!url) return url;
-    
-    // If URL starts with https://, replace with http://
-    if (url.startsWith('https://')) {
-      const httpUrl = url.replace('https://', 'http://');
-      console.log(`[Image Upload] Converted HTTPS to HTTP: ${httpUrl}`);
-      return httpUrl;
+  private async getFileBuffer(file: Express.Multer.File): Promise<Buffer> {
+    if (file.buffer) {
+      return file.buffer;
     }
-    
-    // If already HTTP or relative URL, return as is
-    return url;
+    if (file.path) {
+      return fs.readFile(file.path);
+    }
+    throw new Error('File object is missing both buffer and path.');
+  }
+
+  private buildObjectKey(originalName: string): string {
+    const extension = extname(originalName || '').toLowerCase() || '.bin';
+    const safeBase = (originalName || 'file')
+      .replace(extname(originalName || ''), '')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 40) || 'file';
+    return `uploads/${Date.now()}-${randomUUID().slice(0, 8)}-${safeBase}${extension}`;
+  }
+
+  private getPublicObjectUrl(key: string): string {
+    return `${this.publicUrl}/${key}`;
   }
 
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {
-    // 🛑 CRITICAL FIX: Handle both memory storage (buffer) and disk storage (path)
     if (!file) {
       throw new Error('No file provided');
     }
 
-    // Check if we have either buffer (memory storage) or path (disk storage)
     if (!file.buffer && !file.path) {
-      throw new Error('File object is missing both buffer and path. Upload may have failed.');
+      throw new Error(
+        'File object is missing both buffer and path. Upload may have failed.',
+      );
     }
 
-    let result;
+    if (!process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+      throw new HttpException(
+        'R2 storage is not configured',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
     try {
-      if (!this.uploadServiceUrl) {
-        throw new HttpException(
-          'Image upload service URL not configured',
-          HttpStatus.INTERNAL_SERVER_ERROR
-        );
-      }
+      const body = await this.getFileBuffer(file);
+      const key = this.buildObjectKey(file.originalname);
 
-      const formData = new FormData();
-      
-      // Handle both memory storage (buffer) and disk storage (path)
-      if (file.buffer) {
-        // Memory storage - create stream from buffer
-        const stream = Readable.from(file.buffer);
-        formData.append('image', stream, {
-          filename: file.originalname,
-          contentType: file.mimetype,
-          knownLength: file.size,
-        });
-      } else if (file.path) {
-        // Disk storage - create stream from file path
-        const stream = createReadStream(file.path);
-        formData.append('image', stream, {
-          filename: file.originalname,
-          contentType: file.mimetype,
-        });
-      }
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: body,
+          ContentType: file.mimetype || 'application/octet-stream',
+        }),
+      );
 
-      const response = await axios.post(`${this.uploadServiceUrl}/upload-single`, formData, {
-        headers: {
-          ...formData.getHeaders(),
-        },
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-      });
-
-      if (response.data && response.data.url) {
-        // Ensure URL is HTTP (not HTTPS) to avoid certificate issues
-        const imageUrl = this.ensureHttpUrl(response.data.url);
-        result = { url: imageUrl };
-        return result;
-      } else if (response.data && response.data.file && response.data.file.url) {
-        // Handle the structure from your Express.js service: { file: { url: "..." } }
-        // Ensure URL is HTTP (not HTTPS) to avoid certificate issues
-        const imageUrl = this.ensureHttpUrl(response.data.file.url);
-        result = { url: imageUrl };
-        return result;
-      } else {
-        console.error('Upload response:', response.data);
-        throw new Error('Invalid response from upload service');
-      }
+      return { url: this.getPublicObjectUrl(key) };
     } catch (error) {
-      console.error('Image upload failed:', {
+      console.error('R2 image upload failed:', {
         message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        url: `${this.uploadServiceUrl}/upload-single`
+        name: error.name,
+        bucket: this.bucket,
       });
       throw new HttpException(
-        `Image upload failed: ${error.response?.data?.message || error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        `Image upload failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     } finally {
-      // ✅ CRITICAL FIX: Clean up the temporary file only if using disk storage
       if (file.path) {
-        await this.cleanupTempFile(file.path); 
+        await this.cleanupTempFile(file.path);
       }
     }
   }
 
-  async uploadMultipleImages(files: Express.Multer.File[]): Promise<{ urls: string[] }> {
-    // Filter out any potential null/undefined entries and validate files
-    const validFiles = files ? files.filter(file => {
-      if (!file) return false;
-      // Check if we have either buffer (memory storage) or path (disk storage)
-      return file.buffer || file.path;
-    }) : [];
+  async deleteImage(urlOrKey: string): Promise<boolean> {
+    if (!urlOrKey) return false;
+
+    try {
+      const key = urlOrKey.startsWith('http')
+        ? urlOrKey.replace(`${this.publicUrl}/`, '')
+        : urlOrKey;
+
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+      return true;
+    } catch (error) {
+      console.error('R2 image delete failed:', error.message);
+      return false;
+    }
+  }
+
+  async uploadMultipleImages(
+    files: Express.Multer.File[],
+  ): Promise<{ urls: string[] }> {
+    const validFiles = files
+      ? files.filter((file) => file && (file.buffer || file.path))
+      : [];
 
     if (validFiles.length === 0) {
       return { urls: [] };
     }
-    
-    // Use Promise.allSettled to ensure all cleanup runs even if one upload fails
-    const uploadPromises = validFiles.map(file => this.uploadImage(file));
-    const results = await Promise.allSettled(uploadPromises);
-    
-    // Check for failures and collect successful URLs
-    const failedUploads = results.filter(r => r.status === 'rejected');
+
+    const results = await Promise.allSettled(
+      validFiles.map((file) => this.uploadImage(file)),
+    );
+
+    const failedUploads = results.filter((r) => r.status === 'rejected');
     if (failedUploads.length > 0) {
-        const errorMessages = failedUploads.map(r => (r as PromiseRejectedResult).reason.message).join('; ');
-        throw new HttpException(
-            `One or more uploads failed: ${errorMessages}`,
-            HttpStatus.INTERNAL_SERVER_ERROR
-        );
+      const errorMessages = failedUploads
+        .map((r) => (r as PromiseRejectedResult).reason.message)
+        .join('; ');
+      throw new HttpException(
+        `One or more uploads failed: ${errorMessages}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     return {
-      urls: (results as PromiseFulfilledResult<any>[]).map(result => result.value.url)
+      urls: (
+        results as PromiseFulfilledResult<{ url: string }>[]
+      ).map((result) => result.value.url),
     };
   }
 }

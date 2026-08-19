@@ -99,6 +99,22 @@ export class ImageUploadService {
     return `${this.publicUrl}/${key}`;
   }
 
+  /** True when the URL is a live Cloudflare R2 object (post-migration). */
+  isHostedUrl(url: string | null | undefined): boolean {
+    if (!url || typeof url !== 'string') return false;
+    try {
+      const parsed = new URL(url);
+      const publicHost = new URL(this.publicUrl).host;
+      return (
+        parsed.host === publicHost ||
+        parsed.host.endsWith('.r2.dev') ||
+        parsed.host.endsWith('.r2.cloudflarestorage.com')
+      );
+    } catch {
+      return false;
+    }
+  }
+
   private async prepareUploadBuffer(
     file: Express.Multer.File,
   ): Promise<{ body: Buffer; contentType: string; key: string }> {

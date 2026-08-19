@@ -36,8 +36,9 @@ export class ProfileService {
     
     const missingFields = requiredFields.filter(field => !profile[field]);
 
-    // Check minimum image requirement (min 3)
-    if (!profile.image || profile.image.length < 3) {
+    // Check minimum image requirement (min 3 live R2 photos — ignore stale local URLs)
+    const usableImages = this.getUsableImageUrls(profile);
+    if (usableImages.length < 3) {
         missingFields.push('image (minimum 3 required)');
     }
     
@@ -503,14 +504,26 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
         // Check update mode (default is 'merge')
         const updateMode = updateData.imageUpdateMode || 'merge';
 
-        // Use client-provided images JSON as base when present (preserves reorder)
-        let baseImagesJson: ImagesJson =
+        // Use client-provided images JSON as base when present (preserves reorder).
+        // Always drop stale pre-R2 URLs so they cannot occupy required slots.
+        const clientImagesJson =
           updateData.images && typeof updateData.images === 'object'
             ? (updateData.images as ImagesJson)
-            : (existingProfile.images as ImagesJson) || {};
+            : undefined;
+        const clientUsable = clientImagesJson
+          ? this.sanitizeImagesJson(clientImagesJson)
+          : this.buildJsonFromImageArray([]);
+        const existingUsable = this.buildJsonFromImageArray(
+          this.getUsableImageUrls(existingProfile),
+        );
+        const clientHasUsable =
+          this.buildImageArrayFromJson(clientUsable).length > 0;
+        const baseImagesJson: ImagesJson = clientHasUsable
+          ? clientUsable
+          : existingUsable;
         
         if (updateMode === 'replace') {
-          const mergedImagesJson = uploadResult.imagesJson;
+          const mergedImagesJson = this.sanitizeImagesJson(uploadResult.imagesJson);
           updateData.image = this.buildImageArrayFromJson(mergedImagesJson).map(
             (url) => ({ url }),
           );
@@ -519,9 +532,8 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
             `🔄 Structured image replace: Using ${uploadResult.imageUrls.length} new images`,
           );
         } else {
-          const mergedImagesJson = this.mergeStructuredUpload(
-            baseImagesJson,
-            uploadResult,
+          const mergedImagesJson = this.sanitizeImagesJson(
+            this.mergeStructuredUpload(baseImagesJson, uploadResult),
           );
           const allImageUrls = this.buildImageArrayFromJson(mergedImagesJson);
 
@@ -540,13 +552,21 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
           );
         }
       } else if (updateData.images && typeof updateData.images === 'object') {
-        const imagesJson = updateData.images as ImagesJson;
-        const imageUrls = this.buildImageArrayFromJson(imagesJson);
-        if (imageUrls.length > 0) {
-          updateData.images = imagesJson as any;
-          updateData.image = imageUrls.map((url) => ({ url }));
+        const clientSanitized = this.sanitizeImagesJson(
+          updateData.images as ImagesJson,
+        );
+        const clientUrls = this.buildImageArrayFromJson(clientSanitized);
+        const existingUsable = this.getUsableImageUrls(existingProfile);
+
+        // Persist client's remaining live photos (stale local URLs are dropped).
+        // If the client sent an empty payload but live R2 photos still exist,
+        // keep those so an accidental empty JSON cannot wipe the gallery.
+        if (clientUrls.length > 0 || existingUsable.length === 0) {
+          updateData.images = clientSanitized as any;
+          updateData.image = clientUrls.map((url) => ({ url }));
         } else {
-          delete updateData.images;
+          updateData.images = this.buildJsonFromImageArray(existingUsable) as any;
+          updateData.image = existingUsable.map((url) => ({ url }));
         }
       }
       
@@ -591,8 +611,10 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
           updateData.image = uploadedImageReferences;
           console.log(`🔄 Image replace: Using ${uploadedImageReferences.length} new images (replacing all existing)`);
         } else {
-          // Merge mode: add new images to existing ones
-          const existingImages = existingProfile.image || [];
+          // Merge mode: add new images to existing live R2 photos only
+          const existingImages = (existingProfile.image || []).filter((url) =>
+            this.imageUploadService.isHostedUrl(url),
+          );
           
           // Check total image limit (3 required + up to 10 optional = 13 max)
           const totalImages = existingImages.length + uploadedImageReferences.length;
@@ -685,14 +707,16 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
         updateData.image = updateProfileDto.image.map(img => img.url);
     }
     
-    // Handle new images JSON field — keep image[] in sync
+    // Handle new images JSON field — keep image[] in sync, drop stale local URLs
     if (updateProfileDto.images !== undefined) {
-        const imageUrls = this.buildImageArrayFromJson(
+        const sanitized = this.sanitizeImagesJson(
           updateProfileDto.images as ImagesJson,
         );
-        // Never wipe photos when client sends an empty images payload
-        if (imageUrls.length > 0) {
-          updateData.images = updateProfileDto.images as any;
+        const imageUrls = this.buildImageArrayFromJson(sanitized);
+        const existingUsable = this.getUsableImageUrls(profile);
+
+        if (imageUrls.length > 0 || existingUsable.length === 0) {
+          updateData.images = sanitized as any;
           updateData.image = imageUrls;
         }
     }
@@ -773,49 +797,22 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
     
-    const currentImages = profile.image || [];
+    const currentImages = this.getCurrentImageUrls(profile);
+    const flatArray = profile.image || [];
 
-    if (!currentImages.includes(photoUrl)) {
+    if (!currentImages.includes(photoUrl) && !flatArray.includes(photoUrl)) {
       throw new HttpException('Photo URL not found in profile images.', HttpStatus.NOT_FOUND);
     }
 
-    let updatedImagesJson = (profile.images as ImagesJson) || {
-      face: null,
-      fullbody: null,
-      toothyGrin: null,
-      extras: {},
-    };
+    const remaining = currentImages.filter((url) => url !== photoUrl);
+    this.assertCanRemovePhoto(photoUrl, remaining);
 
-    if (updatedImagesJson.face === photoUrl) {
-      updatedImagesJson.face = null;
-    }
-    if (updatedImagesJson.fullbody === photoUrl) {
-      updatedImagesJson.fullbody = null;
-    }
-    if (updatedImagesJson.toothyGrin === photoUrl) {
-      updatedImagesJson.toothyGrin = null;
-    }
-    if (updatedImagesJson.extras && !Array.isArray(updatedImagesJson.extras)) {
-      Object.keys(updatedImagesJson.extras).forEach((key) => {
-        if (updatedImagesJson.extras![key] === photoUrl) {
-          delete updatedImagesJson.extras![key];
-        }
-      });
-    }
-
-    const syncedImages = this.buildImageArrayFromJson(updatedImagesJson);
-
-    if (syncedImages.length < 3) {
-      throw new HttpException(
-        'Cannot delete photo: minimum of 3 images required to maintain profile completeness.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const updatedImagesJson = this.buildJsonFromImageArray(remaining);
 
     return this.prisma.profile.update({
       where: { userId },
       data: {
-        image: syncedImages,
+        image: remaining,
         images: updatedImagesJson,
       },
     });
@@ -825,54 +822,60 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
     
-    const currentImages = profile.image || []; 
+    const currentImages = this.getCurrentImageUrls(profile);
     
     if (imageIndex < 0 || imageIndex >= currentImages.length) {
         throw new HttpException('Invalid image index.', HttpStatus.BAD_REQUEST);
     }
-    
-    // if (currentImages.length <= 3) {
-    //     throw new HttpException('Cannot delete photo: minimum of 3 images required.', HttpStatus.BAD_REQUEST);
-    // }
 
     const photoToDelete = currentImages[imageIndex];
+    const remaining = currentImages.filter((_, idx) => idx !== imageIndex);
+    this.assertCanRemovePhoto(photoToDelete, remaining);
 
-    // Also clean up the images JSON field if the deleted photo is referenced there
-    let updatedImagesJson = profile.images as ImagesJson;
-    if (updatedImagesJson && photoToDelete) {
-      if (updatedImagesJson.face === photoToDelete) {
-        updatedImagesJson.face = null;
-      }
-      if (updatedImagesJson.fullbody === photoToDelete) {
-        updatedImagesJson.fullbody = null;
-      }
-      if (updatedImagesJson.toothyGrin === photoToDelete) {
-        updatedImagesJson.toothyGrin = null;
-      }
-      if (updatedImagesJson.extras && !Array.isArray(updatedImagesJson.extras)) {
-        Object.keys(updatedImagesJson.extras).forEach((key) => {
-          if (updatedImagesJson.extras![key] === photoToDelete) {
-            delete updatedImagesJson.extras![key];
-          }
-        });
-      }
-    }
-
-    const syncedImages = this.buildImageArrayFromJson(updatedImagesJson);
+    const updatedImagesJson = this.buildJsonFromImageArray(remaining);
 
     return this.prisma.profile.update({
       where: { userId },
       data: {
-        image: syncedImages,
+        image: remaining,
         images: updatedImagesJson,
       },
     });
+  }
+
+  /** Min-3 applies only to live R2 photos, so stale local records can be cleared. */
+  private assertCanRemovePhoto(photoUrl: string, remainingUrls: string[]) {
+    const remainingUsable = remainingUrls.filter((url) =>
+      this.imageUploadService.isHostedUrl(url),
+    );
+    const deletingUsable = this.imageUploadService.isHostedUrl(photoUrl);
+
+    if (deletingUsable && remainingUsable.length < 3) {
+      throw new HttpException(
+        'Cannot delete photo: minimum of 3 images required to maintain profile completeness.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   private getCurrentImageUrls(profile: { image?: string[]; images?: unknown }): string[] {
     const fromJson = this.buildImageArrayFromJson(profile.images as ImagesJson);
     if (fromJson.length > 0) return fromJson;
     return profile.image || [];
+  }
+
+  private getUsableImageUrls(profile: { image?: string[]; images?: unknown }): string[] {
+    return this.getCurrentImageUrls(profile).filter((url) =>
+      this.imageUploadService.isHostedUrl(url),
+    );
+  }
+
+  /** Drop pre-R2 / local-server URLs and compact remaining photos into canonical slots. */
+  private sanitizeImagesJson(imagesJson: ImagesJson | null | undefined): ImagesJson {
+    const usable = this.buildImageArrayFromJson(imagesJson).filter((url) =>
+      this.imageUploadService.isHostedUrl(url),
+    );
+    return this.buildJsonFromImageArray(usable);
   }
 
   private normalizeHeight(value: unknown): string | null {

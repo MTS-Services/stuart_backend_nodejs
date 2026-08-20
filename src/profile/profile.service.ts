@@ -1318,13 +1318,21 @@ async createProfile(userId: number, createProfileDto: CreateProfileDto) {
     const profile = await this.prisma.profile.findUnique({ where: { userId: user.id } });
     if (!profile) { throw new HttpException('Profile not found', HttpStatus.NOT_FOUND); }
 
-    await this.prisma.profile.delete({ where: { userId: user.id } });
-
-    // Reset user so they can run the full profile setup workflow again
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { status: UserStatus.PAID_SETUP },
-    });
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.qRCard.deleteMany({ where: { profileId: profile.id } });
+        await tx.profile.delete({ where: { userId: user.id } });
+        await tx.user.update({
+          where: { id: user.id },
+          data: { status: UserStatus.PAID_SETUP, isApproved: false },
+        });
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to delete profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
 
     return { message: 'Profile deleted successfully' };
   }

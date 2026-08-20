@@ -947,10 +947,12 @@ console.log('Where Clause:', whereClause);
       throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
     }
 
+    const active = isActive === true;
+
     // Update profile isActive status
     const updatedProfile = await this.prisma.profile.update({
       where: { id: profileId },
-      data: { isActive },
+      data: { isActive: active },
       include: {
         user: {
           select: {
@@ -965,13 +967,59 @@ console.log('Where Clause:', whereClause);
     // Also deactivate/activate all QR cards for this profile
     await this.prisma.qRCard.updateMany({
       where: { profileId },
-      data: { isActive },
+      data: { isActive: active },
     });
 
     return {
       success: true,
-      message: isActive ? 'Profile activated successfully' : 'Profile deactivated successfully',
+      message: active ? 'Profile activated successfully' : 'Profile deactivated successfully',
       data: this.addStructuredImages(updatedProfile),
+    };
+  }
+
+  async deleteProfileById(profileId: number) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      include: { user: true },
+    });
+
+    if (!profile) {
+      throw new HttpException('Profile not found', HttpStatus.NOT_FOUND);
+    }
+
+    const userId = profile.userId;
+    const userEmail = profile.user?.email || profile.email;
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // QR cards cascade from profile, but clear explicitly for safety
+        await tx.qRCard.deleteMany({ where: { profileId } });
+        await tx.profile.delete({ where: { id: profileId } });
+
+        // Reset user so they can run profile setup again (account retained)
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            status: UserStatus.PAID_SETUP,
+            isApproved: false,
+          },
+        });
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to delete profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      success: true,
+      message: 'Profile deleted successfully',
+      data: {
+        profileId,
+        userId,
+        email: userEmail,
+      },
     };
   }
 

@@ -177,9 +177,18 @@ async getDashboard(
   @Put('profiles/:profileId/toggle-active')
   async toggleProfileActive(
     @Param('profileId', ParseIntPipe) profileId: number,
-    @Body('isActive') isActive: boolean
+    @Body('isActive') isActive: boolean | string
   ) {
-    return this.adminService.toggleProfileActive(profileId, isActive);
+    const active =
+      isActive === true || isActive === 'true' || isActive === '1';
+    return this.adminService.toggleProfileActive(profileId, active);
+  }
+
+  @Delete('profiles/:profileId')
+  async deleteProfile(
+    @Param('profileId', ParseIntPipe) profileId: number,
+  ) {
+    return this.adminService.deleteProfileById(profileId);
   }
 
   @Post('profiles/unverify')

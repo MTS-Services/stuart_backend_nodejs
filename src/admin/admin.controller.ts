@@ -330,6 +330,11 @@ async getDashboard(
     return this.adminService.getUserById(userId);
   }
 
+  @Delete('users/:userId')
+  async deleteUser(@Param('userId', ParseIntPipe) userId: number) {
+    return this.adminService.deleteUserById(userId);
+  }
+
   @Post('users/approve')
   async approveUser(
     @Request() req,

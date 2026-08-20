@@ -1023,6 +1023,68 @@ console.log('Where Clause:', whereClause);
     };
   }
 
+  async deleteUserById(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (user.role === 'admin') {
+      throw new HttpException(
+        'Cannot delete an admin account from this action',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const profileId = user.profile?.id;
+
+        await tx.match.deleteMany({
+          where: {
+            OR: [{ userId }, { targetId: userId }],
+          },
+        });
+
+        await tx.scan.updateMany({
+          where: { viewerId: userId },
+          data: { viewerId: null },
+        });
+
+        if (profileId) {
+          await tx.qRCard.deleteMany({ where: { profileId } });
+          await tx.profile.delete({ where: { id: profileId } });
+        }
+
+        await tx.qRCard.deleteMany({ where: { userId } });
+
+        await tx.payment.deleteMany({ where: { userId } });
+        await tx.subscription.deleteMany({ where: { userId } });
+
+        await tx.user.delete({ where: { id: userId } });
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to delete user: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      success: true,
+      message: 'User deleted successfully',
+      data: {
+        userId,
+        email: user.email,
+        name: user.name,
+      },
+    };
+  }
+
   async unverifyProfile(adminId: number, profileId: number, reason: string) {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },

@@ -19,6 +19,7 @@ logs
 *.log
 
 # IDE files
+temp_auto_push.bat
 .idea/
 *.swp
 *.swo
@@ -37,8 +38,8 @@ temp/
 # Local dev/test scripts (not for production deploy)
 test-*.js
 
-branch_structure.json
+
+!.env.example
 .gitignore
-temp_auto_push.bat
-temp_interactive_push.bat
+branch_structure.json
 config.bat
